@@ -1,6 +1,4 @@
-﻿using System.Text.Json;
-using System.Text.Json.Serialization;
-using System.Threading;
+﻿using System.Text.Json.Serialization;
 
 namespace Common.Models.Jobs
 {
@@ -11,27 +9,30 @@ namespace Common.Models.Jobs
         DESTINATION,    //목적지
         ELEVATOR,       //엘리베이터
         WAIT,           //대기
-        CHARGE          //충전
+        CHARGE,          //충전
+        ElevatorWait,
+        ElevatorEnter1,
+        ElevatorEnter2,
     }
 
     public class Position
     {
-        [JsonPropertyOrder(1)] public string    id { get; set; }
-        [JsonPropertyOrder(2)] public string    source { get; set; }
-        [JsonPropertyOrder(3)] public string    group { get; set; }
-        [JsonPropertyOrder(4)] public string    type { get; set; }
-        [JsonPropertyOrder(5)] public string    subType { get; set; }
-        [JsonPropertyOrder(6)] public string    mapId { get; set; }
-        [JsonPropertyOrder(7)] public string    name { get; set; }
-        [JsonPropertyOrder(8)] public double    x { get; set; }
-        [JsonPropertyOrder(9)] public double    y { get; set; }
-        [JsonPropertyOrder(10)] public double   theth { get; set; }
-        [JsonPropertyOrder(11)] public bool     isDisplayed { get; set; }
-        [JsonPropertyOrder(12)] public bool     isEnabled { get; set; }
-        [JsonPropertyOrder(13)] public bool     isOccupied { get; set; }
-        [JsonPropertyOrder(14)] public string   linkedFacility { get; set; }
-        [JsonPropertyOrder(15)] public string   linkedRobotId { get; set; }
-        [JsonPropertyOrder(16)] public bool     hasCharger { get; set; }
+        [JsonPropertyOrder(1)] public string id { get; set; }
+        [JsonPropertyOrder(2)] public string source { get; set; }
+        [JsonPropertyOrder(3)] public string group { get; set; }
+        [JsonPropertyOrder(4)] public string type { get; set; }
+        [JsonPropertyOrder(5)] public string subType { get; set; }
+        [JsonPropertyOrder(6)] public string mapId { get; set; }
+        [JsonPropertyOrder(7)] public string name { get; set; }
+        [JsonPropertyOrder(8)] public double x { get; set; }
+        [JsonPropertyOrder(9)] public double y { get; set; }
+        [JsonPropertyOrder(10)] public double theth { get; set; }
+        [JsonPropertyOrder(11)] public bool isDisplayed { get; set; }
+        [JsonPropertyOrder(12)] public bool isEnabled { get; set; }
+        [JsonPropertyOrder(13)] public bool isOccupied { get; set; }
+        [JsonPropertyOrder(14)] public string linkedFacility { get; set; }
+        [JsonPropertyOrder(15)] public string linkedRobotId { get; set; }
+        [JsonPropertyOrder(16)] public bool hasCharger { get; set; }
 
         public override string ToString()
         {

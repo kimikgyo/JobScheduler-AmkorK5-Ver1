@@ -238,6 +238,41 @@ namespace JOB.JobQueues
                             value = drumKeyCode
                         };
                         break;
+
+                    case "SourceFloor":
+                        var Sourceposition = _repository.Positions.MiR_GetById(job.sourceId);
+                        if (Sourceposition != null)
+                        {
+                            var map = _repository.Maps.GetById(Sourceposition.mapId);
+                            if (map != null)
+                            {
+                                param = new Parameta
+                                {
+                                    key = parameta.key,
+                                    value = $"{map.level}F"
+                                };
+                            }
+                        }
+                        break;
+                    case "DestinationFloor":
+
+                        var Destposition = _repository.Positions.MiR_GetById(job.destinationId);
+                        if (Destposition != null)
+                        {
+                            var map = _repository.Maps.GetById(Destposition.mapId);
+                            if (map != null)
+                            {
+                                param = new Parameta
+                                {
+                                    key = parameta.key,
+                                    value = $"{map.level}F"
+                                };
+                            }
+                        }
+                        break;
+
+
+
                 }
             }
             else

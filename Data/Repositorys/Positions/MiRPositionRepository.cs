@@ -53,5 +53,12 @@ namespace Data.Repositorys.Positions
                 return _positions.FirstOrDefault(m => m.source == "mir" && m.name == name);
             }
         }
+        public List<Position> MiR_GetBySubType(string subtype)
+        {
+            lock (_lock)
+            {
+                return _positions.Where(m => m.source == "mir" && m.subType == subtype).ToList();
+            }
+        }
     }
 }

@@ -2,6 +2,7 @@
 using Common.Models.Jobs;
 using Common.Models.Settings;
 using Common.Templates;
+using System.Text.Json;
 
 namespace JOB.Services
 {
@@ -446,6 +447,116 @@ namespace JOB.Services
             }
         }
 
+        private bool workerElevatorParameterMapping(Mission mission)
+        {
+            bool completed = false;
+
+            var workers = _repository.Workers.ANT_GetByActive();
+            //현재 워커의 정보를 조회한다
+            var assignedWorker = workers.FirstOrDefault(r => r.id == mission.assignedWorkerId);
+            if (assignedWorker == null) return completed;
+
+            //현재 워커와 다른 워커를 조회한다
+            var anotherWorkers = workers.Where(r => r.id != assignedWorker.id).ToList();
+
+            switch (mission.subType)
+            {
+                case nameof(MissionSubType.ELEVATORWAITMOVE):
+                    //엘리베이터 대기위치 이고 점유중인 포지션이 아니고 현재워커와 맵아이디가 일치하는 것을 가지고온다.
+                    var waitPositions = _repository.Positions.MiR_GetBySubType(nameof(PositionSubType.ElevatorWait));
+                    var waitPositionIsOccupied = waitPositions.Where(r => r.isOccupied == false).ToList();
+                    var waitPosition = waitPositionIsOccupied.FirstOrDefault(r => r.mapId == assignedWorker.mapId);
+
+                    var param = mission.parameters.FirstOrDefault(r => r.key == "target");
+
+                    if (waitPosition != null && param != null)
+                    {
+                        param.value = waitPosition.id;
+                        completed = true;
+                    }
+
+                    break;
+
+                case nameof(MissionSubType.ELEVATORENTERMOVE):
+                    var enter1Positions = _repository.Positions.MiR_GetBySubType(nameof(PositionSubType.ElevatorEnter1));
+                    var enter2Positions = _repository.Positions.MiR_GetBySubType(nameof(PositionSubType.ElevatorEnter2));
+                    var enter1PositionIsOccupied = enter1Positions.FirstOrDefault(r => r.isOccupied == true);
+                    var enter2PositionIsOccupied = enter2Positions.FirstOrDefault(r => r.isOccupied == true);
+
+                    if (enter1PositionIsOccupied == null)
+                    {
+                        completed = elevatorEnterParameterMapping(enter1Positions, mission, assignedWorker);
+                        if (completed)
+                        {
+                            completed = switchingMapParameterMapping(enter1Positions, mission);
+                        }
+                    }
+                    else if (enter2PositionIsOccupied == null)
+                    {
+                        completed = elevatorEnterParameterMapping(enter2Positions, mission, assignedWorker);
+                        if (completed)
+                        {
+                            completed = switchingMapParameterMapping(enter2Positions, mission);
+                        }
+                    }
+                    break;
+
+                default:
+                    completed = true;
+                    break;
+            }
+            return completed;
+        }
+
+        private bool elevatorEnterParameterMapping(List<Position> positions, Mission mission, Worker worker)
+        {
+            bool completed = false;
+            var enterPosition = positions.FirstOrDefault(r => r.mapId == worker.mapId);
+            if (enterPosition != null)
+            {
+                //이동 포지션 적용
+                var param = mission.parameters.FirstOrDefault(r => r.key == "target");
+                if (param != null)
+                {
+                    param.value = enterPosition.id;
+                    mission.parametersJson = JsonSerializer.Serialize(mission.parameters);
+                    _repository.Missions.Update(mission);
+                    completed = true;
+                }
+            }
+
+            return completed;
+        }
+
+        private bool switchingMapParameterMapping(List<Position> positions, Mission mission)
+        {
+            bool completed = false;
+
+            //Map스위칭 포지션 적용
+            var job = _repository.Jobs.GetByid(mission.jobId);
+            if (job != null)
+            {
+                var position = _repository.Positions.MiR_GetById(job.destinationId);
+                var switchMapMission = _repository.Missions.GetByJobId(job.guid).FirstOrDefault(r => r.subType == nameof(MissionSubType.SWITCHINGMAP));
+                if (position != null && switchMapMission != null)
+                {
+                    var mapSwitchPosition = positions.FirstOrDefault(r => r.mapId == position.mapId);
+                    if (mapSwitchPosition != null)
+                    {
+                        var mapSwitchParam = switchMapMission.parameters.FirstOrDefault(p => p.key == "target");
+                        if (mapSwitchParam != null)
+                        {
+                            mapSwitchParam.value = mapSwitchPosition.id;
+                            switchMapMission.parametersJson = JsonSerializer.Serialize(switchMapMission.parameters);
+                            _repository.Missions.Update(switchMapMission);
+                            completed = true;
+                        }
+                    }
+                }
+            }
+            return completed;
+        }
+
         /// <summary>
         /// [Sub] postMissionControl
         /// 미션 전송 ACS -> Service
@@ -468,21 +579,25 @@ namespace JOB.Services
                     var workerApi = _repository.ServiceApis.GetAll().FirstOrDefault(r => r.type == "worker");
                     if (workerApi != null)
                     {
-                        //[조건3] API 형식에 맞추어서 Mapping 을 한다.
-                        var mapping_mission = _mapping.Missions.ApiRequestDtoPostMission(mission);
-                        if (mapping_mission != null)
+                        bool elevatorparamMapping = workerElevatorParameterMapping(mission);
+                        if (elevatorparamMapping)
                         {
-                            //[조건4] Service 로 Api Mission 전송을 한다.
-                            var postmission = workerApi.Api.WorkerPostMissionQueueAsync(mapping_mission).Result;
-                            if (postmission != null)
+                            //[조건3] API 형식에 맞추어서 Mapping 을 한다.
+                            var mapping_mission = _mapping.Missions.ApiRequestDtoPostMission(mission);
+                            if (mapping_mission != null)
                             {
-                                //[조건5] 상태코드 200~300 까지는 완료 처리
-                                if (postmission.statusCode >= 200 && postmission.statusCode < 300)
+                                //[조건4] Service 로 Api Mission 전송을 한다.
+                                var postmission = workerApi.Api.WorkerPostMissionQueueAsync(mapping_mission).Result;
+                                if (postmission != null)
                                 {
-                                    EventLogger.Info($"PostMission Success = Service = {nameof(Service.WORKER)}, Message = {postmission.statusText}, MissionName = {mission.name}, MissionId = {mission.guid}, AssignedWorkerId = {mission.assignedWorkerId}");
-                                    CommandRequst = true;
+                                    //[조건5] 상태코드 200~300 까지는 완료 처리
+                                    if (postmission.statusCode >= 200 && postmission.statusCode < 300)
+                                    {
+                                        EventLogger.Info($"PostMission Success = Service = {nameof(Service.WORKER)}, Message = {postmission.statusText}, MissionName = {mission.name}, MissionId = {mission.guid}, AssignedWorkerId = {mission.assignedWorkerId}");
+                                        CommandRequst = true;
+                                    }
+                                    else EventLogger.Info($"PostMission Failed = Service = {nameof(Service.WORKER)}, Message = {postmission.message}, MissionName = {mission.name}, MissionId = {mission.guid}, AssignedWorkerId = {mission.assignedWorkerId}");
                                 }
-                                else EventLogger.Info($"PostMission Failed = Service = {nameof(Service.WORKER)}, Message = {postmission.message}, MissionName = {mission.name}, MissionId = {mission.guid}, AssignedWorkerId = {mission.assignedWorkerId}");
                             }
                         }
                     }

@@ -18,22 +18,22 @@ namespace Common.Models.Jobs
 
     public class Worker
     {
-        [JsonPropertyOrder(1)] public string  id { get; set; }
-        [JsonPropertyOrder(2)] public string  source { get; set; }
-        [JsonPropertyOrder(3)] public bool    isOnline { get; set; }
-        [JsonPropertyOrder(4)] public bool    isActive { get; set; }
-        [JsonPropertyOrder(5)] public bool    isMiddleware { get; set; } = false;
-        [JsonPropertyOrder(6)] public string  acsmissionId { get; set; }
-        [JsonPropertyOrder(7)] public string  group { get; set; } = "";
-        [JsonPropertyOrder(8)] public string  name { get; set; }
-        [JsonPropertyOrder(9)] public string  mapId { get; set; }
+        [JsonPropertyOrder(1)] public string id { get; set; }
+        [JsonPropertyOrder(2)] public string source { get; set; }
+        [JsonPropertyOrder(3)] public bool isOnline { get; set; }
+        [JsonPropertyOrder(4)] public bool isActive { get; set; }
+        [JsonPropertyOrder(5)] public bool isMiddleware { get; set; } = false;
+        [JsonPropertyOrder(6)] public string acsmissionId { get; set; }
+        [JsonPropertyOrder(7)] public string group { get; set; } = "";
+        [JsonPropertyOrder(8)] public string name { get; set; }
+        [JsonPropertyOrder(9)] public string mapId { get; set; }
         [JsonPropertyOrder(10)] public string mapName { get; set; }
         [JsonPropertyOrder(11)] public string state { get; set; }
         [JsonPropertyOrder(12)] public double batteryPercent { get; set; }
         [JsonPropertyOrder(13)] public double position_X { get; set; }
         [JsonPropertyOrder(14)] public double position_Y { get; set; }
         [JsonPropertyOrder(15)] public double position_Orientation { get; set; }
-        [JsonPropertyOrder(16)] public string PositionId{ get; set; }
+        [JsonPropertyOrder(16)] public string PositionId { get; set; }
         [JsonPropertyOrder(17)] public string PositionName { get; set; }
 
         // 사람용 요약 (디버거/로그에서 보기 좋게)

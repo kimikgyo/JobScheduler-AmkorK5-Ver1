@@ -60,11 +60,13 @@ namespace Common.Models.Jobs
         ELEVATORENTERMOVE,
         ELEVATOREXITMOVE,
         DESTINATIONMOVE,
-
+        SWITCHINGMAP,
         //ACTION
 
         SOURCEACTION,
         DESTINATIONACTION,
+        ELEVATORSOURCEFLOOR,
+        ELEVATORDESTINATIONFLOOR,
         PICK,
         DROP,
         WAIT,

@@ -34,7 +34,7 @@ namespace JOB.JobQueues
                     sourceId = addOrder.sourceId,
                     destinationId = addOrder.destinationId,
                     carrierId = addOrder.carrierId,
-                    drumKeyCode = addOrder.drumKeyCode,
+                    drumKeyCode = "",
                     orderedBy = addOrder.orderedBy,
                     orderedAt = addOrder.orderedAt,
                     priority = addOrder.priority,

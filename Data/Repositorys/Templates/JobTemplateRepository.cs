@@ -88,7 +88,7 @@ namespace Data.Repositorys.Templates
         {
             lock (_lock)
             {
-                return _jobTemplates.Where(m=>m.type == type && m.subType.StartsWith(subType)).ToList();
+                return _jobTemplates.Where(m=>m.type == type && m.subType == subType).ToList();
             }
         }
         

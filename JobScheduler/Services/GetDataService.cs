@@ -49,7 +49,7 @@ namespace JobScheduler.Services
                             var Workers = await serviceApi.Api.GetResourceWorker();
                             var Maps = await serviceApi.Api.GetResourceMap();
                             var Positions = await serviceApi.Api.GetResourcePosition();
-                            var Carriers = await serviceApi.Api.GetResourceCarrier();
+                            //var Carriers = await serviceApi.Api.GetResourceCarrier();
 
                             if (Workers == null)
                             {
@@ -66,11 +66,11 @@ namespace JobScheduler.Services
                                 _eventlog.Info($"{nameof(Positions)}GetDataFail");
                                 break;
                             }
-                            else if (Carriers == null)
-                            {
-                                _eventlog.Info($"{nameof(Carriers)}GetDataFail");
-                                break;
-                            }
+                            //else if (Carriers == null)
+                            //{
+                            //    _eventlog.Info($"{nameof(Carriers)}GetDataFail");
+                            //    break;
+                            //}
                             else
                             {
                                 foreach (var getmap in Maps)
@@ -122,17 +122,17 @@ namespace JobScheduler.Services
                                     _repository.Positions.Add(position);
                                 }
 
-                                foreach (var getCarrier in Carriers)
-                                {
-                                    var carrier = _mapping.Carriers.ApiGetResourceResponse(getCarrier);
-                                    _repository.Carriers.Add(carrier);
-                                }
+                                //foreach (var getCarrier in Carriers)
+                                //{
+                                //    var carrier = _mapping.Carriers.ApiGetResourceResponse(getCarrier);
+                                //    _repository.Carriers.Add(carrier);
+                                //}
                                 Resource = true;
                             }
                         }
                         if (serviceApi.type == "Template")
                         {
-                            var JobTemplates = await serviceApi.Api.STIGetResourceJobTemplate();
+                            var JobTemplates = await serviceApi.Api.AmkorGetResourceJobTemplate();
                             if (JobTemplates == null)
                             {
                                 _eventlog.Info($"{nameof(JobTemplates)}GetDataFail");
@@ -187,7 +187,7 @@ namespace JobScheduler.Services
                             var getReloadWorkers = await serviceApi.Api.GetResourceWorker();
                             var getReloadMaps = await serviceApi.Api.GetResourceMap();
                             var getReloadPositions = await serviceApi.Api.GetResourcePosition();
-                            var getReloadCarrier = await serviceApi.Api.GetResourceCarrier();
+                            //var getReloadCarrier = await serviceApi.Api.GetResourceCarrier();
                             if (getReloadWorkers == null)
                             {
                                 _eventlog.Info($"{nameof(getReloadWorkers)}GetDataFail");
@@ -203,23 +203,23 @@ namespace JobScheduler.Services
                                 _eventlog.Info($"{nameof(getReloadPositions)}GetDataFail");
                                 break;
                             }
-                            else if (getReloadCarrier == null)
-                            {
-                                _eventlog.Info($"{nameof(getReloadCarrier)}GetDataFail");
-                                break;
-                            }
+                            //else if (getReloadCarrier == null)
+                            //{
+                            //    _eventlog.Info($"{nameof(getReloadCarrier)}GetDataFail");
+                            //    break;
+                            //}
                             else
                             {
                                 ReloadMap(getReloadMaps);
                                 ReloadWorker(getReloadWorkers);
                                 ReloadPosition(getReloadPositions);
-                                ReloadCarrier(getReloadCarrier);
+                                //ReloadCarrier(getReloadCarrier);
                                 Resource = true;
                             }
                         }
                         if (serviceApi.type == "Template")
                         {
-                            var JobTemplates = await serviceApi.Api.STIGetResourceJobTemplate();
+                            var JobTemplates = await serviceApi.Api.AmkorGetResourceJobTemplate();
                             if (JobTemplates == null)
                             {
                                 _eventlog.Info($"{nameof(JobTemplates)}GetDataFail");

@@ -64,7 +64,7 @@ namespace JOB.Services
             foreach (var worker in _repository.Workers.ANT_GetByActive())
             {
                 Job job = null;
-                var runjob = _repository.Jobs.GetByAssignWorkerId(worker.id).FirstOrDefault(j=>j.type != nameof(JobType));
+                var runjob = _repository.Jobs.GetByAssignWorkerId(worker.id).FirstOrDefault(j => j.type != nameof(JobType));
                 if (runjob != null) continue;
 
                 //지정한 워커가 있는지
@@ -165,55 +165,26 @@ namespace JOB.Services
                     workers = workers.Where(w => w.group == job.group).ToList();
                     if (workers.Count == 0 || workers == null) continue;
 
-                    //================= 2호기가 슬러리가 되어있지않아 1호기만 슬러리 가능하도록한다 ==========//
-                    //================= 2호기가 슬러리가 가능하게 될경우 else 문에 있는 Code만 사용한다 ======//
-                    if ((job.type == nameof(JobType.TRANSPORTSLURRYRECOVERY)) || (job.type == nameof(JobType.TRANSPORTSLURRYSUPPLY)))
+                    var worker = NotspecifiedJobSelect(workers, job);
+                    if (worker != null)
                     {
-                        var worker = workers.FirstOrDefault(w => w.name == "MORA_01" || w.name == "Vehicle 1 Simul");
-                        if (worker != null)
+                        if (TransPortCondition(job, worker) == false) continue;
+
+                        job.assignedWorkerId = worker.id;
+                        updateStateJob(job, nameof(JobState.WORKERASSIGNED), true);
+
+                        foreach (var mission in _repository.Missions.GetByJobId(job.guid))
                         {
-                            if (TransPortCondition(job, worker) == false) continue;
-
-                            job.assignedWorkerId = worker.id;
-                            updateStateJob(job, nameof(JobState.WORKERASSIGNED), true);
-
-                            foreach (var mission in _repository.Missions.GetByJobId(job.guid))
-                            {
-                                mission.assignedWorkerId = worker.id;
-                                updateStateMission(mission, nameof(MissionState.WORKERASSIGNED), true);
-                            }
-                            var order = _repository.Orders.GetByid(job.orderId);
-                            if (order != null)
-                            {
-                                order.assignedWorkerId = worker.id;
-                                updateStateOrder(order, OrderState.Transferring, true);
-                            }
-                            workers.Remove(worker);
+                            mission.assignedWorkerId = worker.id;
+                            updateStateMission(mission, nameof(MissionState.WORKERASSIGNED), true);
                         }
-                    }
-                    else
-                    {
-                        var worker = NotspecifiedJobSelect(workers, job);
-                        if (worker != null)
+                        var order = _repository.Orders.GetByid(job.orderId);
+                        if (order != null)
                         {
-                            if (TransPortCondition(job, worker) == false) continue;
-
-                            job.assignedWorkerId = worker.id;
-                            updateStateJob(job, nameof(JobState.WORKERASSIGNED), true);
-
-                            foreach (var mission in _repository.Missions.GetByJobId(job.guid))
-                            {
-                                mission.assignedWorkerId = worker.id;
-                                updateStateMission(mission, nameof(MissionState.WORKERASSIGNED), true);
-                            }
-                            var order = _repository.Orders.GetByid(job.orderId);
-                            if (order != null)
-                            {
-                                order.assignedWorkerId = worker.id;
-                                updateStateOrder(order, OrderState.Transferring, true);
-                            }
-                            workers.Remove(worker);
+                            order.assignedWorkerId = worker.id;
+                            updateStateOrder(order, OrderState.Transferring, true);
                         }
+                        workers.Remove(worker);
                     }
                 }
             }
@@ -551,7 +522,7 @@ namespace JOB.Services
             return CommandRequst;
         }
 
-         /// <summary>
+        /// <summary>
         /// postDeleteMission
         /// 미션 삭제 요청 ACS -> Service
         /// </summary>

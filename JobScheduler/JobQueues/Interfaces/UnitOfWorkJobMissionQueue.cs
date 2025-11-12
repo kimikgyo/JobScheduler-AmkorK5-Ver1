@@ -47,6 +47,7 @@ namespace JOB.JobQueues.Interfaces
                 orderId = orderId,
                 carrierId = carrierId,
                 drumKeyCode = drumKeyCode,
+                groupId = jobTemplate.group,
                 sourceId = sourceId,
                 destinationId = destinationId,
                 priority = priority,

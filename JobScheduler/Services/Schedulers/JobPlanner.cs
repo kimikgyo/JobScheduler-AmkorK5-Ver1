@@ -9,101 +9,8 @@ namespace JOB.Services
         private void JobPlanner()
         {
             createJob();
-            createWaitControl();
-            createChargeControl();
-        }
-
-        /// <summary>
-        /// OrderContoller 받은 Order데이터 다시 update
-        /// </summary>
-        /// <param name="order"></param>
-        /// <returns></returns>
-        private Order orderTypeAndSubTypeUpdate(Order order)
-        {
-            bool ChangedData = false;
-            Position Source = null;
-            Position Destination = null;
-            if (!IsInvalid(order.sourceId)) Source = _repository.Positions.ANT_GetById_Name_linkedFacility(order.sourceId);
-            Destination = _repository.Positions.ANT_GetById_Name_linkedFacility(order.destinationId);
-            if (Destination != null)
-            {
-                switch (order.subType)
-                {
-                    case nameof(JobSubType.SIMPLEMOVE):
-                        order.type = nameof(JobType.MOVE);
-                        order.destinationId = Destination.id;
-                        ChangedData = true;
-                        break;
-
-                    case nameof(JobSubType.PICKONLY):
-                    case nameof(JobSubType.DROPONLY):
-                        order.type = nameof(JobType.TRANSPORT);
-                        order.destinationId = Destination.id;
-                        ChangedData = true;
-                        break;
-
-                    case nameof(JobSubType.PICKDROP):
-                        if (Source != null)
-                        {
-                            if ((Source.name.ToUpper().Contains("BUFFER")) || (Source.linkedFacility.ToUpper().Contains("BUFFER")))
-                            {
-                                if ((Destination.name.ToUpper().Contains("CHEMICAL")) || (Destination.linkedFacility.ToUpper().Contains("CHEMICAL")))
-                                {
-                                    order.type = nameof(JobType.TRANSPORTCHEMICALSUPPLY);
-                                    order.sourceId = Source.id;
-                                    order.destinationId = Destination.id;
-                                    ChangedData = true;
-                                }
-                                else if ((Destination.name.ToUpper().Contains("SLURRY")) || (Destination.linkedFacility.ToUpper().Contains("SLURRY")))
-                                {
-                                    order.type = nameof(JobType.TRANSPORTSLURRYSUPPLY);
-                                    order.sourceId = Source.id;
-                                    order.destinationId = Destination.id;
-                                    ChangedData = true;
-                                }
-                            }
-                            else if ((Source.name.ToUpper().Contains("CHEMICAL")) || (Source.linkedFacility.ToUpper().Contains("CHEMICAL")))
-                            {
-                                order.type = nameof(JobType.TRANSPORTCHEMICALRECOVERY);
-                                order.sourceId = Source.id;
-                                order.destinationId = Destination.id;
-                                ChangedData = true;
-                            }
-                            else if ((Source.name.ToUpper().Contains("SLURRY")) || (Source.linkedFacility.ToUpper().Contains("SLURRY")))
-                            {
-                                order.type = nameof(JobType.TRANSPORTSLURRYRECOVERY);
-                                order.sourceId = Source.id;
-                                order.destinationId = Destination.id;
-                                ChangedData = true;
-                            }
-                        }
-
-                        break;
-
-                    case nameof(JobSubType.CHARGE):
-                        order.type = nameof(JobType.CHARGE);
-                        order.destinationId = Destination.id;
-                        ChangedData = true;
-                        break;
-
-                    case nameof(JobSubType.WAIT):
-                        order.type = nameof(JobType.WAIT);
-                        order.destinationId = Destination.id;
-                        ChangedData = true;
-                        break;
-
-                    case nameof(JobSubType.RESET):
-                        order.type = nameof(JobType.RESET);
-                        order.destinationId = Destination.id;
-                        ChangedData = true;
-                        break;
-                }
-                if (ChangedData)
-                {
-                    updateStateOrder(order, OrderState.Queued, true);
-                }
-            }
-            return order;
+            //createWaitControl();
+            //createChargeControl();
         }
 
         /// <summary>
@@ -114,13 +21,12 @@ namespace JOB.Services
         {
             var initStatusOrders = _repository.Orders.GetByOrderStatus(nameof(OrderState.Queued));
 
-            foreach (var newOrder in initStatusOrders)
+            foreach (var order in initStatusOrders)
             {
                 Position source = null;
                 Position destination = null;
                 bool selectJobflag = false;
                 JobTemplate selectJob = null;
-                var order = orderTypeAndSubTypeUpdate(newOrder);
                 //JobTemplates 타입과 서브타입으로 조회한다
                 var jobTemplates = _repository.JobTemplates.GeyByOrderType(order.type, order.subType);
                 //JobTemplates 조회가 되지않으면 continue;

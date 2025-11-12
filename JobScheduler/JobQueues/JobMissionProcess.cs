@@ -16,6 +16,7 @@ namespace JOB.JobQueues
                 var carrierId = cmd.carrierId;
                 var drumKeyCode = cmd.drumKeyCode;
                 var priority = cmd.priority;
+                var groupId = cmd.groupId;
                 var sourceId = cmd.sourceId;
                 var destinationId = cmd.destinationId;
                 var specifiedWorkerId = cmd.specifiedWorkerId;
@@ -28,7 +29,7 @@ namespace JOB.JobQueues
                 var job = new Job
                 {
                     guid = Guid.NewGuid().ToString(),
-                    group = jobTemplate.group,
+                    group = groupId,
                     name = $"{sourceName}to{destinationName}",
                     orderId = orderId,
                     type = jobTemplate.type,

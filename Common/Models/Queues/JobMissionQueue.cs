@@ -18,6 +18,7 @@ namespace Common.Models.Queues
         public string drumKeyCode { get; set; }
         public JobTemplate jobTemplate { get; set; }
         public int priority { get; set; }
+        public string groupId { get; set; }
         public string sourceId { get; set; }
         public string sourceName { get; set; }
         public string sourcelinkedFacility { get; set; }

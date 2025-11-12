@@ -80,6 +80,7 @@ namespace JOB.Mappings.Jobs
                 jobId = model.jobId,
                 guid = model.guid,
                 carrierId = model.carrierId,
+                name = model.name,
                 service = model.service,
                 type = model.type,
                 subType = model.subType,

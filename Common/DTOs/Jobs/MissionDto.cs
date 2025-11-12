@@ -99,18 +99,19 @@ namespace Common.DTOs.Jobs
         [JsonPropertyOrder(2)] public string jobId { get; set; }
         [JsonPropertyOrder(3)] public string guid { get; set; }
         [JsonPropertyOrder(4)] public string carrierId { get; set; }              // 자재 ID (nullable)
-        [JsonPropertyOrder(5)] public string service { get; set; }
-        [JsonPropertyOrder(6)] public string type { get; set; }
-        [JsonPropertyOrder(7)] public string subType { get; set; }
-        [JsonPropertyOrder(8)] public int sequence { get; set; }
-        [JsonPropertyOrder(8)] public string linkedFacility { get; set; }
-        [JsonPropertyOrder(9)] public bool isLocked { get; set; }
-        [JsonPropertyOrder(10)] public int sequenceChangeCount { get; set; } = 0;
-        [JsonPropertyOrder(11)] public int retryCount { get; set; } = 0;
-        [JsonPropertyOrder(12)] public string state { get; set; }
-        [JsonPropertyOrder(14)] public string specifiedWorkerId { get; set; }
-        [JsonPropertyOrder(15)] public string assignedWorkerId { get; set; }
-        [JsonPropertyOrder(16)] public List<Parameta> parameters { get; set; }
+        [JsonPropertyOrder(5)] public string name { get; set; }              // 자재 ID (nullable)
+        [JsonPropertyOrder(6)] public string service { get; set; }
+        [JsonPropertyOrder(7)] public string type { get; set; }
+        [JsonPropertyOrder(8)] public string subType { get; set; }
+        [JsonPropertyOrder(9)] public int sequence { get; set; }
+        [JsonPropertyOrder(10)] public string linkedFacility { get; set; }
+        [JsonPropertyOrder(11)] public bool isLocked { get; set; }
+        [JsonPropertyOrder(12)] public int sequenceChangeCount { get; set; } = 0;
+        [JsonPropertyOrder(13)] public int retryCount { get; set; } = 0;
+        [JsonPropertyOrder(14)] public string state { get; set; }
+        [JsonPropertyOrder(15)] public string specifiedWorkerId { get; set; }
+        [JsonPropertyOrder(16)] public string assignedWorkerId { get; set; }
+        [JsonPropertyOrder(17)] public List<Parameta> parameters { get; set; }
 
         // 사람용 요약 (디버거/로그에서 보기 좋게)
         public override string ToString()
@@ -137,6 +138,7 @@ namespace Common.DTOs.Jobs
               $",jobId = {jobId,-5}" +
               $",guid = {guid,-5}" +
               $",carrierId = {carrierId,-5}" +
+              $",name = {name,-5}" +
               $",service = {service,-5}" +
               $",type = {type,-5}" +
               $",subType = {subType,-5}" +

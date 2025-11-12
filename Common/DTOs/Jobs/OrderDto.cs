@@ -13,11 +13,11 @@ namespace Common.DTOs.Jobs
         [JsonPropertyOrder(4)] public string sourceId { get; set; }
         [JsonPropertyOrder(5)] public string destinationId { get; set; }
         [JsonPropertyOrder(6)] public string carrierId { get; set; }
-        [JsonPropertyOrder(7)] public string drumKeyCode { get; set; }
-        [JsonPropertyOrder(8)] public string orderedBy { get; set; }
-        [JsonPropertyOrder(9)] public DateTime orderedAt { get; set; }
-        [JsonPropertyOrder(10)] public int priority { get; set; }
-        [JsonPropertyOrder(11)] public string specifiedWorkerId { get; set; }
+        //[JsonPropertyOrder(7)] public string drumKeyCode { get; set; }
+        [JsonPropertyOrder(7)] public string orderedBy { get; set; }
+        [JsonPropertyOrder(8)] public DateTime orderedAt { get; set; }
+        [JsonPropertyOrder(9)] public int priority { get; set; }
+        [JsonPropertyOrder(10)] public string specifiedWorkerId { get; set; }
 
         public override string ToString()
         {
@@ -29,7 +29,7 @@ namespace Common.DTOs.Jobs
                 $",sourceId = {sourceId,-5}" +
                 $",destinationId = {destinationId,-5}" +
                 $",carrierId = {carrierId,-5}" +
-                $",drumKeyCode = {drumKeyCode,-5}" +
+                //$",drumKeyCode = {drumKeyCode,-5}" +
                 $",orderedBy = {orderedBy,-5}" +
                 $",orderedAt = {orderedAt,-5}" +
                 $",priority = {priority,-5}" +

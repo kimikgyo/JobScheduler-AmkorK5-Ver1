@@ -1,0 +1,437 @@
+﻿using Common.DTOs.Jobs;
+using Common.Models.Jobs;
+using Data.Interfaces;
+using JOB.JobQueues.Interfaces;
+using JOB.Mappings.Interfaces;
+using JOB.MQTTs.Interfaces;
+using log4net;
+using Microsoft.AspNetCore.Mvc;
+using Swashbuckle.AspNetCore.Annotations;
+
+// For more information on enabling Web API for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
+
+namespace JobScheduler.Controllers.Jobs
+{
+    [Route("api/[controller]")]
+    [ApiController]
+    public class ordersController : ControllerBase
+    {
+        //Ok()` / `Ok(object)`                 `200 OK`            요청 성공, 결과 데이터 포함
+        //Created(uri, object)`                `201 Created`       리소스 생성 완료(URI 포함 가능)
+        //NoContent()`                         `204 No Content`    성공했지만 반환할 내용 없음
+        //BadRequest()` / `BadRequest(object)` `400 Bad Request`   잘못된 요청
+        //Unauthorized()`                      `401 Unauthorized`  인증 필요(토큰 등 없음)
+        //Forbid()`                            `403 Forbidden`     권한 부족으로 접근 금지
+        //NotFound()`                          `404 Not Found`     리소스 없음
+        //Conflict()`                          `409 Conflict`      중복 등 충돌 발생
+        //StatusCode(int)`                     임의 상태               임의 HTTP 상태 코드 반환
+        // 500	Internal Server Error 서버 내부 오류.명확한 원인 없이 실패한 경우
+        //501	Not Implemented 요청된 기능이 서버에 구현되어 있지 않음
+        //502	Bad Gateway 게이트웨이 또는 프록시 서버가 잘못된 응답 수신
+        //503	Service Unavailable 서버가 일시적으로 사용 불가능 (예: 과부하, 점검 중)
+        //504	Gateway Timeout 게이트웨이 또는 프록시 서버가 시간 내 응답 받지 못함
+        //505	HTTP Version Not Supported  요청에서 사용한 HTTP 버전이 지원되지 않음
+
+        private static readonly ILog logger = LogManager.GetLogger("OrderController"); //Function 실행관련 Log
+
+        private readonly IUnitOfWorkRepository _repository;
+        private readonly IUnitOfWorkMapping _mapping;
+        private readonly IUnitOfWorkJobMissionQueue _queue;
+        private readonly IUnitofWorkMqttQueue _mqttQueue;
+
+        public ordersController(IUnitOfWorkRepository repository, IUnitOfWorkMapping mapping, IUnitOfWorkJobMissionQueue queue, IUnitofWorkMqttQueue mqttQueue)
+        {
+            _repository = repository;
+            _mapping = mapping;
+            _queue = queue;
+            _mqttQueue = mqttQueue;
+        }
+
+        //GET: api/<OrderController>
+        [HttpGet]
+        public ActionResult<List<ResponseDtoOrder>> GetAll()
+        {
+            List<ResponseDtoOrder> _responseDtos = new List<ResponseDtoOrder>();
+            foreach (var model in _repository.Orders.GetAll())
+            {
+                ResponseDtoOrder responseDto = null;
+                responseDto = _mapping.Orders.Response(model);
+                var job = _repository.Jobs.GetByOrderId(model.id, model.type, model.subType);
+                if (job != null)
+                {
+                    var jobresponse = _mapping.Jobs.Response(job);
+
+                    foreach (var mission in _repository.Missions.GetByJobId(job.guid))
+                    {
+                        var missionresponse = _mapping.Missions.Response(mission);
+                        jobresponse.missions.Add(missionresponse);
+                    }
+
+                    responseDto.Job = jobresponse;
+                }
+
+                _responseDtos.Add(responseDto);
+                logger.Info($"{this.ControllerLogPath()} Response = {responseDto}");
+            }
+
+            return Ok(_responseDtos);
+        }
+
+        //History
+        [HttpGet("history")]
+        public ActionResult<List<ResponseDtoOrder>> FindHistory(DateTime startDay, DateTime endDay)
+        {
+            if (startDay != DateTime.MinValue && endDay != DateTime.MinValue)
+            {
+                List<ResponseDtoOrder> _responseDtos = new List<ResponseDtoOrder>();
+
+                if (startDay == endDay) endDay = endDay.AddDays(1);
+                var histories = _repository.OrderHistorys.FindHistory(startDay, endDay);
+
+                foreach (var history in histories)
+                {
+                    var responseDto = _mapping.Orders.Response(history);
+                    foreach (var job in _repository.JobHistorys.FindHistoryOrderId(history.id))
+                    {
+                        var jobresponse = _mapping.Jobs.Response(job);
+
+                        foreach (var mission in _repository.MissionHistorys.FindHistoryOrderId(history.id))
+                        {
+                            var missionresponse = _mapping.Missions.Response(mission);
+                            jobresponse.missions.Add(missionresponse);
+                        }
+                        responseDto.Job = jobresponse;
+                    }
+                    _responseDtos.Add(responseDto);
+                }
+
+                return Ok(_responseDtos);
+            }
+            else
+            {
+                return BadRequest("check startDay or endDay");
+            }
+        }
+
+        [HttpGet("history/today")]
+        public ActionResult<List<ResponseDtoOrder>> GetTodayHistory()
+        {
+            List<ResponseDtoOrder> _responseDtos = new List<ResponseDtoOrder>();
+
+            DateTime today = DateTime.Today;
+            DateTime tomorrow = today.AddDays(1);
+            var histories = _repository.OrderHistorys.FindHistory(today, tomorrow);
+
+            foreach (var history in histories)
+            {
+                var responseDto = _mapping.Orders.Response(history);
+                foreach (var job in _repository.JobHistorys.FindHistoryOrderId(history.id))
+                {
+                    var jobresponse = _mapping.Jobs.Response(job);
+
+                    foreach (var mission in _repository.MissionHistorys.FindHistoryOrderId(history.id))
+                    {
+                        var missionresponse = _mapping.Missions.Response(mission);
+                        jobresponse.missions.Add(missionresponse);
+                    }
+                    responseDto.Job = jobresponse;
+                }
+                _responseDtos.Add(responseDto);
+            }
+
+            return Ok(_responseDtos);
+        }
+
+        //finisth
+        [HttpGet("finish/today")]
+        public ActionResult<List<ResponseDtoOrder>> GetTodayFinisthHistory()
+        {
+            List<ResponseDtoOrder> _responseDtos = new List<ResponseDtoOrder>();
+
+            DateTime today = DateTime.Today;
+            DateTime tomorrow = today.AddDays(1);
+            var histories = _repository.OrderFinishedHistorys.FindHistory(today, tomorrow);
+
+            foreach (var history in histories)
+            {
+                var mappingOrderHistory = _mapping.Orders.Response(history);
+                foreach (var job in _repository.JobFinishedHistorys.FindHistoryOrderId(history.id))
+                {
+                    var mappingJobHistory = _mapping.Jobs.Response(job);
+
+                    foreach (var mission in _repository.MissionFinishedHistorys.FindHistoryOrderId(history.id))
+                    {
+                        mappingJobHistory.missions.Add(_mapping.Missions.Response(mission));
+                    }
+                    mappingOrderHistory.Job = mappingJobHistory;
+                }
+                _responseDtos.Add(mappingOrderHistory);
+            }
+            return Ok(_responseDtos);
+        }
+
+        //GET api/<OrderController>/5
+        [HttpGet("{id}")]
+        public ActionResult<ResponseDtoOrder> GetById(string id)
+        {
+            ResponseDtoOrder responseDto = null;
+            var order = _repository.Orders.GetByid(id);
+            if (order != null)
+            {
+                responseDto = _mapping.Orders.Response(order);
+                var job = _repository.Jobs.GetByOrderId(order.id, order.type, order.subType);
+                if (job != null)
+                {
+                    var jobresponse = _mapping.Jobs.Response(job);
+
+                    foreach (var mission in _repository.Missions.GetByJobId(job.guid))
+                    {
+                        var missionresponse = _mapping.Missions.Response(mission);
+                        jobresponse.missions.Add(missionresponse);
+                    }
+
+                    responseDto.Job = jobresponse;
+                }
+            }
+            logger.Info($"{this.ControllerLogPath(id)} Response = {responseDto}");
+            return Ok(responseDto);
+        }
+
+        // POST api/<OrderController>
+        [HttpPost]
+        [SwaggerOperation(Summary = "새로운 주문 생성")]
+        public ActionResult Post([FromBody] AddRequestDtoOrder add)
+        {
+            logger.Info($"AddRequest = {add}");
+            string message = ConditionAddOrder(add);
+            if (message == null)
+            {
+                _queue.CreateOrder(add);
+                logger.Info($"{this.ControllerLogPath()} Response = " +
+                                $"Code = {Ok(message).StatusCode}" +
+                                $",massage = {Ok(message).Value}" +
+                                $",Date = {add}"
+                                );
+                return Created();
+            }
+            else
+            {
+                logger.Info($"{this.ControllerLogPath()} Response = " +
+                                 $"Code = {NotFound(message).StatusCode}" +
+                                 $",massage = {NotFound(message).Value}" +
+                                 $",Date = {add}"
+                                 );
+                return BadRequest(message);
+            }
+        }
+
+        // PUT api/<OrderController>/5
+        //[HttpPut("{id}")]
+        //public ActionResult Put([FromBody] UpdateRequestDtoOrder update)
+        //{
+        //}
+
+        //// DELETE api/<OrderController>/5
+        //[HttpDelete("{id}")]
+        //public void Delete(int id)
+        //{
+        //}
+
+        private string ConditionAddOrder(AddRequestDtoOrder RequestDto)
+        {
+            string massage = null;
+            //[조건1] order Id 가 null이거나 빈문자 이고 type이 트랜스포트일경우
+            if (IsInvalid(RequestDto.id)) return massage = $"Check Order Id";
+            //orderId 조회
+            var order = _repository.Orders.GetByid(RequestDto.id);
+            if (order != null) massage = $"Check Order Id";
+           
+
+            //[조건2]도착자Id가 null이거나 빈문자일경우
+            if (IsInvalid(RequestDto.destinationId)) return massage = $"Check Order destinationId";
+            else
+            {
+                var destination = _repository.Positions.ANT_GetById_Name_linkedFacility(RequestDto.destinationId);
+                if (destination == null) return massage = $"Check Order destinationId";
+            }
+
+            ////[조건3]타입이 null이거나 빈문자일경우
+            //if (IsInvalid(RequestDto.type)) return massage = $"Check Order Type";
+            ////orderType 빈문자를제외후 대문자로 변환
+            //RequestDto.type = RequestDto.type.Replace(" ", "").ToUpper();
+            // Enum에 값이 존재하는지 확인
+            //bool existTypes = Enum.IsDefined(typeof(OrderType), RequestDto.type);
+            //if (!existTypes) return massage = $"Check Order Type";
+
+           
+
+            
+            //[조건4]서브타입이 null이거나 빈문자일경우
+            if (IsInvalid(RequestDto.subType)) return massage = $"Check Order subType";
+            //orderSubType 빈문자를제외후 대문자로 변환
+            RequestDto.subType = RequestDto.subType.Replace(" ", "").ToUpper();
+            // Enum에 값이 존재하는지 확인
+            bool existSubTypes = Enum.IsDefined(typeof(JobSubType), RequestDto.subType);
+            if (!existSubTypes) return massage = $"Check Order SubType";
+
+            switch (RequestDto.subType)
+            {
+                case nameof(JobSubType.SIMPLEMOVE):
+                    //워커를 지정하여 보내지 않는경우
+                    if (IsInvalid(RequestDto.specifiedWorkerId)) massage = $"Check Order SpecifiedWorkerId ";
+                    else
+                    {
+                        //워커를 지정 하였지만 worker가 List에 없는경우
+                        var worker = _repository.Workers.ANT_GetById(RequestDto.specifiedWorkerId);
+                        if (worker == null) massage = $"Check Order SpecifiedWorkerId ";
+                    }
+                    break;
+
+                case nameof(JobSubType.PICKDROP):
+                case nameof(JobSubType.PICKONLY):
+                case nameof(JobSubType.DROPONLY):
+                    //같은 출발지와 목적지가 있는경우
+                    var findSource_dest = _repository.Orders.GetBySource_Dest(RequestDto.sourceId, RequestDto.destinationId);
+                    if (findSource_dest != null) massage = $"Check sourceId And DestinationId";
+                    //carrier Id 가 없는경우 [자재 이송이기때문에 carrier이 존재해야함]
+                    else if (IsInvalid(RequestDto.carrierId)) massage = $"Check Order carrierId ";
+                    else if (RequestDto.subType == nameof(JobSubType.PICKONLY) || RequestDto.subType == nameof(JobSubType.DROPONLY))
+                    {
+                        //워커를 지정하여 보내지 않는경우
+                        if (IsInvalid(RequestDto.specifiedWorkerId)) massage = $"Check Order SpecifiedWorkerId ";
+                        else
+                        {
+                            //워커를 지정 하였지만 worker가 List에 없는경우
+                            var worker = _repository.Workers.ANT_GetById(RequestDto.specifiedWorkerId);
+                            if (worker == null) massage = $"Check Order SpecifiedWorkerId ";
+                        }
+                    }
+                    else if (RequestDto.subType == nameof(JobSubType.PICKDROP))
+                    {
+                        //출발지가 없는경우 PickDrop이기때문에 출발지와 목적지가 있어야함.
+                        if (IsInvalid(RequestDto.sourceId)) massage = $"Check Order sourceId ";
+                        else
+                        {
+                            //출발지가 Position 목록에 없는경우
+                            var source = _repository.Positions.ANT_GetById_Name_linkedFacility(RequestDto.sourceId);
+                            if (source == null) massage = $"Check Order sourceId ";
+                        }
+                    }
+                    break;
+
+                case nameof(JobSubType.CHARGE):
+                case nameof(JobSubType.WAIT):
+                    if (RequestDto.type == nameof(JobType.CHARGE) && RequestDto.subType != nameof(JobSubType.CHARGE)) massage = $"Check Order SubType";
+                    else if (RequestDto.type == nameof(JobType.WAIT) && RequestDto.subType != nameof(JobSubType.WAIT)) massage = $"Check Order SubType";
+                    //워커를 지정하여 보내지 않는경우
+                    else if (IsInvalid(RequestDto.specifiedWorkerId)) massage = $"Check Order SpecifiedWorkerId ";
+                    else
+                    {
+                        //워커를 지정 하였지만 worker가 List에 없는경우
+                        var worker = _repository.Workers.ANT_GetById(RequestDto.specifiedWorkerId);
+                        if (worker == null) massage = $"Check Order SpecifiedWorkerId ";
+                    }
+
+                    break;
+
+                case nameof(JobSubType.RESET):
+                    if (RequestDto.type == nameof(JobType.RESET) && RequestDto.subType != nameof(JobType.RESET)) massage = $"Check Order SubType";
+                    break;
+            }
+
+            //사용안함
+            //switch (RequestDto.type)
+            //{
+            //    case nameof(OrderType.MOVE):
+
+            //        //같은 order Id 가 존재하는경우
+            //        if (order != null) massage = $"Check Order Id";
+            //        else if (RequestDto.subType != nameof(OrderSubType.SIMPLEMOVE)) massage = $"Check Order SubType";
+            //        //워커를 지정하여 보내지 않는경우
+            //        else if (IsInvalid(RequestDto.specifiedWorkerId)) massage = $"Check Order SpecifiedWorkerId ";
+            //        else
+            //        {
+            //            //워커를 지정 하였지만 worker가 List에 없는경우
+            //            var worker = _repository.Workers.ANT_GetById(RequestDto.specifiedWorkerId);
+            //            if (worker == null) massage = $"Check Order SpecifiedWorkerId ";
+            //        }
+            //        break;
+
+            //    case nameof(OrderType.TRANSPORT):
+            //    case nameof(OrderType.TRANSPORTCHEMICALSUPPLY):
+            //    case nameof(OrderType.TRANSPORTCHEMICALRECOVERY):
+            //    case nameof(OrderType.TRANSPORTSLURRYSUPPLY):
+            //    case nameof(OrderType.TRANSPORTSLURRYRECOVERY):
+
+            //        //같은 order Id 가 존재하는경우
+            //        if (order != null) massage = $"Check Order Id";
+            //        //같은 출발지와 목적지가 있는경우
+            //        else if (findSource_dest != null) massage = $"Check sourceId And DestinationId";
+            //        //carrier Id 가 없는경우 [자재 이송이기때문에 carrier이 존재해야함]
+            //        else if (IsInvalid(RequestDto.carrierId)) massage = $"Check Order carrierId ";
+            //        else if (RequestDto.subType == nameof(OrderSubType.PICKONLY) || RequestDto.subType == nameof(OrderSubType.DROPONLY))
+            //        {
+            //            //워커를 지정하여 보내지 않는경우
+            //            if (IsInvalid(RequestDto.specifiedWorkerId)) massage = $"Check Order SpecifiedWorkerId ";
+            //            else
+            //            {
+            //                //워커를 지정 하였지만 worker가 List에 없는경우
+            //                var worker = _repository.Workers.ANT_GetById(RequestDto.specifiedWorkerId);
+            //                if (worker == null) massage = $"Check Order SpecifiedWorkerId ";
+            //            }
+            //        }
+            //        else if (RequestDto.subType == nameof(OrderSubType.PICKDROP))
+            //        {
+            //            //출발지가 없는경우 PickDrop이기때문에 출발지와 목적지가 있어야함.
+            //            if (IsInvalid(RequestDto.sourceId)) massage = $"Check Order sourceId ";
+            //            else
+            //            {
+            //                //출발지가 Position 목록에 없는경우
+            //                var source = _repository.Positions.ANT_GetById(RequestDto.sourceId);
+            //                if (source == null) massage = $"Check Order sourceId ";
+            //            }
+            //        }
+            //        //서브 타입이 잘못되어서 들어오는경우
+            //        else if (RequestDto.subType != nameof(OrderSubType.PICKONLY)
+            //          || RequestDto.subType != nameof(OrderSubType.DROPONLY)
+            //          || RequestDto.subType != nameof(OrderSubType.PICKDROP))
+            //        {
+            //            massage = $"Check Order SubType";
+            //        }
+
+            //        break;
+
+            //    case nameof(OrderType.CHARGE):
+            //    case nameof(OrderType.WAIT):
+            //        if (order != null) massage = $"Check Order Id";
+            //        else if (RequestDto.type == nameof(OrderType.CHARGE) && RequestDto.subType != nameof(OrderSubType.CHARGE)) massage = $"Check Order SubType";
+            //        else if (RequestDto.type == nameof(OrderType.WAIT) && RequestDto.subType != nameof(OrderSubType.WAIT)) massage = $"Check Order SubType";
+            //        //워커를 지정하여 보내지 않는경우
+            //        else if (IsInvalid(RequestDto.specifiedWorkerId)) massage = $"Check Order SpecifiedWorkerId ";
+            //        else
+            //        {
+            //            //워커를 지정 하였지만 worker가 List에 없는경우
+            //            var worker = _repository.Workers.ANT_GetById(RequestDto.specifiedWorkerId);
+            //            if (worker == null) massage = $"Check Order SpecifiedWorkerId ";
+            //        }
+
+            //        break;
+
+            //    case nameof(OrderType.RESET):
+            //        if (order == null) massage = $"Check Order Id";
+            //        else if (RequestDto.type == nameof(OrderType.RESET) && RequestDto.subType != nameof(OrderSubType.RESET)) massage = $"Check Order SubType";
+            //        break;
+            //}
+
+            return massage;
+        }
+
+        private bool IsInvalid(string value)
+        {
+            return string.IsNullOrWhiteSpace(value)
+                || value.ToUpper() == "NULL"
+                || value.ToUpper() == "STRING"
+                || value.ToUpper() == "";
+        }
+    }
+}

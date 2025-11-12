@@ -1,0 +1,223 @@
+
+
+Map
+{
+
+}
+
+Carrier
+{
+   "id" : 0, 
+   "name": "string"
+}
+
+WorkerImage
+{
+  "id" : 0,
+  "name": "string",
+  "image2D" : "string",
+  "image3D" : "string"
+}
+Area
+{
+  "id": 0,
+  "type": "string",
+  "subType": "string",
+  "name": "string",
+  "isUse": true,
+  "isDisplay": true,
+  "x": 0,
+  "y": 0,
+  "z": 0,
+  "width": 0,
+  "height": 0,
+  "theta": 0
+}
+
+IO
+{
+  "id": 0,
+  "type": "string",
+  "subType": "string",
+  "name": "string",
+  "ioKey": 0,
+  "ioValue": 0
+}
+Group
+{
+  "id": 0,
+  "type": "string",
+  "name": "string",
+}
+
+---------------------------
+
+
+
+------------------------------ Pointtype
+Waypoint (Position)
+{
+   "id": 0,
+  "mapId": "string",
+  "name": "string",
+  "x": 0,
+  "y": 0,
+  "theta": 0,
+  "isDisplay": true
+
+}
+
+Charger
+{
+   "id": 0,
+  "mapId": "string",
+  "name": "string",
+  "x": 0,
+  "y": 0,
+  "theta": 0,
+  "chargerGroup": "string",
+  "isDisplay": true,
+  "chargingArea": areaId
+}
+
+TowerLamp
+{
+  "id": 0,
+  "ip": "string",
+  "port": 0,
+  "connectId": "string",
+  "connectPassword": "string",
+  "mapId": "string",
+  "name": "string",
+  "x": 0,
+  "y": 0,
+  "theta": 0,
+  "mode": "string",
+  "carrier": "string",
+  "isUse": true,
+  "isDisplay": true,
+  "isOnDelayUse": true,
+  "isOFFDelayUse": true,
+  "onDelay": 0,
+  "offDelay": 0,
+  "io": [ioId, ioId],
+  "area": [areaId]
+}
+
+------------------------------ Zonetype
+ElevatorGate
+{
+  "id": 0,
+  "mapId": "string",
+  "name": "string",
+  "workerGroup": "string",
+  "elevator": elevatorid,
+  "location": areaId,
+  "entrys": [areaId],
+  "exits": [areaId],
+  "waitings": [areaId],
+}
+
+TrafficArea
+{
+  "id": 0,
+  "mapId": "string",
+  "name": "string",
+  "workerGroup": "string",
+  "mission": "string",
+  "io": ioId,
+  "areas": [areaId]
+}
+
+SourceArea
+{
+  "id": 0,
+  "mapId": "string",
+  "name": "string",
+  "area": areaId
+}
+
+DestinationArea
+{
+  "id": 0,
+  "mapId": "string",
+  "name": "string",
+  "area": areaId
+}
+
+FacilityArea
+{
+  "id": 0,
+  "mapId": "string",
+  "name": "string",
+  "area": areaId
+}
+
+WaitArea
+{
+  "id": 0,
+  "mapId": "string",
+  "name": "string",
+  "area": areaId
+}
+
+-------------------------------- Polygontype
+
+-------------------------------- Worker
+WorkerPutRegister
+{
+  "id": 0,
+  "name": "string",
+  "workname": "string",
+  "workerGroup": "string",
+  "io": ioId,
+}
+
+WorkerEdit
+{
+ "id": 0,
+ "ip": "string",
+ "connectId": 0,
+ "connectPassword": 0,
+ "name": "string",
+ "ailas": "string",
+ "isActive": "bool",
+ "resetMission": "string",
+ "workerGroup": "string",
+ "imageModelid": "string",
+}
+
+
+
+-------------------------
+
+Get -> Get [필요데이터 및 전체 데이터 Return]
+Post -> Add [완료시 Add한 데이터만 Return]
+  - 만약 Base 데이터가 필요한경우 처음 등록시에는 베이스 데이터가 없어도됨
+  - Base 데이터 등록시 Base 데이터 Post API 해야함.
+
+put -> Update [완료시 Update한 데이터만 Return]
+Delete -> Remove [완료시 Update한 데이터만 Return]
+  - 만약 Base 데이터가 필요한경우 처음 등록시에는 베이스 데이터가 없어도됨
+  - Base 데이터 등록시 Base 데이터 Post API 해야함.
+
+Setting Device
+id
+name
+ip
+Port
+connectId
+connectPassword
+TimeOut
+Mode
+
+Setting Alram
+id
+Temperature
+Packvoltage
+Batterycurrent
+Fullychargedvoltage
+Cellvoltageimblance
+ChargerTemperature
+ChargerCurrent
+ChargerVoltage

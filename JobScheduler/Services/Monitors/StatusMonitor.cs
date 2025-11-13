@@ -17,7 +17,7 @@ namespace JOB.Services
             foreach (var mission in _repository.Missions.GetAll().Where(m => m.state == nameof(MissionState.COMMANDREQUESTCOMPLETED) || m.state == nameof(MissionState.SKIPPED)).ToList())
             {
                 var job = _repository.Jobs.GetByid(mission.jobId);
-                if (job != null && job.state != nameof(JobState.INPROGRESS))
+                if (job != null)
                 {
                     updateStateJob(job, nameof(JobState.INPROGRESS), true);
 

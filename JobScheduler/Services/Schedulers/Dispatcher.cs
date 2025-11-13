@@ -2,7 +2,6 @@
 using Common.Models.Jobs;
 using Common.Models.Settings;
 using Common.Templates;
-using Microsoft.Extensions.Logging.Abstractions;
 using System.Text.Json;
 
 namespace JOB.Services
@@ -66,8 +65,10 @@ namespace JOB.Services
             foreach (var worker in _repository.Workers.MiR_GetByActive())
             {
                 Job job = null;
-                var runjob = _repository.Jobs.GetByAssignWorkerId(worker.id).FirstOrDefault(j => j.type != nameof(JobType));
+                var runjob = _repository.Jobs.GetByAssignWorkerId(worker.id).FirstOrDefault();
                 if (runjob != null) continue;
+                //그룹과 일치하는 Job이있는지
+                UnAssignedWorkerJobs = UnAssignedWorkerJobs.Where(u => u.group == worker.group).ToList();
 
                 //지정한 워커가 있는지
                 job = UnAssignedWorkerJobs.FirstOrDefault(j => j.specifiedWorkerId == worker.id);
@@ -410,17 +411,14 @@ namespace JOB.Services
 
                 //[조회] 현재 진행중인 Mission
                 var runmission = _repository.Missions.GetByRunMissions(missions).FirstOrDefault();
-                if (runmission != null)
-                {
-                    //[업데이트] 충전 미션 파라메타
-                    ChargeEquest = runmission.parameters.FirstOrDefault(k => k.value != null && k.value == "CHARGEREQUEST");
-                }
 
                 //[업데이트] 재정렬 및 상태변경된 Mission
                 missions = missionDispatcher(missions, runmission, worker);
 
                 bool c1 = worker.isMiddleware == true;
-                bool c2 = worker.state == nameof(WorkerState.IDLE) && runmission == null;
+
+                //bool c2 = worker.state == nameof(WorkerState.IDLE) && runmission == null;
+                bool c2 = worker.state == "RUNNING" && runmission == null;
 
                 //bool c3 = /*worker.state != nameof(WorkerState.IDLE) && */ChargeEquest != null && worker.batteryPercent > batterySetting.minimum;
 
@@ -442,12 +440,57 @@ namespace JOB.Services
 
                         //[조건] 충전중이 아닐경우 Skipped 후 다른 미션 전송[구현 필요]
 
-                        if (skipMoveMission(mission, worker)) continue;
+                        if (skipMission(mission, worker)) continue;
 
                         postMission(mission);
                     }
                 }
             }
+        }
+
+        private bool skipMission(Mission mission, Worker worker)
+        {
+            bool completed = false;
+
+            switch (mission.type)
+            {
+                case nameof(MissionType.MOVE):
+                    if (worker.PositionId != null)
+                    {
+                        //[조건2] 이동 목적지 파라메타가 있는경우
+                        var param = mission.parameters.FirstOrDefault(r => r.key == "target" && r.value != null);
+                        if (param != null)
+                        {
+                            //[조건3]워커 포지션 Id와 이동하는 미션의 목적지 파라메타 와 일치하는경우
+                            if (worker.PositionId == param.value)
+                            {
+                                updateStateMission(mission, nameof(MissionState.SKIPPED), true);
+                                EventLogger.Info($"PostMission SKIPPED = Service = {nameof(Service.WORKER)}, PositionId = {worker.PositionId}, PositionName = {worker.PositionName}, MissionId = {mission.guid}, AssignedWorkerId = {mission.assignedWorkerId}");
+                                completed = true;
+                            }
+                        }
+                    }
+                    break;
+
+                case nameof(MissionType.ACTION):
+                    if (mission.subType == nameof(MissionSubType.DOORCLOSE))
+                    {
+                        var elevatorMoveMissions = _repository.Missions.GetAll().Where(r => r.subType == nameof(MissionSubType.ELEVATORENTERMOVE)
+                                                                                        || r.subType == nameof(MissionSubType.ELEVATOREXITMOVE)
+                                                                                        || r.subType == nameof(MissionSubType.SWITCHINGMAP)).ToList();
+                        var runmission = _repository.Missions.GetByRunMissions(elevatorMoveMissions).FirstOrDefault();
+
+                        if (runmission != null)
+                        {
+                            updateStateMission(mission, nameof(MissionState.SKIPPED), true);
+                            EventLogger.Info($"PostMission SKIPPED = Service = {nameof(Service.ELEVATOR)}, MissionId = {mission.guid}, missionName = {mission.name} ,AssignedWorkerId = {mission.assignedWorkerId}");
+                            completed = true;
+                        }
+                    }
+                    break;
+            }
+
+            return completed;
         }
 
         private bool workerElevatorParameterMapping(Mission mission)
@@ -466,15 +509,17 @@ namespace JOB.Services
             {
                 case nameof(MissionSubType.ELEVATORWAITMOVE):
                     //엘리베이터 대기위치 이고 점유중인 포지션이 아니고 현재워커와 맵아이디가 일치하는 것을 가지고온다.
+                    var elevatorWaitpositions = _repository.Positions.MiR_GetBySubType(nameof(PositionSubType.ELEVATORWAIT));
+                    var waitPosition = elevatorWaitpositions.FirstOrDefault(r => r.mapId == assignedWorker.mapId);
 
-                    var waitPositionNotOccupieds = _repository.Positions.MiR_GetNotOccupied(null, nameof(PositionSubType.ELEVATORWAIT));
-                    var waitPosition = waitPositionNotOccupieds.FirstOrDefault(r => r.mapId == assignedWorker.mapId);
+                    //var waitPositionNotOccupieds = _repository.Positions.MiR_GetNotOccupied(null, nameof(PositionSubType.ELEVATORWAIT));
+                    //var waitPosition = waitPositionNotOccupieds.FirstOrDefault(r => r.mapId == assignedWorker.mapId);
 
-                    var param = mission.parameters.FirstOrDefault(r => r.key == "target");
+                    var waitparam = mission.parameters.FirstOrDefault(r => r.key == "target");
 
-                    if (waitPosition != null && param != null)
+                    if (waitPosition != null && waitparam.value == null)
                     {
-                        param.value = waitPosition.id;
+                        waitparam.value = waitPosition.id;
                         completed = true;
                     }
 
@@ -508,6 +553,22 @@ namespace JOB.Services
                     }
                     break;
 
+                case nameof(MissionSubType.ELEVATOREXITMOVE):
+                    var elevatorExitpositions = _repository.Positions.MiR_GetBySubType(nameof(PositionSubType.ELEVATOREXIT));
+                    var exitPosition = elevatorExitpositions.FirstOrDefault(r => r.mapId == assignedWorker.mapId);
+
+                    //var waitPositionNotOccupieds = _repository.Positions.MiR_GetNotOccupied(null, nameof(PositionSubType.ELEVATOREXIT));
+                    //var waitPosition = waitPositionNotOccupieds.FirstOrDefault(r => r.mapId == assignedWorker.mapId);
+
+                    var exitparam = mission.parameters.FirstOrDefault(r => r.key == "target");
+
+                    if (exitPosition != null && exitparam.value == null)
+                    {
+                        completed = true;
+                    }
+
+                    break;
+
                 default:
                     completed = true;
                     break;
@@ -523,7 +584,7 @@ namespace JOB.Services
             {
                 //이동 포지션 적용
                 var param = mission.parameters.FirstOrDefault(r => r.key == "target");
-                if (param != null)
+                if (param.value == null)
                 {
                     param.value = enterPosition.id;
                     mission.parametersJson = JsonSerializer.Serialize(mission.parameters);
@@ -551,7 +612,7 @@ namespace JOB.Services
                     if (mapSwitchPosition != null)
                     {
                         var mapSwitchParam = switchMapMission.parameters.FirstOrDefault(p => p.key == "target");
-                        if (mapSwitchParam != null)
+                        if (mapSwitchParam.value == null)
                         {
                             mapSwitchParam.value = mapSwitchPosition.id;
                             switchMapMission.parametersJson = JsonSerializer.Serialize(switchMapMission.parameters);
@@ -574,10 +635,8 @@ namespace JOB.Services
         {
             bool CommandRequst = false;
             //[조건1] 미션 상태가 COMMANDREQUEST 다르면 COMMANDREQUEST 로 상태변경한다
-            if (mission.state != nameof(MissionState.COMMANDREQUEST))
-            {
-                updateStateMission(mission, nameof(MissionState.COMMANDREQUEST), true);
-            }
+
+            updateStateMission(mission, nameof(MissionState.COMMANDREQUEST), true);
 
             switch (mission.service)
             {
@@ -679,37 +738,6 @@ namespace JOB.Services
 
                     break;
             }
-        }
-
-        /// <summary>
-        /// [Sub] postMissionControl
-        /// Worker 위치와 이동하려는 Mission 의 목적지와 같을시 Mission Skip 진행
-        /// </summary>
-        /// <param name="mission"></param>
-        /// <param name="worker"></param>
-        /// <returns> Skip 여부 </returns>
-        private bool skipMoveMission(Mission mission, Worker worker)
-        {
-            //[초기화] Mission Skip 여부
-            bool skip = false;
-
-            //[조건1] 이동 미션이고 Worker 위치한 포지션 Id가 있는경우
-            if (mission.type == nameof(MissionType.MOVE) && worker.PositionId != null)
-            {
-                //[조건2] 이동 목적지 파라메타가 있는경우
-                var param = mission.parameters.FirstOrDefault(r => r.key == "target" && r.value != null);
-                if (param != null)
-                {
-                    //[조건3]워커 포지션 Id와 이동하는 미션의 목적지 파라메타 와 일치하는경우
-                    if (worker.PositionId == param.value)
-                    {
-                        updateStateMission(mission, nameof(MissionState.SKIPPED), true);
-                        EventLogger.Info($"PostMission SKIPPED = Service = {nameof(Service.WORKER)}, PositionId = {worker.PositionId}, PositionName = {worker.PositionName}, MissionId = {mission.guid}, AssignedWorkerId = {mission.assignedWorkerId}");
-                        skip = true;
-                    }
-                }
-            }
-            return skip;
         }
 
         /// <summary>

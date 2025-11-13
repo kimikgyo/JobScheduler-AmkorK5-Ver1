@@ -50,22 +50,29 @@ namespace JOB.Services
             List<string> PositionIds = new List<string>();
             foreach (var worker in _repository.Workers.MiR_GetByConnect())
             {
-                var position = _repository.Positions.MiR_GetByPosValue(worker.position_X, worker.position_Y, worker.mapId).FirstOrDefault();
-                if (position != null)
+                var positions = _repository.Positions.MiR_GetByPosValue(worker.position_X, worker.position_Y, worker.mapId).ToList();
+
+                if (positions == null || positions.Count == 0)
                 {
-                    PositionIds.Add(position.id);
-                    if (position.id != worker.PositionId)
+                    if (worker.PositionId != null)
                     {
-                        worker.PositionId = position.id;
-                        worker.PositionName = position.name;
+                        worker.PositionId = null;
+                        worker.PositionName = null;
                         _repository.Workers.Update(worker);
                     }
                 }
-                else if (worker.PositionId != null)
+                else
                 {
-                    worker.PositionId = null;
-                    worker.PositionName = null;
-                    _repository.Workers.Update(worker);
+                    foreach (var position in positions)
+                    {
+                        PositionIds.Add(position.id);
+                        if (position.id != worker.PositionId)
+                        {
+                            worker.PositionId = position.id;
+                            worker.PositionName = position.name;
+                            _repository.Workers.Update(worker);
+                        }
+                    }
                 }
             }
             return PositionIds;

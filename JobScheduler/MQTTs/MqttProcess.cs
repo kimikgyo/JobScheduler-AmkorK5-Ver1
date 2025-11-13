@@ -50,6 +50,7 @@ namespace JOB.MQTTs
                 }
             }
         }
+
         public void LogExceptionMessage(Exception ex)
         {
             //string message = ex.InnerException?.Message ?? ex.Message;
@@ -61,24 +62,39 @@ namespace JOB.MQTTs
 
         public void updateStateMission(Mission mission, string state, bool historyAdd = false)
         {
-            mission.state = state;
-            mission.updatedAt = DateTime.Now;
-
-            if (mission.finishedAt == null)
+            if (mission.state != state)
             {
+                mission.state = state;
                 switch (mission.state)
                 {
+                    case nameof(MissionState.INIT):
+                    case nameof(MissionState.WORKERASSIGNED):
+                    case nameof(MissionState.WAITING):
+                    case nameof(MissionState.COMMANDREQUEST):
+                    case nameof(MissionState.COMMANDREQUESTCOMPLETED):
+                    case nameof(MissionState.PENDING):
+                    case nameof(MissionState.EXECUTING):
+                    case nameof(MissionState.FAILED):
+                    case nameof(MissionState.ABORTINITED):
+                    case nameof(MissionState.ABORTFAILED):
+                    case nameof(MissionState.CANCELINITED):
+                    case nameof(MissionState.CNACELFAILED):
+                        mission.updatedAt = DateTime.Now;
+                        break;
+
                     case nameof(MissionState.SKIPPED):
+                    case nameof(MissionState.ABORTCOMPLETED):
+                    case nameof(MissionState.CANCELINITCOMPLETED):
                     case nameof(MissionState.CANCELED):
                     case nameof(MissionState.COMPLETED):
                         mission.finishedAt = DateTime.Now;
                         break;
                 }
-            }
 
-            _repository.Missions.Update(mission);
-            if (historyAdd) _repository.MissionHistorys.Add(mission);
-            _mqttQueue.MqttPublishMessage(TopicType.mission, TopicSubType.status, _mapping.Missions.MqttPublish(mission));
+                _repository.Missions.Update(mission);
+                if (historyAdd) _repository.MissionHistorys.Add(mission);
+                _mqttQueue.MqttPublishMessage(TopicType.mission, TopicSubType.status, _mapping.Missions.MqttPublish(mission));
+            }
         }
     }
 }

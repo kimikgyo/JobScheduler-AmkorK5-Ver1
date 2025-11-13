@@ -62,6 +62,13 @@ namespace Data.Repositorys.Maps
                 return _maps.FirstOrDefault(m => m.id == id);
             }
         }
+        public Map GetBymapId(string mapId)
+        {
+            lock (_lock)
+            {
+                return _maps.FirstOrDefault(m => m.mapId == mapId);
+            }
+        }
         public Map GetByName(string name)
         {
             lock (_lock)

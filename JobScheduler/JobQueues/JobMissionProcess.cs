@@ -200,6 +200,14 @@ namespace JOB.JobQueues
                                 value = job.destinationId,
                             };
                         }
+                        else
+                        {
+                            param = new Parameta
+                            {
+                                key = parameta.key,
+                                value = parameta.value,
+                            };
+                        }
                         break;
 
                     case "targetlevel":
@@ -254,6 +262,7 @@ namespace JOB.JobQueues
                             }
                         }
                         break;
+
                     case "DestinationFloor":
 
                         var Destposition = _repository.Positions.MiR_GetById(job.destinationId);
@@ -270,9 +279,6 @@ namespace JOB.JobQueues
                             }
                         }
                         break;
-
-
-
                 }
             }
             else

@@ -13,6 +13,7 @@ namespace Common.Models.Jobs
         ELEVATORWAIT,
         ELEVATORENTER1,
         ELEVATORENTER2,
+        ELEVATOREXIT,
     }
 
     public class Position

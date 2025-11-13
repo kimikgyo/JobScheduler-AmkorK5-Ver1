@@ -36,7 +36,7 @@ namespace JOB.MQTTs
                                 {
                                     string missionstate = missionStateDto.state.Replace(" ", "").ToUpper();
 
-                                    if(missionstate != nameof(MissionState.COMPLETED))
+                                    if (missionstate != nameof(MissionState.COMPLETED))
                                     {
                                         updateStateMission(mission, missionstate, true);
                                     }
@@ -44,7 +44,6 @@ namespace JOB.MQTTs
                                     {
                                         updateStateMission(mission, missionstate);
                                     }
-                                    
                                 }
                                 break;
                         }
@@ -56,28 +55,38 @@ namespace JOB.MQTTs
                 }
             }
         }
-       
+
         private void mapAndPositionOccupied(Worker worker)
         {
-            var map = _repository.Maps.GetByName(worker.mapName);
-            if (map != null)
+            var positions = _repository.Positions.MiR_GetByPosValue(worker.position_X, worker.position_Y, worker.mapId).ToList();
+
+            if (positions == null || positions.Count == 0)
             {
-                worker.mapId = map.mapId;
-            }
-            var position = _repository.Positions.MiR_GetByPosValue(worker.position_X, worker.position_Y, worker.mapId).FirstOrDefault();
-            if (position != null)
-            {
-                updateOccupied(position, true);
-                if (position.id != worker.PositionId)
+                if (worker.PositionId != null)
                 {
-                    worker.PositionId = position.id;
-                    worker.PositionName = position.name;
+                    var position = _repository.Positions.GetById(worker.PositionId);
+                    if(position !=null)
+                    {
+                        updateOccupied(position, false);
+                    }
+                    worker.PositionId = null;
+                    worker.PositionName = null;
+                    _repository.Workers.Update(worker);
                 }
             }
             else
             {
-                worker.PositionId = null;
-                worker.PositionName = null;
+                foreach (var position in positions)
+                {
+                    updateOccupied(position, true);
+
+                    if (position.id != worker.PositionId)
+                    {
+                        worker.PositionId = position.id;
+                        worker.PositionName = position.name;
+                        _repository.Workers.Update(worker);
+                    }
+                }
             }
         }
 

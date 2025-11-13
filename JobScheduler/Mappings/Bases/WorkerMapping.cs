@@ -12,6 +12,7 @@ namespace JOB.Mappings.Bases
                 id = model._id,
                 source = model.source,
                 name = model.name,
+                group = model.groupId,
             };
             return response;
         }
@@ -41,7 +42,7 @@ namespace JOB.Mappings.Bases
             }
             else worker.position_Orientation = Convert.ToDouble(state.pose.theta);
 
-            worker.mapName = state.pose.mapId;
+            worker.mapId = state.pose.mapId;
             worker.isOnline = state.connectivity.online;
             worker.isActive = state.application.isActive;
 

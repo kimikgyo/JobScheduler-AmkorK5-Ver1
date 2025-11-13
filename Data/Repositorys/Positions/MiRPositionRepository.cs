@@ -27,6 +27,8 @@ namespace Data.Repositorys.Positions
             }
         }
 
+   
+
         //점유하고있지않은 포지션
         public List<Position> MiR_GetNotOccupied(string group, string subType)
         {
@@ -55,7 +57,8 @@ namespace Data.Repositorys.Positions
         {
             lock (_lock)
             {
-                return MiR_GetByMapId(mapid).Where(m => m.source == "mir" && m.x == x && m.y == y).ToList();
+                double PositionTolerance = 0.05; // 오차범위 보통 미터 단위이므로 5cm 이면 0.05로 한다
+                return _positions.Where(m => m.source == "mir" && m.mapId == mapid && Math.Abs(m.x - x) <= PositionTolerance && Math.Abs(m.y - y) <= PositionTolerance).ToList();
             }
         }
 
@@ -79,7 +82,7 @@ namespace Data.Repositorys.Positions
         {
             lock (_lock)
             {
-                return _positions.Where(m => m.source == "mir" && m.subType == subtype).ToList();
+                return _positions.Where(m => m.source == "mir" && m.isEnabled == true && m.subType == subtype).ToList();
             }
         }
 

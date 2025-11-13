@@ -120,6 +120,7 @@ namespace JOB.Services
                 EventLogger.Info("[StatusMonitor Task] Stop");  // 루프 종료 로그
             }
         }
+
         public async Task JobScheduler()
         {
             try
@@ -145,6 +146,7 @@ namespace JOB.Services
                 EventLogger.Info("[JobScheduler Task] Stop");  // 루프 정지 로그
             }
         }
+
         /// <summary>
         /// Stop 요청 후 모든 Task가 종료될 때까지 대기
         /// </summary>
@@ -174,43 +176,78 @@ namespace JOB.Services
 
         public void updateStateOrder(Order order, OrderState state, bool historyAdd = false)
         {
-            order.state = state.ToString();
-            order.stateCode = state;
-            order.updatedAt = DateTime.Now;
-            _repository.Orders.Update(order);
-            if (historyAdd) _repository.OrderHistorys.Add(order);
-            _mqttQueue.MqttPublishMessage(TopicType.order, TopicSubType.status, _mapping.Orders.MqttPublish(order));
+            if (order.state != state.ToString())
+            {
+                order.state = state.ToString();
+                order.stateCode = state;
+                order.updatedAt = DateTime.Now;
+
+                _repository.Orders.Update(order);
+                if (historyAdd) _repository.OrderHistorys.Add(order);
+                _mqttQueue.MqttPublishMessage(TopicType.order, TopicSubType.status, _mapping.Orders.MqttPublish(order));
+            }
         }
 
         public void updateStateJob(Job job, string state, bool historyAdd = false)
         {
-            job.state = state;
-            job.updatedAt = DateTime.Now;
-            _repository.Jobs.Update(job);
-            if (historyAdd) _repository.JobHistorys.Add(job);
-            _mqttQueue.MqttPublishMessage(TopicType.job, TopicSubType.status, _mapping.Jobs.MqttPublish(job));
+            if (job.state != state)
+            {
+                switch (job.state)
+                {
+                    case nameof(JobState.INIT):
+                    case nameof(JobState.WORKERASSIGNED):
+                    case nameof(JobState.INPROGRESS):
+                        job.updatedAt = DateTime.Now;
+
+                        break;
+
+                    case nameof(JobState.CANCELCOMPLETED):
+                    case nameof(JobState.ABORTCOMPLETED):
+                    case nameof(JobState.COMPLETED):
+                        break;
+                }
+                _repository.Jobs.Update(job);
+                if (historyAdd) _repository.JobHistorys.Add(job);
+                _mqttQueue.MqttPublishMessage(TopicType.job, TopicSubType.status, _mapping.Jobs.MqttPublish(job));
+            }
         }
 
         public void updateStateMission(Mission mission, string state, bool historyAdd = false)
         {
-            mission.state = state;
-            mission.updatedAt = DateTime.Now;
-
-            if (mission.finishedAt == null)
+            if (mission.state != state)
             {
+                mission.state = state;
+
                 switch (mission.state)
                 {
+                    case nameof(MissionState.INIT):
+                    case nameof(MissionState.WORKERASSIGNED):
+                    case nameof(MissionState.WAITING):
+                    case nameof(MissionState.COMMANDREQUEST):
+                    case nameof(MissionState.COMMANDREQUESTCOMPLETED):
+                    case nameof(MissionState.PENDING):
+                    case nameof(MissionState.EXECUTING):
+                    case nameof(MissionState.FAILED):
+                    case nameof(MissionState.ABORTINITED):
+                    case nameof(MissionState.ABORTFAILED):
+                    case nameof(MissionState.CANCELINITED):
+                    case nameof(MissionState.CNACELFAILED):
+                        mission.updatedAt = DateTime.Now;
+                        break;
+
                     case nameof(MissionState.SKIPPED):
+                    case nameof(MissionState.ABORTCOMPLETED):
+                    case nameof(MissionState.CANCELINITCOMPLETED):
                     case nameof(MissionState.CANCELED):
                     case nameof(MissionState.COMPLETED):
                         mission.finishedAt = DateTime.Now;
                         break;
                 }
-            }
 
-            _repository.Missions.Update(mission);
-            if (historyAdd) _repository.MissionHistorys.Add(mission);
-            _mqttQueue.MqttPublishMessage(TopicType.mission, TopicSubType.status, _mapping.Missions.MqttPublish(mission));
+                _repository.Missions.Update(mission);
+                if (historyAdd) _repository.MissionHistorys.Add(mission);
+                _mqttQueue.MqttPublishMessage(TopicType.mission, TopicSubType.status, _mapping.Missions.MqttPublish(mission));
+            }
         }
 
         public void updateOccupied(Position position, bool flag)

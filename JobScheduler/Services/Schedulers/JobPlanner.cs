@@ -202,13 +202,13 @@ namespace JOB.Services
                     {
                         foreach (var job in jobTemplates)
                         {
-                            var missionSource = job.missionTemplates.FirstOrDefault(s => s.type == nameof(MissionType.MOVE) && s.subType == nameof(MissionSubType.SOURCEMOVE));
-                            var missionDest = job.missionTemplates.FirstOrDefault(s => s.type == nameof(MissionType.MOVE) && s.subType == nameof(MissionSubType.DESTINATIONMOVE));
-                            if (missionSource != null && missionDest != null)
+                            //var missionSource = job.missionTemplates.FirstOrDefault(s => s.type == nameof(MissionType.MOVE) && s.subType == nameof(MissionSubType.SOURCEMOVE));
+                            //var missionDest = job.missionTemplates.FirstOrDefault(s => s.type == nameof(MissionType.MOVE) && s.subType == nameof(MissionSubType.DESTINATIONMOVE));
+                            //if (missionSource != null && missionDest != null)
                             {
-                                var paramSource = missionSource.parameters.FirstOrDefault(p => p.key == "target" && p.value == null);
-                                var paramDest = missionDest.parameters.FirstOrDefault(p => p.key == "target" && p.value == null);
-                                if (paramSource != null && paramDest != null)
+                                //var paramSource = missionSource.parameters.FirstOrDefault(p => p.key == "target" && p.value == null);
+                                //var paramDest = missionDest.parameters.FirstOrDefault(p => p.key == "target" && p.value == null);
+                                //if (paramSource != null && paramDest != null)
                                 {
                                     jobTemplate = job;
                                     break;

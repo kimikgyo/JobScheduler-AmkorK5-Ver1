@@ -463,7 +463,7 @@ namespace JobScheduler.Services
             }
 
             var ReloadId = Reload.Select(x => x.id);
-            var positions = _repository.Positions.GetAll();
+            var positions = _repository.Positions.MiR_GetAll();
             var positionIds = positions.Select(x => x.id);
 
             //새로운 데이터 기준 으로 기존데이터가 없는것

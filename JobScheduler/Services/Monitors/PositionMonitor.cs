@@ -11,7 +11,7 @@ namespace JOB.Services
 
         private void PositionOccupied()
         {
-            var Positions = _repository.Positions.ANT_GetAll();
+            var Positions = _repository.Positions.MiR_GetAll();
 
             var OccupiedPositionIds = new List<string>();
 
@@ -48,9 +48,9 @@ namespace JOB.Services
         private List<string> workerPositionOccupied()
         {
             List<string> PositionIds = new List<string>();
-            foreach (var worker in _repository.Workers.ANT_GetByConnect())
+            foreach (var worker in _repository.Workers.MiR_GetByConnect())
             {
-                var position = _repository.Positions.ANT_GetByPosValue(worker.position_X, worker.position_Y, worker.mapId).FirstOrDefault();
+                var position = _repository.Positions.MiR_GetByPosValue(worker.position_X, worker.position_Y, worker.mapId).FirstOrDefault();
                 if (position != null)
                 {
                     PositionIds.Add(position.id);

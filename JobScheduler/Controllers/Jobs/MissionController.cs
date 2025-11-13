@@ -147,7 +147,7 @@ namespace JOB.Controllers.Jobs
                         var parameter = mission.parameters.FirstOrDefault(e => e.key == "target");
                         if (parameter != null)
                         {
-                            var positions = _repository.Positions.GetAll();
+                            var positions = _repository.Positions.MiR_GetAll();
                             var movePosition = positions.FirstOrDefault(p => p.id == parameter.value);
                             var updatePosition = positions.FirstOrDefault(p => p.id == patchDto.destinationId);
 

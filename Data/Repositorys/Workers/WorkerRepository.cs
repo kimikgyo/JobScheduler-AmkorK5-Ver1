@@ -97,10 +97,6 @@ namespace Data.Repositorys.Workers
             }
         }
 
-
-
-
-
         /// <summary>
         /// 포지션에서 가장 가까운거리 Worker 찾기
         /// </summary>

@@ -15,7 +15,7 @@ namespace JOB.MQTTs
             {
                 try
                 {
-                    var worker = _repository.Workers.ANT_GetById(subscribe.id);
+                    var worker = _repository.Workers.MiR_GetById(subscribe.id);
                     if (worker != null)
                     {
                         //Console.WriteLine(string.Format("Process Message: [{0}] {1} at {2:yyyy-MM-dd HH:mm:ss,fff}", subscribe.topic, subscribe.Payload, subscribe.Timestamp));
@@ -64,7 +64,7 @@ namespace JOB.MQTTs
             {
                 worker.mapId = map.mapId;
             }
-            var position = _repository.Positions.ANT_GetByPosValue(worker.position_X, worker.position_Y, worker.mapId).FirstOrDefault();
+            var position = _repository.Positions.MiR_GetByPosValue(worker.position_X, worker.position_Y, worker.mapId).FirstOrDefault();
             if (position != null)
             {
                 updateOccupied(position, true);

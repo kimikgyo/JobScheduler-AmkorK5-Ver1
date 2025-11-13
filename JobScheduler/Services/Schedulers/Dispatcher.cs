@@ -2,6 +2,7 @@
 using Common.Models.Jobs;
 using Common.Models.Settings;
 using Common.Templates;
+using Microsoft.Extensions.Logging.Abstractions;
 using System.Text.Json;
 
 namespace JOB.Services
@@ -62,7 +63,7 @@ namespace JOB.Services
             // 1.Job 받을수있는 워커를 확인한다.
             // 1-1 통신연결 되어있고 Error 상태가 아니고 엑티브 활성화 되어있는지
 
-            foreach (var worker in _repository.Workers.ANT_GetByActive())
+            foreach (var worker in _repository.Workers.MiR_GetByActive())
             {
                 Job job = null;
                 var runjob = _repository.Jobs.GetByAssignWorkerId(worker.id).FirstOrDefault(j => j.type != nameof(JobType));
@@ -107,9 +108,10 @@ namespace JOB.Services
         /// <param name="batterySetting"></param>
         private void distance(List<Job> UnAssignedWorkerJobs, Battery batterySetting)
         {
-            var Test = _repository.Workers.GetByActive();
-            var workers = _repository.Workers.GetByActive().Where(r => r.state == nameof(WorkerState.IDLE) && r.batteryPercent > batterySetting.minimum).ToList();
+            var workers = _repository.Workers.MiR_GetByActive();
             if (workers.Count == 0 || workers == null) return;
+            var idleWorkers = workers.Where(r => r.state == nameof(WorkerState.IDLE) && r.batteryPercent > batterySetting.minimum).ToList();
+            if (idleWorkers == null || idleWorkers.Count == 0) return;
             var findSpecifiedWorkerjobs = UnAssignedWorkerJobs.Where(j => IsInvalid(j.specifiedWorkerId) == false).ToList();
             var findNotspecifiedWorkerjobs = UnAssignedWorkerJobs.Where(j => IsInvalid(j.specifiedWorkerId) == true).ToList();
 
@@ -239,11 +241,11 @@ namespace JOB.Services
             Worker woekrSelect = null;
             if (IsInvalid(job.sourceId))
             {
-                position = _repository.Positions.ANT_GetById(job.destinationId);
+                position = _repository.Positions.MiR_GetById(job.destinationId);
             }
             else
             {
-                position = _repository.Positions.ANT_GetById(job.sourceId);
+                position = _repository.Positions.MiR_GetById(job.sourceId);
             }
 
             if (position != null)
@@ -274,12 +276,12 @@ namespace JOB.Services
             {
                 if (IsInvalid(job.sourceId))
                 {
-                    var position = _repository.Positions.ANT_GetById(job.destinationId);
+                    var position = _repository.Positions.MiR_GetById(job.destinationId);
                     if (position != null) Positions.Add(position);
                 }
                 else
                 {
-                    var position = _repository.Positions.ANT_GetById(job.sourceId);
+                    var position = _repository.Positions.MiR_GetById(job.sourceId);
                     if (position != null) Positions.Add(position);
                 }
             }
@@ -394,7 +396,7 @@ namespace JOB.Services
             var batterySetting = _repository.Battery.GetAll();
 
             //[조회] 작업이 가능한 Worker
-            foreach (var worker in _repository.Workers.ANT_GetByActive()/*.Where(m => m.state == nameof(WorkerState.IDLE) && m.acsmissionId == null */)
+            foreach (var worker in _repository.Workers.MiR_GetByActive()/*.Where(m => m.state == nameof(WorkerState.IDLE) && m.acsmissionId == null */)
             {
                 //[초기화] 충전 파라메터
                 Parameta ChargeEquest = null;
@@ -451,7 +453,7 @@ namespace JOB.Services
         {
             bool completed = false;
 
-            var workers = _repository.Workers.ANT_GetByActive();
+            var workers = _repository.Workers.MiR_GetByActive();
             //현재 워커의 정보를 조회한다
             var assignedWorker = workers.FirstOrDefault(r => r.id == mission.assignedWorkerId);
             if (assignedWorker == null) return completed;
@@ -463,9 +465,9 @@ namespace JOB.Services
             {
                 case nameof(MissionSubType.ELEVATORWAITMOVE):
                     //엘리베이터 대기위치 이고 점유중인 포지션이 아니고 현재워커와 맵아이디가 일치하는 것을 가지고온다.
-                    var waitPositions = _repository.Positions.MiR_GetBySubType(nameof(PositionSubType.ElevatorWait));
-                    var waitPositionIsOccupied = waitPositions.Where(r => r.isOccupied == false).ToList();
-                    var waitPosition = waitPositionIsOccupied.FirstOrDefault(r => r.mapId == assignedWorker.mapId);
+
+                    var waitPositionNotOccupieds = _repository.Positions.MiR_GetNotOccupied(null, nameof(PositionSubType.ElevatorWait));
+                    var waitPosition = waitPositionNotOccupieds.FirstOrDefault(r => r.mapId == assignedWorker.mapId);
 
                     var param = mission.parameters.FirstOrDefault(r => r.key == "target");
 
@@ -478,21 +480,26 @@ namespace JOB.Services
                     break;
 
                 case nameof(MissionSubType.ELEVATORENTERMOVE):
-                    var enter1Positions = _repository.Positions.MiR_GetBySubType(nameof(PositionSubType.ElevatorEnter1));
-                    var enter2Positions = _repository.Positions.MiR_GetBySubType(nameof(PositionSubType.ElevatorEnter2));
-                    var enter1PositionIsOccupied = enter1Positions.FirstOrDefault(r => r.isOccupied == true);
-                    var enter2PositionIsOccupied = enter2Positions.FirstOrDefault(r => r.isOccupied == true);
+                    var enter1IsOccupied= _repository.Positions.MiR_GetIsOccupied(nameof(PositionSubType.ElevatorEnter1)).FirstOrDefault();
+                    var enter2IsOccupied = _repository.Positions.MiR_GetIsOccupied(nameof(PositionSubType.ElevatorEnter2)).FirstOrDefault();
+                   
 
-                    if (enter1PositionIsOccupied == null)
+                    if (enter1IsOccupied == null)
                     {
+                        var enter1Positions = _repository.Positions.MiR_GetNotOccupied(null,nameof(PositionSubType.ElevatorEnter1));
+                        if (enter1Positions == null || enter1Positions.Count == 0) break;
+
                         completed = elevatorEnterParameterMapping(enter1Positions, mission, assignedWorker);
                         if (completed)
                         {
                             completed = switchingMapParameterMapping(enter1Positions, mission);
                         }
                     }
-                    else if (enter2PositionIsOccupied == null)
+                    else if (enter2IsOccupied == null)
                     {
+                        var enter2Positions = _repository.Positions.MiR_GetNotOccupied(null, nameof(PositionSubType.ElevatorEnter2));
+                        if (enter2Positions == null || enter2Positions.Count == 0) break;
+
                         completed = elevatorEnterParameterMapping(enter2Positions, mission, assignedWorker);
                         if (completed)
                         {

@@ -13,11 +13,18 @@ namespace Data.Repositorys.Positions
             }
         }
 
-        public Position ANT_GetOccupied(string id, string subType)
+        public List<Position> ANT_GetIsOccupied(string group, string subType)
         {
             lock (_lock)
             {
-                return _positions.FirstOrDefault(m => m.source == "ant" && m.isEnabled == true && m.subType == subType && m.id == id);
+                if (group == null)
+                {
+                    return _positions.Where(m => m.source == "ant" && m.isEnabled == true && m.subType == subType && m.isOccupied == true).ToList();
+                }
+                else
+                {
+                    return _positions.Where(m => m.source == "ant" && m.isEnabled == true && m.group == group && m.subType == subType && m.isOccupied == true).ToList();
+                }
             }
         }
 
@@ -30,11 +37,18 @@ namespace Data.Repositorys.Positions
         }
 
         //점유하고있지않은 포지션
-        public List<Position> ANT_GetNotOccupied(string group, string subType, string mapid)
+        public List<Position> ANT_GetNotOccupied(string group, string subType)
         {
             lock (_lock)
             {
-                return _positions.Where(m => m.source == "ant" && m.isEnabled == true && m.group == group && m.subType == subType && m.isOccupied == false && m.mapId == mapid).ToList();
+                if (group == null)
+                {
+                    return _positions.Where(m => m.source == "ant" && m.isEnabled == true && m.subType == subType && m.isOccupied == false).ToList();
+                }
+                else
+                {
+                    return _positions.Where(m => m.source == "ant" && m.isEnabled == true && m.group == group && m.subType == subType && m.isOccupied == false).ToList();
+                }
             }
         }
 
@@ -83,7 +97,7 @@ namespace Data.Repositorys.Positions
                                                 || (m.linkedFacility == value))
                                                 );
             }
-}
+        }
 
         public Position ANT_GetByname(string name)
         {

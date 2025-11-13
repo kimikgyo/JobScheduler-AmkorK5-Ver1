@@ -40,7 +40,7 @@ namespace JOB.Services
                 }
 
                 //도착지 포지션 조회
-                destination = _repository.Positions.ANT_GetById(order.destinationId);
+                destination = _repository.Positions.MiR_GetById(order.destinationId);
                 if (destination == null) continue;
 
                 //orderType 빈문자를제외후 대문자로 변환
@@ -60,7 +60,7 @@ namespace JOB.Services
                         if (IsInvalid(order.sourceId))
                         {
                             //지정 Worker 조회
-                            var worker = _repository.Workers.ANT_GetById(order.specifiedWorkerId);
+                            var worker = _repository.Workers.MiR_GetById(order.specifiedWorkerId);
                             if (worker == null) break;
                             //Worker그룹과 JobTemplate 그룹을 비교하여 조회한다
                             jobTemplates = jobTemplates.Where(jt => jt.group == worker.group).ToList();
@@ -75,7 +75,7 @@ namespace JOB.Services
                         else
                         {
                             //출발지 조회
-                            source = _repository.Positions.ANT_GetById(order.sourceId);
+                            source = _repository.Positions.MiR_GetById(order.sourceId);
                             if (source == null) break;
 
                             //그룹 조회
@@ -96,7 +96,7 @@ namespace JOB.Services
                     case nameof(JobType.CHARGE):
                     case nameof(JobType.WAIT):
                     case nameof(JobType.RESET):
-                        if (order.sourceId != null) source = _repository.Positions.ANT_GetById(order.sourceId);
+                        if (order.sourceId != null) source = _repository.Positions.MiR_GetById(order.sourceId);
                         selectJob = selectJobTemplate(jobTemplates, source, destination);
                         break;
                 }
@@ -226,7 +226,7 @@ namespace JOB.Services
         /// </summary>
         private void createChargeControl()
         {
-            var workers = _repository.Workers.ANT_GetByActive();    //worker 정보
+            var workers = _repository.Workers.MiR_GetByActive();    //worker 정보
             var batterySetting = _repository.Battery.GetAll();      //배터리 정보
             if (workers == null || workers.Count == 0) return;
             if (batterySetting == null) return;
@@ -246,7 +246,7 @@ namespace JOB.Services
                 if (worker.state == nameof(WorkerState.IDLE) && worker.batteryPercent < batterySetting.chargeStart)
                 {
                     //충전기 점유하고 있지 않은 포지션을 확인
-                    var NotOccupiedPositions = _repository.Positions.ANT_GetAll().Where(p => p.hasCharger == true && p.isOccupied == false).ToList();
+                    var NotOccupiedPositions = _repository.Positions.MiR_GetAll().Where(p => p.hasCharger == true && p.isOccupied == false).ToList();
 
                     //전부 점유 중일경우
                     if (NotOccupiedPositions == null || NotOccupiedPositions.Count == 0)
@@ -255,7 +255,7 @@ namespace JOB.Services
                         var crossWorkers = workers.Where(w => w.batteryPercent > batterySetting.chargeStart && w.batteryPercent > batterySetting.crossCharge).ToList();
                         if (crossWorkers == null || crossWorkers.Count == 0) continue;
                         //충전기 점유 하고 있는 포지션을 확인
-                        var OccupiedPositions = _repository.Positions.ANT_GetAll().Where(p => p.hasCharger == true && p.isOccupied == true).ToList();
+                        var OccupiedPositions = _repository.Positions.MiR_GetAll().Where(p => p.hasCharger == true && p.isOccupied == true).ToList();
                         // 크로스가능한 워커가 있는 포지션을 확인
                         var crossChargePosition = OccupiedPositions.Where(w => crossWorkers.Select(c => c.PositionId).Contains(w.id)).ToList();
 
@@ -269,7 +269,9 @@ namespace JOB.Services
                             if (crossWorker != null)
                             {
                                 //해당 워커 위치가 대기 위치인지 확인
-                                var waitPositionOccupied = _repository.Positions.ANT_GetOccupied(worker.PositionId, nameof(PositionSubType.WAIT));
+                                var waitPositionOccupieds = _repository.Positions.MiR_GetIsOccupied(nameof(PositionSubType.WAIT));
+                                var waitPositionOccupied = waitPositionOccupieds.FirstOrDefault(w => w.id == worker.PositionId);
+
                                 if (waitPositionOccupied != null)
                                 {
                                     CrossPosition = waitPositionOccupied;
@@ -277,7 +279,7 @@ namespace JOB.Services
                                 else
                                 {
                                     //점유하고 있지않은 대기위치를 선택하여 미션을 보낸다
-                                    var notOccupiedPositions = _repository.Positions.ANT_GetAll().Where(c => c.subType == nameof(PositionSubType.WAIT) && c.isOccupied == false).ToList();
+                                    var notOccupiedPositions = _repository.Positions.MiR_GetAll().Where(c => c.subType == nameof(PositionSubType.WAIT) && c.isOccupied == false).ToList();
                                     if (notOccupiedPositions == null || notOccupiedPositions.Count == 0) continue;
                                     CrossPosition = _repository.Positions.FindNearestWayPoint(crossWorker, notOccupiedPositions).FirstOrDefault();
                                 }
@@ -344,7 +346,7 @@ namespace JOB.Services
         /// </summary>
         private void createWaitControl()
         {
-            var workers = _repository.Workers.ANT_GetByActive();    //worker 정보
+            var workers = _repository.Workers.MiR_GetByActive();    //worker 정보
             var batterySetting = _repository.Battery.GetAll();      //배터리 정보
             if (workers == null || workers.Count == 0) return;
             if (batterySetting == null) return;
@@ -363,13 +365,15 @@ namespace JOB.Services
                 if (jobFindAssignedWorker != null) continue;
 
                 //포지션중 점유하고 있지않은 대기위치를 검색한다
-                var notOccupiedPositions = _repository.Positions.ANT_GetAll().Where(c => c.subType == nameof(PositionSubType.WAIT) && c.isOccupied == false).ToList();
+                var notOccupiedPositions = _repository.Positions.MiR_GetNotOccupied(null, nameof(PositionSubType.WAIT));
                 if (notOccupiedPositions == null || notOccupiedPositions.Count == 0) continue;
                 //Worker 상태 확인
                 if (worker.state == nameof(WorkerState.IDLE))
                 {
                     // Worker가 대기 위치에 있는지 확인
-                    var waitPositionOccupied = _repository.Positions.ANT_GetOccupied(worker.PositionId, nameof(PositionSubType.WAIT));
+                    //해당 워커 위치가 대기 위치인지 확인
+                    var waitPositionOccupieds = _repository.Positions.MiR_GetIsOccupied(nameof(PositionSubType.WAIT));
+                    var waitPositionOccupied = waitPositionOccupieds.FirstOrDefault(w => w.id == worker.PositionId);
                     if (waitPositionOccupied != null)
                     {
                         //worker가 대기하는 위치가 충전 위치가 아닐경우

@@ -251,7 +251,7 @@ namespace JobScheduler.Controllers.Jobs
             if (IsInvalid(RequestDto.destinationId)) return massage = $"Check Order destinationId";
             else
             {
-                var destination = _repository.Positions.ANT_GetById_Name_linkedFacility(RequestDto.destinationId);
+                var destination = _repository.Positions.MiR_GetById_Name_linkedFacility(RequestDto.destinationId);
                 if (destination == null) return massage = $"Check Order destinationId";
             }
 
@@ -282,7 +282,7 @@ namespace JobScheduler.Controllers.Jobs
                     else
                     {
                         //워커를 지정 하였지만 worker가 List에 없는경우
-                        var worker = _repository.Workers.ANT_GetById(RequestDto.specifiedWorkerId);
+                        var worker = _repository.Workers.MiR_GetById(RequestDto.specifiedWorkerId);
                         if (worker == null) massage = $"Check Order SpecifiedWorkerId ";
                     }
                     break;
@@ -302,7 +302,7 @@ namespace JobScheduler.Controllers.Jobs
                         else
                         {
                             //워커를 지정 하였지만 worker가 List에 없는경우
-                            var worker = _repository.Workers.ANT_GetById(RequestDto.specifiedWorkerId);
+                            var worker = _repository.Workers.MiR_GetById(RequestDto.specifiedWorkerId);
                             if (worker == null) massage = $"Check Order SpecifiedWorkerId ";
                         }
                     }
@@ -313,7 +313,7 @@ namespace JobScheduler.Controllers.Jobs
                         else
                         {
                             //출발지가 Position 목록에 없는경우
-                            var source = _repository.Positions.ANT_GetById_Name_linkedFacility(RequestDto.sourceId);
+                            var source = _repository.Positions.MiR_GetById_Name_linkedFacility(RequestDto.sourceId);
                             if (source == null) massage = $"Check Order sourceId ";
                         }
                     }
@@ -328,7 +328,7 @@ namespace JobScheduler.Controllers.Jobs
                     else
                     {
                         //워커를 지정 하였지만 worker가 List에 없는경우
-                        var worker = _repository.Workers.ANT_GetById(RequestDto.specifiedWorkerId);
+                        var worker = _repository.Workers.MiR_GetById(RequestDto.specifiedWorkerId);
                         if (worker == null) massage = $"Check Order SpecifiedWorkerId ";
                     }
 

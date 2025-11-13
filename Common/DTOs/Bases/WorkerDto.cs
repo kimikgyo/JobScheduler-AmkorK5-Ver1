@@ -56,8 +56,8 @@ namespace Common.DTOs.Bases
         [JsonPropertyOrder(4)] public string state { get; set; }
         [JsonPropertyOrder(5)] public string mode { get; set; }
         [JsonPropertyOrder(6)] public string severity { get; set; }
-        [JsonPropertyOrder(9)] public DateTime ts { get; set; }
-        [JsonPropertyOrder(10)] public DateTime vendorTs { get; set; }
+        [JsonPropertyOrder(9)] public string ts { get; set; }
+        [JsonPropertyOrder(10)] public string vendorTs { get; set; }
         [JsonPropertyOrder(11)] public MqttSubscribeDtoWorkerBattery battery { get; set; }
         [JsonPropertyOrder(12)] public MqttSubscribeDtoWorkerMission mission { get; set; }
         [JsonPropertyOrder(13)] public MqttSubscribeDtoWorkerPose pose { get; set; }
@@ -92,7 +92,7 @@ namespace Common.DTOs.Bases
 
     public class MqttSubscribeDtoWorkerBattery
     {
-        public int? percent { get; set; }
+        public double? percent { get; set; }
         public bool isCharging { get; set; }
 
         public override string ToString()

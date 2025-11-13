@@ -421,6 +421,7 @@ namespace JOB.Services
 
                 bool c1 = worker.isMiddleware == true;
                 bool c2 = worker.state == nameof(WorkerState.IDLE) && runmission == null;
+
                 //bool c3 = /*worker.state != nameof(WorkerState.IDLE) && */ChargeEquest != null && worker.batteryPercent > batterySetting.minimum;
 
                 //if (c3)
@@ -466,7 +467,7 @@ namespace JOB.Services
                 case nameof(MissionSubType.ELEVATORWAITMOVE):
                     //엘리베이터 대기위치 이고 점유중인 포지션이 아니고 현재워커와 맵아이디가 일치하는 것을 가지고온다.
 
-                    var waitPositionNotOccupieds = _repository.Positions.MiR_GetNotOccupied(null, nameof(PositionSubType.ElevatorWait));
+                    var waitPositionNotOccupieds = _repository.Positions.MiR_GetNotOccupied(null, nameof(PositionSubType.ELEVATORWAIT));
                     var waitPosition = waitPositionNotOccupieds.FirstOrDefault(r => r.mapId == assignedWorker.mapId);
 
                     var param = mission.parameters.FirstOrDefault(r => r.key == "target");
@@ -480,13 +481,12 @@ namespace JOB.Services
                     break;
 
                 case nameof(MissionSubType.ELEVATORENTERMOVE):
-                    var enter1IsOccupied= _repository.Positions.MiR_GetIsOccupied(nameof(PositionSubType.ElevatorEnter1)).FirstOrDefault();
-                    var enter2IsOccupied = _repository.Positions.MiR_GetIsOccupied(nameof(PositionSubType.ElevatorEnter2)).FirstOrDefault();
-                   
+                    var enter1IsOccupied = _repository.Positions.MiR_GetIsOccupied(null, nameof(PositionSubType.ELEVATORENTER1)).FirstOrDefault();
+                    var enter2IsOccupied = _repository.Positions.MiR_GetIsOccupied(null, nameof(PositionSubType.ELEVATORENTER2)).FirstOrDefault();
 
                     if (enter1IsOccupied == null)
                     {
-                        var enter1Positions = _repository.Positions.MiR_GetNotOccupied(null,nameof(PositionSubType.ElevatorEnter1));
+                        var enter1Positions = _repository.Positions.MiR_GetNotOccupied(null, nameof(PositionSubType.ELEVATORENTER1));
                         if (enter1Positions == null || enter1Positions.Count == 0) break;
 
                         completed = elevatorEnterParameterMapping(enter1Positions, mission, assignedWorker);
@@ -497,7 +497,7 @@ namespace JOB.Services
                     }
                     else if (enter2IsOccupied == null)
                     {
-                        var enter2Positions = _repository.Positions.MiR_GetNotOccupied(null, nameof(PositionSubType.ElevatorEnter2));
+                        var enter2Positions = _repository.Positions.MiR_GetNotOccupied(null, nameof(PositionSubType.ELEVATORENTER2));
                         if (enter2Positions == null || enter2Positions.Count == 0) break;
 
                         completed = elevatorEnterParameterMapping(enter2Positions, mission, assignedWorker);

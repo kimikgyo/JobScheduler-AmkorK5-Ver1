@@ -10,9 +10,9 @@ namespace Common.Models.Jobs
         ELEVATOR,       //엘리베이터
         WAIT,           //대기
         CHARGE,          //충전
-        ElevatorWait,
-        ElevatorEnter1,
-        ElevatorEnter2,
+        ELEVATORWAIT,
+        ELEVATORENTER1,
+        ELEVATORENTER2,
     }
 
     public class Position

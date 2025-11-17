@@ -27,6 +27,8 @@ namespace JOB.Services
                 Position destination = null;
                 bool selectJobflag = false;
                 JobTemplate selectJob = null;
+                var Job = _repository.Jobs.GetByOrderId(order.id,order.type,order.subType);
+                if (Job != null) continue;
                 //JobTemplates 타입과 서브타입으로 조회한다
                 var jobTemplates = _repository.JobTemplates.GeyByOrderType(order.type, order.subType);
                 //JobTemplates 조회가 되지않으면 continue;

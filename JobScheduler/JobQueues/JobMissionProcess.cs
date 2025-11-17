@@ -251,13 +251,13 @@ namespace JOB.JobQueues
                         var Sourceposition = _repository.Positions.MiR_GetById(job.sourceId);
                         if (Sourceposition != null)
                         {
-                            var map = _repository.Maps.GetById(Sourceposition.mapId);
+                            var map = _repository.Maps.GetBymapId(Sourceposition.mapId);
                             if (map != null)
                             {
                                 param = new Parameta
                                 {
                                     key = parameta.key,
-                                    value = $"{map.level}F"
+                                    value = $"{map.name}F"
                                 };
                             }
                         }
@@ -268,13 +268,13 @@ namespace JOB.JobQueues
                         var Destposition = _repository.Positions.MiR_GetById(job.destinationId);
                         if (Destposition != null)
                         {
-                            var map = _repository.Maps.GetById(Destposition.mapId);
+                            var map = _repository.Maps.GetBymapId(Destposition.mapId);
                             if (map != null)
                             {
                                 param = new Parameta
                                 {
                                     key = parameta.key,
-                                    value = $"{map.level}F"
+                                    value = $"{map.name}F"
                                 };
                             }
                         }

@@ -93,9 +93,13 @@ namespace JOB.MQTTs.Interfaces
                 case nameof(TopicType.middleware):
                     QueueStorage.MqttEnqueueSubscribeMiddleware(subscribe);
                     break;
+
                 case nameof(TopicType.carrier):
                     QueueStorage.MqttEnqueueSubscribeCarrier(subscribe);
-                    break;  
+                    break;
+                case nameof(TopicType.elevator):
+                    break;
+
             }
         }
 

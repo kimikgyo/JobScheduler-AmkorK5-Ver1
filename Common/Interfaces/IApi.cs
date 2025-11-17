@@ -15,6 +15,8 @@ namespace Common.Interfaces
         Task<List<ApiGetResponseDtoResourceJobTemplate>> STIGetResourceJobTemplate();
         Task<List<ApiGetResponseDtoResourceJobTemplate>> AmkorGetResourceJobTemplate();
         Task<ApResponseDto> WorkerPostMissionQueueAsync(object value);
+        Task<ApResponseDto> ElevatorPostMissionQueueAsync(object value);
+        
         Task<ApResponseDto> MiddlewarePostMissionQueueAsync(object value);
         Task<ApResponseDto> WorkerDeleteMissionQueueAsync(string id);
         Task<ApResponseDto> MiddlewareDeleteMissionQueueAsync(string id);

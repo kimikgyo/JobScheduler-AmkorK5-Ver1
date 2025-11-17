@@ -8,7 +8,8 @@
         job,
         mission,
         position,
-        carrier
+        carrier,
+        elevator
     }
 
     public enum TopicSubType

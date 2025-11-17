@@ -9,7 +9,7 @@ using log4net;
 using RestApi.Interfases;
 using System.Data;
 using System.Diagnostics;
-using System.Reflection;
+using System.Net;
 
 namespace JobScheduler.Services
 {
@@ -89,31 +89,6 @@ namespace JobScheduler.Services
                                         worker.isMiddleware = true;
                                     }
                                     _repository.Workers.Add(worker);
-
-                                    if (worker.isMiddleware)
-                                    {
-                                        var middlewarestatetopic = new MqttTopicSubscribe
-                                        {
-                                            topic = $"acs/middleware/{getworker._id}/state"
-                                        };
-                                        var middlewaremissiontopic = new MqttTopicSubscribe
-                                        {
-                                            topic = $"acs/middleware/{getworker._id}/mission"
-                                        };
-                                        mqttTopicSubscribes.Add(middlewarestatetopic);
-                                        mqttTopicSubscribes.Add(middlewaremissiontopic);
-                                    }
-
-                                    var statetopic = new MqttTopicSubscribe
-                                    {
-                                        topic = $"acs/worker/{getworker._id}/state"
-                                    };
-                                    var missiontopic = new MqttTopicSubscribe
-                                    {
-                                        topic = $"acs/worker/{getworker._id}/mission"
-                                    };
-                                    mqttTopicSubscribes.Add(statetopic);
-                                    mqttTopicSubscribes.Add(missiontopic);
                                 }
 
                                 foreach (var getPosition in Positions)
@@ -132,6 +107,7 @@ namespace JobScheduler.Services
                         }
                         if (serviceApi.type == "Template")
                         {
+                            _repository.JobTemplates.Delete();
                             var JobTemplates = await serviceApi.Api.AmkorGetResourceJobTemplate();
                             if (JobTemplates == null)
                             {
@@ -152,7 +128,7 @@ namespace JobScheduler.Services
                     if (Resource && Template)
                     {
                         Complete = true;
-                        ConfigData.SubscribeTopics = mqttTopicSubscribes;
+                        ConfigData.SubscribeTopics = suscreibeTopicsAdd();
                         _eventlog.Info($"GetData{nameof(Complete)}");
                     }
                     await Task.Delay(500);
@@ -165,6 +141,46 @@ namespace JobScheduler.Services
             }
 
             return Complete;
+        }
+
+        private List<MqttTopicSubscribe> suscreibeTopicsAdd()
+        {
+            var workers = _repository.Workers.GetAll();
+            foreach (var worker in workers)
+            {
+                var statetopic = new MqttTopicSubscribe
+                {
+                    topic = $"acs/worker/{worker.id}/state"
+                };
+                var missiontopic = new MqttTopicSubscribe
+                {
+                    topic = $"acs/worker/{worker.id}/mission"
+                };
+                mqttTopicSubscribes.Add(statetopic);
+                mqttTopicSubscribes.Add(missiontopic);
+
+                if (worker.isMiddleware)
+                {
+                    var middlewarestatetopic = new MqttTopicSubscribe
+                    {
+                        topic = $"acs/middleware/{worker.id}/state"
+                    };
+                    var middlewaremissiontopic = new MqttTopicSubscribe
+                    {
+                        topic = $"acs/middleware/{worker.id}/mission"
+                    };
+                    mqttTopicSubscribes.Add(middlewarestatetopic);
+                    mqttTopicSubscribes.Add(middlewaremissiontopic);
+                }
+            }
+
+            var elevatorMissionTopic = new MqttTopicSubscribe
+            {
+                topic = "acs/elevatorService/mission/status"
+            };
+            mqttTopicSubscribes.Add(elevatorMissionTopic);
+
+            return mqttTopicSubscribes;
         }
 
         public async Task<bool> ReloadAsyc()
@@ -517,7 +533,6 @@ namespace JobScheduler.Services
                     apiInfo.Api = client;
                     _repository.ServiceApis.Add(apiInfo);
                 }
-            
             }
         }
 

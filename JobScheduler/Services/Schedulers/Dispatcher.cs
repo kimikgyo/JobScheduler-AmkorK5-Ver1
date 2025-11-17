@@ -23,7 +23,7 @@ namespace JOB.Services
             foreach (var CancelJob in CancelJobs)
             {
                 var missions = _repository.Missions.GetByJobId(CancelJob.guid);
-                if (CancelJob.terminator.ToUpper() == "INATECH")
+                if (CancelJob.terminator.ToUpper() == "INATECH" || CancelJob.terminator.ToUpper() == "TABLET")
                 {
                     //관리자가 취소할경우
                     var cancelMissions = missions.Where(m => m.state != nameof(MissionState.COMPLETED)).ToList();
@@ -128,8 +128,7 @@ namespace JOB.Services
 
                 bool c1 = worker.isMiddleware == true;
 
-                //bool c2 = worker.state == nameof(WorkerState.IDLE) && runmission == null;
-                bool c2 = worker.state == "RUNNING" && runmission == null;
+                bool c2 = worker.state == nameof(WorkerState.IDLE) && runmission == null;
 
                 //bool c3 = /*worker.state != nameof(WorkerState.IDLE) && */ChargeEquest != null && worker.batteryPercent > batterySetting.minimum;
 
@@ -275,6 +274,7 @@ namespace JOB.Services
 
                     if (exitPosition != null && exitparam.value == null)
                     {
+                        exitparam.value = exitPosition.id;
                         completed = true;
                     }
 
@@ -404,7 +404,27 @@ namespace JOB.Services
                     break;
 
                 case nameof(Service.ELEVATOR):
-
+                    var elevatorApi = _repository.ServiceApis.GetAll().FirstOrDefault(r => r.type == "elevator");
+                    if (elevatorApi != null)
+                    {
+                        //[조건3] API 형식에 맞추어서 Mapping 을 한다.
+                        var mapping_mission = _mapping.Missions.ApiRequestDtoPostMission(mission);
+                        if (mapping_mission != null)
+                        {
+                            //[조건4] Service 로 Api Mission 전송을 한다.
+                            var postmission = elevatorApi.Api.ElevatorPostMissionQueueAsync(mapping_mission).Result;
+                            if (postmission != null)
+                            {
+                                //[조건5] 상태코드 200~300 까지는 완료 처리
+                                if (postmission.statusCode >= 200 && postmission.statusCode < 300)
+                                {
+                                    EventLogger.Info($"PostMission Success = Service = {nameof(Service.ELEVATOR)}, Message = {postmission.statusText}, MissionName = {mission.name}, MissionId = {mission.guid}, AssignedWorkerId = {mission.assignedWorkerId}");
+                                    CommandRequst = true;
+                                }
+                                else EventLogger.Info($"PostMission Failed = Service = {nameof(Service.ELEVATOR)}, Message = {postmission.message}, MissionName = {mission.name}, MissionId = {mission.guid}, AssignedWorkerId = {mission.assignedWorkerId}");
+                            }
+                        }
+                    }
                     break;
             }
             if (CommandRequst)

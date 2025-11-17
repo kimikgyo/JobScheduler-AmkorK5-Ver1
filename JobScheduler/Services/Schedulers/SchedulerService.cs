@@ -168,6 +168,7 @@ namespace JOB.Services
         {
             if (job.state != state)
             {
+                job.state = state;
                 switch (job.state)
                 {
                     case nameof(JobState.INIT):

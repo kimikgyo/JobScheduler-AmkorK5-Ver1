@@ -242,7 +242,7 @@ namespace Data.Repositorys.Jobs
         {
             lock (_lock)
             {
-                return _jobs.FirstOrDefault(m => m.orderId == orderId && m.type == type && m.subType == subType);
+                return _jobs.FirstOrDefault(m => m.orderId == orderId && m.type == type && (m.subType == subType || m.subType == $"{subType}WITHEV"));
             }
         }
 

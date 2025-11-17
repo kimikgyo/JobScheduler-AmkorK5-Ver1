@@ -60,8 +60,7 @@ namespace JOB.Services
             // - 이전 실행 기록이 남아있지 않도록 매번 새 리스트로 준비.
             _tasks = new List<Task>
              {
-                Task.Run(() => PositionMonitor()),
-                Task.Run(() => StatusMonitor()),
+                Task.Run(() => Monitor()),
                 Task.Run(() => JobScheduler()),
 
                 //2025.10.31 타이밍 문제로 싱글테스크로 변경
@@ -70,16 +69,18 @@ namespace JOB.Services
             };
         }
 
-        private async Task PositionMonitor()
+        private async Task Monitor()
         {
             try
             {
-                EventLogger.Info("[PositionMonitor Task] Start");  // 루프 시작 로그
+                EventLogger.Info("[Monitor Task] Start");  // 루프 시작 로그
 
                 while (_running)
                 {
                     try
                     {
+                        StatusChangeControl();
+                        CarrierControl();
                         PositionControl();
                         await Task.Delay(300);
                     }
@@ -91,33 +92,7 @@ namespace JOB.Services
             }
             finally
             {
-                EventLogger.Info("[PositionMonitor Task] Stop");  // 루프 종료 로그
-            }
-        }
-
-        private async Task StatusMonitor()
-        {
-            try
-            {
-                EventLogger.Info("[StatusMonitor Task] Start");  // 루프 시작 로그
-
-                while (_running)
-                {
-                    try
-                    {
-                        StatusChangeControl();
-
-                        await Task.Delay(300);
-                    }
-                    catch (Exception ex)
-                    {
-                        main.LogExceptionMessage(ex);
-                    }
-                }
-            }
-            finally
-            {
-                EventLogger.Info("[StatusMonitor Task] Stop");  // 루프 종료 로그
+                EventLogger.Info("[Monitor Task] Stop");  // 루프 종료 로그
             }
         }
 
@@ -132,6 +107,7 @@ namespace JOB.Services
                     try
                     {
                         JobPlanner();
+                        JobAssined();
                         Dispatcher();
                         await Task.Delay(300);
                     }

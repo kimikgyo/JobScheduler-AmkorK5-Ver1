@@ -269,7 +269,7 @@ namespace JOB.Services
                             if (crossWorker != null)
                             {
                                 //해당 워커 위치가 대기 위치인지 확인
-                                var waitPositionOccupieds = _repository.Positions.MiR_GetIsOccupied(null,nameof(PositionSubType.WAIT));
+                                var waitPositionOccupieds = _repository.Positions.MiR_GetIsOccupied(null, nameof(PositionSubType.WAIT));
                                 var waitPositionOccupied = waitPositionOccupieds.FirstOrDefault(w => w.id == worker.PositionId);
 
                                 if (waitPositionOccupied != null)
@@ -372,7 +372,7 @@ namespace JOB.Services
                 {
                     // Worker가 대기 위치에 있는지 확인
                     //해당 워커 위치가 대기 위치인지 확인
-                    var waitPositionOccupieds = _repository.Positions.MiR_GetIsOccupied(null,nameof(PositionSubType.WAIT));
+                    var waitPositionOccupieds = _repository.Positions.MiR_GetIsOccupied(null, nameof(PositionSubType.WAIT));
                     var waitPositionOccupied = waitPositionOccupieds.FirstOrDefault(w => w.id == worker.PositionId);
                     if (waitPositionOccupied != null)
                     {

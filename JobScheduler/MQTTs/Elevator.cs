@@ -23,7 +23,7 @@ namespace JOB.MQTTs
                         //    var state = JsonSerializer.Deserialize<MqttSubscribeDtoWorkerStatus>(subscribe.Payload!);
                         //    _mapping.Workers.MqttUpdateState(worker, state);
                         //    mapAndPositionOccupied(worker);
-                        //    _repository.Workers.Update(worker);
+                        //    _repository.Workers.Update(worker);   
                         //    break;
 
                         case nameof(TopicSubType.mission):

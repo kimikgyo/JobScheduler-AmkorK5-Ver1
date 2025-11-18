@@ -1,6 +1,9 @@
-﻿using Common.Models.Jobs;
+﻿using Common.DTOs.Jobs;
+using Common.Models.Jobs;
 using Common.Templates;
+using System.Collections.Generic;
 using System.Text.Json;
+using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace JOB.Services
 {
@@ -411,6 +414,7 @@ namespace JOB.Services
                         var mapping_mission = _mapping.Missions.ApiRequestDtoPostMission(mission);
                         if (mapping_mission != null)
                         {
+
                             //[조건4] Service 로 Api Mission 전송을 한다.
                             var postmission = elevatorApi.Api.ElevatorPostMissionQueueAsync(mapping_mission).Result;
                             if (postmission != null)

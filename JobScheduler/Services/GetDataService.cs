@@ -46,6 +46,9 @@ namespace JobScheduler.Services
                     {
                         if (serviceApi.type == "Resource")
                         {
+                            _repository.Workers.Delete();
+                            _repository.Maps.Delete();
+                            _repository.Positions.Delete();
                             var Workers = await serviceApi.Api.GetResourceWorker();
                             var Maps = await serviceApi.Api.GetResourceMap();
                             var Positions = await serviceApi.Api.GetResourcePosition();
@@ -145,6 +148,7 @@ namespace JobScheduler.Services
 
         private List<MqttTopicSubscribe> suscreibeTopicsAdd()
         {
+            mqttTopicSubscribes.Clear();
             var workers = _repository.Workers.GetAll();
             foreach (var worker in workers)
             {
@@ -176,7 +180,7 @@ namespace JobScheduler.Services
 
             var elevatorMissionTopic = new MqttTopicSubscribe
             {
-                topic = "acs/elevatorService/mission/status"
+                topic = "acs/elevator/service/mission"
             };
             mqttTopicSubscribes.Add(elevatorMissionTopic);
 

@@ -257,7 +257,7 @@ namespace JOB.JobQueues
                                 param = new Parameta
                                 {
                                     key = parameta.key,
-                                    value = $"{map.name}F"
+                                    value = $"{map.name}"
                                 };
                             }
                         }
@@ -274,7 +274,7 @@ namespace JOB.JobQueues
                                 param = new Parameta
                                 {
                                     key = parameta.key,
-                                    value = $"{map.name}F"
+                                    value = $"{map.name}"
                                 };
                             }
                         }

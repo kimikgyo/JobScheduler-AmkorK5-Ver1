@@ -98,6 +98,7 @@ namespace JOB.MQTTs.Interfaces
                     QueueStorage.MqttEnqueueSubscribeCarrier(subscribe);
                     break;
                 case nameof(TopicType.elevator):
+                    QueueStorage.MqttEnqueueSubscribeElevator(subscribe);
                     break;
 
             }
@@ -109,6 +110,7 @@ namespace JOB.MQTTs.Interfaces
             _mqttProcess.Worker();
             _mqttProcess.Middleware();
             _mqttProcess.Carrier();
+            _mqttProcess.Elevator();
         }
     }
 }

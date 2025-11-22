@@ -1,4 +1,5 @@
 ﻿using Common.DTOs.Rests.JobTemplates;
+using Common.Models.Bases;
 using Common.Templates;
 
 namespace JOB.Mappings.Bases

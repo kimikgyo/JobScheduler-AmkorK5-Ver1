@@ -1,4 +1,5 @@
-﻿using Common.Models.Jobs;
+﻿using Common.Models.Bases;
+using Common.Models.Jobs;
 using Common.Templates;
 using Dapper;
 using log4net;

@@ -1,13 +1,12 @@
-﻿using Common.DTOs.Bases;
+﻿using Common.DTOs.MQTTs.Middlewares;
+using Common.DTOs.Rests.Middlewares;
 using Common.Models.Bases;
-using Common.Models.Jobs;
-using System.Threading;
 
 namespace JOB.Mappings.Bases
 {
     public class MiddlewareMapping
     {
-        public Middleware ApiGetResourceResponse(string workerId, ApiGetResponseDtoResourceMiddleware model)
+        public Middleware ApiGetResourceResponse(string workerId, Response_MiddlewareDto model)
         {
             var response = new Middleware()
             {
@@ -19,7 +18,7 @@ namespace JOB.Mappings.Bases
             return response;
         }
 
-        public Middleware MqttUpdateState(Middleware middleware, MqttSubscribeDtoMiddlewareStatus state)
+        public Middleware MqttUpdateState(Middleware middleware, Subscribe_MiddlewareStatusDto state)
         {
             middleware.state = state.state.Replace(" ", "").ToUpper();
             middleware.isOnline = state.isOnline;

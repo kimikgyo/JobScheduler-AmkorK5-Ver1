@@ -83,7 +83,34 @@ try
         c.EnableAnnotations(); // Annotations 표시 활성화
     });
 
+    // ★ 서비스 모드 활성화
+    builder.Host.UseWindowsService();
+
     var app = builder.Build();
+
+    // ===============================
+    //  서비스 수명 이벤트에 log 연결
+    // ===============================
+    var lifetime = app.Services.GetRequiredService<IHostApplicationLifetime>();
+
+    // 1) 서비스 시작됨
+    lifetime.ApplicationStarted.Register(() =>
+    {
+        EventLogger.Info($"[SERVICE] Started  | PID={Environment.ProcessId}");
+    });
+
+    // 2) 서비스 중지 진행 중 (Stop 눌렀을 때 바로 찍힘)
+    lifetime.ApplicationStopping.Register(() =>
+    {
+        EventLogger.Info($"[SERVICE] Stopping | PID={Environment.ProcessId}");
+    });
+
+    // 3) 서비스 완전히 종료됨
+    lifetime.ApplicationStopped.Register(() =>
+    {
+        EventLogger.Info($"[SERVICE] Stopped  | PID={Environment.ProcessId}");
+    });
+
 
     // AddSingleton<MainService>()만 등록하면 요청될 때까지 생성안됨 1번은 생성해줘야 진행됨.
     using (var scope = app.Services.CreateScope())

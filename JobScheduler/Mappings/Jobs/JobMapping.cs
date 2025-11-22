@@ -1,13 +1,14 @@
-﻿using Common.DTOs.Jobs;
+﻿using Common.DTOs.MQTTs.Jobs;
+using Common.DTOs.Rests.Jobs;
 using Common.Models.Jobs;
 
 namespace JOB.Mappings.Jobs
 {
     public class JobMapping
     {
-        public ResponseDtoJob Response(Job model)
+        public Get_JobDto Response(Job model)
         {
-            var response = new ResponseDtoJob()
+            var response = new Get_JobDto()
             {
                 guid = model.guid,
                 group = model.group,
@@ -42,9 +43,9 @@ namespace JOB.Mappings.Jobs
             return response;
         }
 
-        public MqttPublishDtoJob MqttPublish(Job model)
+        public Publish_JobDto MqttPublish(Job model)
         {
-            var publish = new MqttPublishDtoJob()
+            var publish = new Publish_JobDto()
             {
                 guid = model.guid,
                 group = model.group,

@@ -1,13 +1,14 @@
-﻿using Common.DTOs.Jobs;
+﻿using Common.DTOs.MQTTs.Missions;
+using Common.DTOs.Rests.Missions;
 using Common.Models.Jobs;
 
 namespace JOB.Mappings.Jobs
 {
     public class MissionMapping
     {
-        public ResponseDtoMission Response(Mission model)
+        public Get_MissionDto Response(Mission model)
         {
-            var response = new ResponseDtoMission()
+            var response = new Get_MissionDto()
             {
                 orderId = model.orderId,
                 jobId = model.jobId,
@@ -37,9 +38,9 @@ namespace JOB.Mappings.Jobs
             return response;
         }
 
-        public MqttPublishDtoMission MqttPublish(Mission model)
+        public Publish_MissionDto MqttPublish(Mission model)
         {
-            var publish = new MqttPublishDtoMission()
+            var publish = new Publish_MissionDto()
             {
                 orderId = model.orderId,
                 jobId = model.jobId,
@@ -64,7 +65,7 @@ namespace JOB.Mappings.Jobs
             return publish;
         }
 
-        public Mission MqttUpdateStatus(Mission model, MqttSubscribeDtoMission missionData)
+        public Mission MqttUpdateStatus(Mission model, Subscribe_MissionDto missionData)
         {
             model.state = missionData.state.Replace(" ", "").ToUpper();
             model.updatedAt = DateTime.Now;
@@ -72,9 +73,9 @@ namespace JOB.Mappings.Jobs
             return model;
         }
 
-        public ApiRequestDtotPostMission ApiRequestDtoPostMission(Mission model)
+        public Request_MissionDto ApiRequestDtoPostMission(Mission model)
         {
-            var apiRequest = new ApiRequestDtotPostMission
+            var apiRequest = new Request_MissionDto
             {
                 orderId = model.orderId,
                 jobId = model.jobId,

@@ -3,9 +3,9 @@ using Newtonsoft.Json.Linq;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
-namespace Common.DTOs.Bases
+namespace Common.DTOs.Rests.JobTemplates
 {
-    public class MissionTemplateDto
+    public class Response_MissionTemplateDto
     {
         [JsonPropertyOrder(1)] public string service { get; set; }
         [JsonPropertyOrder(2)] public string name { get; set; }

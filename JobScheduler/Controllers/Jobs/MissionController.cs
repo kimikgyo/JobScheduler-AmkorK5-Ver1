@@ -1,4 +1,4 @@
-﻿using Common.DTOs.Jobs;
+﻿using Common.DTOs.Rests.Missions;
 using Common.Models;
 using Common.Models.Jobs;
 using Data.Interfaces;
@@ -34,9 +34,9 @@ namespace JOB.Controllers.Jobs
 
         // GET: api/<MissionController>
         [HttpGet]
-        public ActionResult<List<ResponseDtoMission>> GetAll()
+        public ActionResult<List<Get_MissionDto>> GetAll()
         {
-            List<ResponseDtoMission> _responseDtos = new List<ResponseDtoMission>();
+            List<Get_MissionDto> _responseDtos = new List<Get_MissionDto>();
 
             foreach (var model in _repository.Missions.GetAll())
             {
@@ -48,11 +48,11 @@ namespace JOB.Controllers.Jobs
 
         //History
         [HttpGet("history")]
-        public ActionResult<List<ResponseDtoMission>> FindHistory(DateTime startDay, DateTime endDay)
+        public ActionResult<List<Get_MissionDto>> FindHistory(DateTime startDay, DateTime endDay)
         {
             if (startDay != DateTime.MinValue && endDay != DateTime.MinValue)
             {
-                List<ResponseDtoMission> _responseDtos = new List<ResponseDtoMission>();
+                List<Get_MissionDto> _responseDtos = new List<Get_MissionDto>();
 
                 if (startDay == endDay) endDay = endDay.AddDays(1);
                 var histories = _repository.MissionHistorys.FindHistory(startDay, endDay);
@@ -71,9 +71,9 @@ namespace JOB.Controllers.Jobs
         }
 
         [HttpGet("history/today")]
-        public ActionResult<List<ResponseDtoMission>> GetTodayHistory()
+        public ActionResult<List<Get_MissionDto>> GetTodayHistory()
         {
-            List<ResponseDtoMission> _responseDtos = new List<ResponseDtoMission>();
+            List<Get_MissionDto> _responseDtos = new List<Get_MissionDto>();
 
             DateTime today = DateTime.Today;
             DateTime tomorrow = today.AddDays(1);
@@ -88,9 +88,9 @@ namespace JOB.Controllers.Jobs
 
         //finisth
         [HttpGet("finish/today")]
-        public ActionResult<List<ResponseDtoMission>> GetTodayFinisthHistory()
+        public ActionResult<List<Get_MissionDto>> GetTodayFinisthHistory()
         {
-            List<ResponseDtoMission> _responseDtos = new List<ResponseDtoMission>();
+            List<Get_MissionDto> _responseDtos = new List<Get_MissionDto>();
 
             DateTime today = DateTime.Today;
             DateTime tomorrow = today.AddDays(1);
@@ -105,9 +105,9 @@ namespace JOB.Controllers.Jobs
 
         // GET api/<JobController>/5
         [HttpGet("{id}")]
-        public ActionResult<ResponseDtoMission> GetById(string id)
+        public ActionResult<Get_MissionDto> GetById(string id)
         {
-            ResponseDtoMission responseDto = null;
+            Get_MissionDto responseDto = null;
 
             var mission = _repository.Missions.GetById(id);
 
@@ -133,9 +133,9 @@ namespace JOB.Controllers.Jobs
 
         // PUT api/<MissionController>/5
         [HttpPatch]
-        public ActionResult<ResponseDtoMission> Put([FromBody] PatchDtoMission patchDto)
+        public ActionResult<Get_MissionDto> Put([FromBody] Patch_MissionDto patchDto)
         {
-            ResponseDtoMission responseDto = null;
+            Get_MissionDto responseDto = null;
             string message = null;
             if (!IsInvalid(patchDto.orderId) && !IsInvalid(patchDto.destinationId))
             {

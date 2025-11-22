@@ -1,5 +1,4 @@
-﻿using Common.DTOs.Bases;
-using System.Text.Json.Serialization;
+﻿using System.Text.Json.Serialization;
 
 namespace Common.Templates
 {
@@ -26,8 +25,8 @@ namespace Common.Templates
                 $",type = {type,-5}" +
                 $",subType = {subType,-5}" +
                 $",isLook = {isLook,-5}" +
-                $",parameters = {parameters,-5}"+
-                $",preReports = {preReports,-5}"+
+                $",parameters = {parameters,-5}" +
+                $",preReports = {preReports,-5}" +
                 $",postReports = {postReports,-5}";
         }
 

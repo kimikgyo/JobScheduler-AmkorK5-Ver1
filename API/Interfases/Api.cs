@@ -1,9 +1,10 @@
-﻿using Common.DTOs.Bases;
-using Common.DTOs.Jobs;
+﻿using Common.DTOs.Rests.Carriers;
+using Common.DTOs.Rests.JobTemplates;
+using Common.DTOs.Rests.Maps;
+using Common.DTOs.Rests.Positions;
+using Common.DTOs.Rests.Workers;
 using Common.Interfaces;
 using Common.Models.Bases;
-using Common.Models.Jobs;
-using Common.Templates;
 using log4net;
 using Newtonsoft.Json;
 using static ExceptionFilterUtility;
@@ -34,11 +35,11 @@ namespace RestApi.Interfases
             return httpClient;
         }
 
-        public async Task<List<ApiGetResponseDtoResourceWorker>> GetResourceWorker()
+        public async Task<List<Response_Worker>> GetResourceWorker()
         {
             try
             {
-                return await _httpClient.GetFromJsonAsync<List<ApiGetResponseDtoResourceWorker>>("api/workers");
+                return await _httpClient.GetFromJsonAsync<List<Response_Worker>>("api/workers");
             }
             //catch (Exception ex) when (True(() => _logger.Error(ex)))
             catch (Exception ex) when (True(() => ApiLogger.Error($"IPAddress = {_httpClient.BaseAddress}" + "\r\n" + ex)))
@@ -47,11 +48,11 @@ namespace RestApi.Interfases
             }
         }
 
-        public async Task<List<ApiGetResponseDtoResourceMap>> GetResourceMap()
+        public async Task<List<Response_MapDto>> GetResourceMap()
         {
             try
             {
-                return await _httpClient.GetFromJsonAsync<List<ApiGetResponseDtoResourceMap>>("api/maps");
+                return await _httpClient.GetFromJsonAsync<List<Response_MapDto>>("api/maps");
             }
             //catch (Exception ex) when (True(() => _logger.Error(ex)))
             catch (Exception ex) when (True(() => ApiLogger.Error($"IPAddress = {_httpClient.BaseAddress}" + "\r\n" + ex)))
@@ -60,11 +61,11 @@ namespace RestApi.Interfases
             }
         }
 
-        public async Task<List<ApiGetResponseDtoResourcePosition>> GetResourcePosition()
+        public async Task<List<Response_Position>> GetResourcePosition()
         {
             try
             {
-                return await _httpClient.GetFromJsonAsync<List<ApiGetResponseDtoResourcePosition>>("api/positions");
+                return await _httpClient.GetFromJsonAsync<List<Response_Position>>("api/positions");
             }
             //catch (Exception ex) when (True(() => _logger.Error(ex)))
             catch (Exception ex) when (True(() => ApiLogger.Error($"IPAddress = {_httpClient.BaseAddress}" + "\r\n" + ex)))
@@ -73,11 +74,11 @@ namespace RestApi.Interfases
             }
         }
 
-        public async Task<List<ApiGetResponseDtoResourceCarrier>> GetResourceCarrier()
+        public async Task<List<Response_CarrierDto>> GetResourceCarrier()
         {
             try
             {
-                return await _httpClient.GetFromJsonAsync<List<ApiGetResponseDtoResourceCarrier>>("api/carriers");
+                return await _httpClient.GetFromJsonAsync<List<Response_CarrierDto>>("api/carriers");
             }
             //catch (Exception ex) when (True(() => _logger.Error(ex)))
             catch (Exception ex) when (True(() => ApiLogger.Error($"IPAddress = {_httpClient.BaseAddress}" + "\r\n" + ex)))
@@ -85,12 +86,13 @@ namespace RestApi.Interfases
                 return null;
             }
         }
-        public async Task<List<ApiGetResponseDtoResourceJobTemplate>> STIGetResourceJobTemplate()
+
+        public async Task<List<Response_JobTemplateDto>> STIGetResourceJobTemplate()
         {
             try
             {
                 string jsonString = await _httpClient.GetStringAsync("api/JobTemplates/STI");
-                return await _httpClient.GetFromJsonAsync<List<ApiGetResponseDtoResourceJobTemplate>>("api/JobTemplates/STI");
+                return await _httpClient.GetFromJsonAsync<List<Response_JobTemplateDto>>("api/JobTemplates/STI");
             }
             //catch (Exception ex) when (True(() => _logger.Error(ex)))
             catch (Exception ex) when (True(() => ApiLogger.Error($"IPAddress = {_httpClient.BaseAddress}" + "\r\n" + ex)))
@@ -99,11 +101,11 @@ namespace RestApi.Interfases
             }
         }
 
-        public async Task<List<ApiGetResponseDtoResourceJobTemplate>> AmkorGetResourceJobTemplate()
+        public async Task<List<Response_JobTemplateDto>> AmkorGetResourceJobTemplate()
         {
             try
             {
-                return await _httpClient.GetFromJsonAsync<List<ApiGetResponseDtoResourceJobTemplate>>("api/JobTemplates/Amkor");
+                return await _httpClient.GetFromJsonAsync<List<Response_JobTemplateDto>>("api/JobTemplates/Amkor");
             }
             //catch (Exception ex) when (True(() => _logger.Error(ex)))
             catch (Exception ex) when (True(() => ApiLogger.Error($"IPAddress = {_httpClient.BaseAddress}" + "\r\n" + ex)))
@@ -201,6 +203,7 @@ namespace RestApi.Interfases
                 return null;
             }
         }
+
         public async Task<ApResponseDto> WorkerDeleteMissionQueueAsync(string id)
         {
             if (!AcceptFilterUtility.WriteAccepted) { ApiLogger.Error($"IPAddress = {_httpClient.BaseAddress}" + "\r\n" + $"-- API NOT ALLOWED. [{nameof(WorkerDeleteMissionQueueAsync)}] --"); return null; }
@@ -230,6 +233,7 @@ namespace RestApi.Interfases
                 return null;
             }
         }
+
         public async Task<ApResponseDto> MiddlewareDeleteMissionQueueAsync(string id)
         {
             if (!AcceptFilterUtility.WriteAccepted) { ApiLogger.Error($"IPAddress = {_httpClient.BaseAddress}" + "\r\n" + $"-- API NOT ALLOWED. [{nameof(MiddlewareDeleteMissionQueueAsync)}] --"); return null; }
@@ -259,7 +263,8 @@ namespace RestApi.Interfases
                 return null;
             }
         }
-        public async Task<ApResponseDto> PositionPatchAsync(string Id,object value)
+
+        public async Task<ApResponseDto> PositionPatchAsync(string Id, object value)
         {
             if (!AcceptFilterUtility.WriteAccepted) { ApiLogger.Error($"IPAddress = {_httpClient.BaseAddress}" + "\r\n" + $"-- API NOT ALLOWED. [{nameof(MiddlewarePostMissionQueueAsync)}] --"); return null; }
 
@@ -288,6 +293,7 @@ namespace RestApi.Interfases
                 return null;
             }
         }
+
         public override string ToString()
         {
             return $"BaseAddress={_httpClient.BaseAddress.AbsoluteUri}";

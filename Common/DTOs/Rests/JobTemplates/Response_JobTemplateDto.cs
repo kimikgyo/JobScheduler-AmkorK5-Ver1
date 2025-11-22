@@ -1,16 +1,15 @@
-﻿using System.Text.Json;
-using System.Text.Json.Serialization;
+﻿using System.Text.Json.Serialization;
 
-namespace Common.DTOs.Bases
+namespace Common.DTOs.Rests.JobTemplates
 {
-    public class ApiGetResponseDtoResourceJobTemplate
+    public class Response_JobTemplateDto
     {
         [JsonPropertyOrder(1)] public int id { get; set; }
         [JsonPropertyOrder(2)] public string group { get; set; }
         [JsonPropertyOrder(3)] public string type { get; set; }
         [JsonPropertyOrder(4)] public string subType { get; set; }
         [JsonPropertyOrder(5)] public bool isLocked { get; set; }
-        [JsonPropertyOrder(6)] public List<MissionTemplateDto> missionTemplates { get; set; }
+        [JsonPropertyOrder(6)] public List<Response_MissionTemplateDto> missionTemplates { get; set; }
 
         public override string ToString()
         {

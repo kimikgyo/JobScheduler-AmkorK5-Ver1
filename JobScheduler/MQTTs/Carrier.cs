@@ -1,9 +1,5 @@
-﻿using Common.DTOs.Bases;
-using Common.DTOs.Jobs;
-using Common.Models;
-using Common.Models.Jobs;
+﻿using Common.Models;
 using Common.Models.Queues;
-using System.Text.Json;
 
 namespace JOB.MQTTs
 {
@@ -15,10 +11,9 @@ namespace JOB.MQTTs
             {
                 try
                 {
-                  //생성
-                  //업데이트
-                  //ReMove
-
+                    //생성
+                    //업데이트
+                    //ReMove
                 }
                 catch (Exception ex)
                 {

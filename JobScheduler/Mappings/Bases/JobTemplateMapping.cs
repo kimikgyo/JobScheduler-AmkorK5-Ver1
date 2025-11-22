@@ -1,11 +1,11 @@
-﻿using Common.DTOs.Bases;
+﻿using Common.DTOs.Rests.JobTemplates;
 using Common.Templates;
 
 namespace JOB.Mappings.Bases
 {
     public class JobTemplateMapping
     {
-        public JobTemplate ApiGetResourceResponse(ApiGetResponseDtoResourceJobTemplate model)
+        public JobTemplate ApiGetResourceResponse(Response_JobTemplateDto model)
         {
             var response = new JobTemplate
             {

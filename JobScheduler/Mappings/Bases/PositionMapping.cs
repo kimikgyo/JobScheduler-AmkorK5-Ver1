@@ -1,11 +1,12 @@
-﻿using Common.DTOs.Bases;
+﻿using Common.DTOs.MQTTs.Positions;
+using Common.DTOs.Rests.Positions;
 using Common.Models.Jobs;
 
 namespace JOB.Mappings.Bases
 {
     public class PositionMapping
     {
-        public Position ApiGetResourceResponse(ApiGetResponseDtoResourcePosition model)
+        public Position ApiGetResourceResponse(Response_Position model)
         {
             var response = new Position
             {
@@ -29,18 +30,9 @@ namespace JOB.Mappings.Bases
             return response;
         }
 
-        public ApiPatchDtoPositionOccupied ApiPatchResourceRequest(Position model)
+        public Publish_Position MqttPublish(Position model)
         {
-            var Request = new ApiPatchDtoPositionOccupied()
-            {
-                isOccupied = model.isOccupied,
-            };
-            return Request;
-        }
-
-        public MqttPublishDtoPosition MqttPublish(Position model)
-        {
-            var publish = new MqttPublishDtoPosition()
+            var publish = new Publish_Position()
             {
                 id = model.id,
                 source = model.source,

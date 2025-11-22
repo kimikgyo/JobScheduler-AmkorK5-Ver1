@@ -1,5 +1,5 @@
-﻿using Common.DTOs.Bases;
-using Common.DTOs.Jobs;
+﻿using Common.DTOs.MQTTs.Missions;
+using Common.DTOs.MQTTs.Workers;
 using Common.Models;
 using Common.Models.Jobs;
 using Common.Models.Queues;
@@ -23,14 +23,14 @@ namespace JOB.MQTTs
                         switch (subscribe.subType)
                         {
                             case nameof(TopicSubType.state):
-                                var state = JsonSerializer.Deserialize<MqttSubscribeDtoWorkerStatus>(subscribe.Payload!);
+                                var state = JsonSerializer.Deserialize<Subscribe_WorkerStatusDto>(subscribe.Payload!);
                                 _mapping.Workers.MqttUpdateState(worker, state);
                                 mapAndPositionOccupied(worker);
                                 _repository.Workers.Update(worker);
                                 break;
 
                             case nameof(TopicSubType.mission):
-                                var missionStateDto = JsonSerializer.Deserialize<MqttSubscribeDtoMission>(subscribe.Payload!);
+                                var missionStateDto = JsonSerializer.Deserialize<Subscribe_MissionDto>(subscribe.Payload!);
                                 var mission = _repository.Missions.GetById(missionStateDto.acsMissionId);
                                 if (mission != null)
                                 {
@@ -65,7 +65,7 @@ namespace JOB.MQTTs
                 if (worker.PositionId != null)
                 {
                     var position = _repository.Positions.GetById(worker.PositionId);
-                    if(position !=null)
+                    if (position != null)
                     {
                         updateOccupied(position, false);
                     }

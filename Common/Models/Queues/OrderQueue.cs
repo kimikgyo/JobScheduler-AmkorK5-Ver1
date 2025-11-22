@@ -1,4 +1,4 @@
-﻿using Common.DTOs.Jobs;
+﻿using Common.DTOs.Rests.Orders;
 using Common.Models.Jobs;
 
 namespace Common.Models.Queues
@@ -13,7 +13,7 @@ namespace Common.Models.Queues
 
     public class AddOrder
     {
-        public AddRequestDtoOrder AddRequestOrder;
+        public Post_OrderDto AddRequestOrder;
     }
 
     public class RemoveOrder

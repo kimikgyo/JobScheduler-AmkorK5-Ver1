@@ -1,4 +1,4 @@
-﻿using Common.DTOs.Jobs;
+﻿using Common.DTOs.Rests.Orders;
 using Common.Models.Jobs;
 using Common.Models.Queues;
 using Common.Templates;
@@ -17,7 +17,7 @@ namespace JOB.JobQueues.Interfaces
             _queueProcess = new QueueProcess(repository, mqttQueue, mapping);
         }
 
-        public void CreateOrder(AddRequestDtoOrder orderAddRequest)
+        public void CreateOrder(Post_OrderDto orderAddRequest)
         {
             QueueStorage.AddEnqueueOrder(new AddOrder
             {
@@ -36,11 +36,10 @@ namespace JOB.JobQueues.Interfaces
             _queueProcess.RemoveOrder();
         }
 
-                        
-        public void CreateJobMission(JobTemplate jobTemplate,string orderId, string carrierId, int priority,string drumKeyCode
-                                    , string sourceId, string sourceName,string sourcelinkedFacility
-                                    , string destinationId, string destinationName , string destinationlinkedFacility
-                                    , string specifiedWorkerId,string assignedWorkerId)
+        public void CreateJobMission(JobTemplate jobTemplate, string orderId, string carrierId, int priority, string drumKeyCode
+                                    , string sourceId, string sourceName, string sourcelinkedFacility
+                                    , string destinationId, string destinationName, string destinationlinkedFacility
+                                    , string specifiedWorkerId, string assignedWorkerId)
         {
             QueueStorage.AddEnqueueJobMission(new AddJobMission
             {

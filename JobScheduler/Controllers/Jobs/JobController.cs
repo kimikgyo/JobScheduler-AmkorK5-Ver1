@@ -1,4 +1,4 @@
-﻿using Common.DTOs.Jobs;
+﻿using Common.DTOs.Rests.Jobs;
 using Common.Models;
 using Common.Models.Jobs;
 using Data.Interfaces;
@@ -33,9 +33,9 @@ namespace JOB.Controllers.Jobs
 
         // GET: api/<JobController>
         [HttpGet]
-        public ActionResult<List<ResponseDtoJob>> GetAll()
+        public ActionResult<List<Get_JobDto>> GetAll()
         {
-            List<ResponseDtoJob> _responseDtos = new List<ResponseDtoJob>();
+            List<Get_JobDto> _responseDtos = new List<Get_JobDto>();
 
             foreach (var job in _repository.Jobs.GetAll())
             {
@@ -53,11 +53,11 @@ namespace JOB.Controllers.Jobs
 
         //History
         [HttpGet("history")]
-        public ActionResult<List<ResponseDtoJob>> FindHistory(DateTime startDay, DateTime endDay)
+        public ActionResult<List<Get_JobDto>> FindHistory(DateTime startDay, DateTime endDay)
         {
             if (startDay != DateTime.MinValue && endDay != DateTime.MinValue)
             {
-                List<ResponseDtoJob> _responseDtos = new List<ResponseDtoJob>();
+                List<Get_JobDto> _responseDtos = new List<Get_JobDto>();
 
                 if (startDay == endDay) endDay = endDay.AddDays(1);
                 var histories = _repository.JobHistorys.FindHistory(startDay, endDay);
@@ -82,9 +82,9 @@ namespace JOB.Controllers.Jobs
         }
 
         [HttpGet("history/today")]
-        public ActionResult<List<ResponseDtoJob>> GetTodayHistory()
+        public ActionResult<List<Get_JobDto>> GetTodayHistory()
         {
-            List<ResponseDtoJob> _responseDtos = new List<ResponseDtoJob>();
+            List<Get_JobDto> _responseDtos = new List<Get_JobDto>();
 
             DateTime today = DateTime.Today;
             DateTime tomorrow = today.AddDays(1);
@@ -106,9 +106,9 @@ namespace JOB.Controllers.Jobs
 
         //finisth
         [HttpGet("finish/today")]
-        public ActionResult<List<ResponseDtoJob>> GetTodayFinisthHistory()
+        public ActionResult<List<Get_JobDto>> GetTodayFinisthHistory()
         {
-            List<ResponseDtoJob> _responseDtos = new List<ResponseDtoJob>();
+            List<Get_JobDto> _responseDtos = new List<Get_JobDto>();
 
             DateTime today = DateTime.Today;
             DateTime tomorrow = today.AddDays(1);
@@ -129,9 +129,9 @@ namespace JOB.Controllers.Jobs
 
         // GET api/<JobController>/5
         [HttpGet("{id}")]
-        public ActionResult<ResponseDtoJob> GetById(string id)
+        public ActionResult<Get_JobDto> GetById(string id)
         {
-            ResponseDtoJob responseDto = null;
+            Get_JobDto responseDto = null;
 
             var job = _repository.Jobs.GetByid(id);
             if (job != null)
@@ -149,7 +149,7 @@ namespace JOB.Controllers.Jobs
 
         // PUT api/<JobController>/5
         [HttpPut/*("{id}")*/]
-        public ActionResult Put([FromBody] UpdateRequestDtoJob update)
+        public ActionResult Put([FromBody] Put_JobDto update)
         {
             logger.Info($"PutRequest = {update}");
 
@@ -180,7 +180,7 @@ namespace JOB.Controllers.Jobs
             }
         }
 
-        private string ConditionUpdateJob(UpdateRequestDtoJob updateRequestDto)
+        private string ConditionUpdateJob(Put_JobDto updateRequestDto)
         {
             string massage = null;
             if (IsInvalid(updateRequestDto.id)) return massage = $"Check Job Id";

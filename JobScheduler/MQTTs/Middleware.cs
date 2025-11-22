@@ -1,5 +1,5 @@
-﻿using Common.DTOs.Bases;
-using Common.DTOs.Jobs;
+﻿using Common.DTOs.MQTTs.Middlewares;
+using Common.DTOs.MQTTs.Missions;
 using Common.Models;
 using Common.Models.Jobs;
 using Common.Models.Queues;
@@ -23,13 +23,13 @@ namespace JOB.MQTTs
                         switch (subscribe.subType)
                         {
                             case nameof(TopicSubType.state):
-                                var state = JsonSerializer.Deserialize<MqttSubscribeDtoMiddlewareStatus>(subscribe.Payload!);
+                                var state = JsonSerializer.Deserialize<Subscribe_MiddlewareStatusDto>(subscribe.Payload!);
                                 _mapping.Middlewares.MqttUpdateState(middleware, state);
                                 _repository.Middlewares.Update(middleware);
                                 break;
 
                             case nameof(TopicSubType.mission):
-                                var missionStateDto = JsonSerializer.Deserialize<MqttSubscribeDtoMission>(subscribe.Payload!);
+                                var missionStateDto = JsonSerializer.Deserialize<Subscribe_MissionDto>(subscribe.Payload!);
                                 var mission = _repository.Missions.GetById(missionStateDto.acsMissionId);
                                 if (mission != null)
                                 {

@@ -1,7 +1,6 @@
-﻿namespace Common.DTOs.Bases
+﻿namespace Common.DTOs.Rests.Batterys
 {
-
-    public class ApiPutRequstDtoBattery
+    public class Put_BatteryDto
     {
         public double minimum { get; set; }
         public double crossCharge { get; set; }

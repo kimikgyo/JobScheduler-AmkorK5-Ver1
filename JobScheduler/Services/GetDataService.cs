@@ -1,4 +1,7 @@
-﻿using Common.DTOs.Bases;
+﻿using Common.DTOs.Rests.Carriers;
+using Common.DTOs.Rests.Maps;
+using Common.DTOs.Rests.Positions;
+using Common.DTOs.Rests.Workers;
 using Common.Models;
 using Common.Models.Bases;
 using Common.Models.Jobs;
@@ -9,7 +12,6 @@ using log4net;
 using RestApi.Interfases;
 using System.Data;
 using System.Diagnostics;
-using System.Net;
 
 namespace JobScheduler.Services
 {
@@ -276,7 +278,7 @@ namespace JobScheduler.Services
             return Complete;
         }
 
-        private void ReloadCarrier(List<ApiGetResponseDtoResourceCarrier> dtoResourceCarriers)
+        private void ReloadCarrier(List<Response_CarrierDto> dtoResourceCarriers)
         {
             List<Carrier> Reload = new List<Carrier>();
             //update Add
@@ -319,7 +321,7 @@ namespace JobScheduler.Services
             }
         }
 
-        private void ReloadMap(List<ApiGetResponseDtoResourceMap> dtoResourceMaps)
+        private void ReloadMap(List<Response_MapDto> dtoResourceMaps)
         {
             List<Map> Reload = new List<Map>();
             //update Add
@@ -361,7 +363,7 @@ namespace JobScheduler.Services
             }
         }
 
-        private void ReloadWorker(List<ApiGetResponseDtoResourceWorker> dtoResourceWorkers)
+        private void ReloadWorker(List<Response_Worker> dtoResourceWorkers)
         {
             List<Worker> Reload = new List<Worker>();
             List<Middleware> ReloadMiddlewares = new List<Middleware>();
@@ -473,7 +475,7 @@ namespace JobScheduler.Services
             }
         }
 
-        private void ReloadPosition(List<ApiGetResponseDtoResourcePosition> dtoResourcePositions)
+        private void ReloadPosition(List<Response_Position> dtoResourcePositions)
         {
             List<Position> Reload = new List<Position>();
             //update Add

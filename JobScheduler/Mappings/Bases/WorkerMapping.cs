@@ -1,11 +1,12 @@
-﻿using Common.DTOs.Bases;
+﻿using Common.DTOs.MQTTs.Workers;
+using Common.DTOs.Rests.Workers;
 using Common.Models.Jobs;
 
 namespace JOB.Mappings.Bases
 {
     public class WorkerMapping
     {
-        public Worker ApiGetResourceResponse(ApiGetResponseDtoResourceWorker model)
+        public Worker ApiGetResourceResponse(Response_Worker model)
         {
             var response = new Worker()
             {
@@ -17,7 +18,7 @@ namespace JOB.Mappings.Bases
             return response;
         }
 
-        public Worker MqttUpdateState(Worker worker, MqttSubscribeDtoWorkerStatus state)
+        public Worker MqttUpdateState(Worker worker, Subscribe_WorkerStatusDto state)
         {
             worker.state = state.state.Replace(" ", "").ToUpper();
             if (state.battery.percent == null)

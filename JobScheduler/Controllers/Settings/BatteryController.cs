@@ -1,4 +1,4 @@
-﻿using Common.DTOs.Bases;
+﻿using Common.DTOs.Rests.Batterys;
 using Common.Models.Settings;
 using Data.Interfaces;
 using JOB.JobQueues.Interfaces;
@@ -46,7 +46,7 @@ namespace JOB.Controllers.Settings
 
         // PUT api/<BatteryController>/5
         [HttpPut]
-        public ActionResult Put([FromBody] ApiPutRequstDtoBattery apiPutRequstDto)
+        public ActionResult Put([FromBody] Put_BatteryDto apiPutRequstDto)
         {
             var battery = _repository.Battery.GetAll();
             if (battery != null)

@@ -1,4 +1,4 @@
-﻿using Common.DTOs.Jobs;
+﻿using Common.DTOs.Rests.Orders;
 using Common.Models.Jobs;
 using Data.Interfaces;
 using JOB.JobQueues.Interfaces;
@@ -49,12 +49,12 @@ namespace JobScheduler.Controllers.Jobs
 
         //GET: api/<OrderController>
         [HttpGet]
-        public ActionResult<List<ResponseDtoOrder>> GetAll()
+        public ActionResult<List<Get_OrderDto>> GetAll()
         {
-            List<ResponseDtoOrder> _responseDtos = new List<ResponseDtoOrder>();
+            List<Get_OrderDto> _responseDtos = new List<Get_OrderDto>();
             foreach (var model in _repository.Orders.GetAll())
             {
-                ResponseDtoOrder responseDto = null;
+                Get_OrderDto responseDto = null;
                 responseDto = _mapping.Orders.Response(model);
                 var job = _repository.Jobs.GetByOrderId(model.id, model.type, model.subType);
                 if (job != null)
@@ -79,11 +79,11 @@ namespace JobScheduler.Controllers.Jobs
 
         //History
         [HttpGet("history")]
-        public ActionResult<List<ResponseDtoOrder>> FindHistory(DateTime startDay, DateTime endDay)
+        public ActionResult<List<Get_OrderDto>> FindHistory(DateTime startDay, DateTime endDay)
         {
             if (startDay != DateTime.MinValue && endDay != DateTime.MinValue)
             {
-                List<ResponseDtoOrder> _responseDtos = new List<ResponseDtoOrder>();
+                List<Get_OrderDto> _responseDtos = new List<Get_OrderDto>();
 
                 if (startDay == endDay) endDay = endDay.AddDays(1);
                 var histories = _repository.OrderHistorys.FindHistory(startDay, endDay);
@@ -114,9 +114,9 @@ namespace JobScheduler.Controllers.Jobs
         }
 
         [HttpGet("history/today")]
-        public ActionResult<List<ResponseDtoOrder>> GetTodayHistory()
+        public ActionResult<List<Get_OrderDto>> GetTodayHistory()
         {
-            List<ResponseDtoOrder> _responseDtos = new List<ResponseDtoOrder>();
+            List<Get_OrderDto> _responseDtos = new List<Get_OrderDto>();
 
             DateTime today = DateTime.Today;
             DateTime tomorrow = today.AddDays(1);
@@ -144,9 +144,9 @@ namespace JobScheduler.Controllers.Jobs
 
         //finisth
         [HttpGet("finish/today")]
-        public ActionResult<List<ResponseDtoOrder>> GetTodayFinisthHistory()
+        public ActionResult<List<Get_OrderDto>> GetTodayFinisthHistory()
         {
-            List<ResponseDtoOrder> _responseDtos = new List<ResponseDtoOrder>();
+            List<Get_OrderDto> _responseDtos = new List<Get_OrderDto>();
 
             DateTime today = DateTime.Today;
             DateTime tomorrow = today.AddDays(1);
@@ -172,9 +172,9 @@ namespace JobScheduler.Controllers.Jobs
 
         //GET api/<OrderController>/5
         [HttpGet("{id}")]
-        public ActionResult<ResponseDtoOrder> GetById(string id)
+        public ActionResult<Get_OrderDto> GetById(string id)
         {
-            ResponseDtoOrder responseDto = null;
+            Get_OrderDto responseDto = null;
             var order = _repository.Orders.GetByid(id);
             if (order != null)
             {
@@ -200,7 +200,7 @@ namespace JobScheduler.Controllers.Jobs
         // POST api/<OrderController>
         [HttpPost]
         [SwaggerOperation(Summary = "새로운 주문 생성")]
-        public ActionResult Post([FromBody] AddRequestDtoOrder add)
+        public ActionResult Post([FromBody] Post_OrderDto add)
         {
             logger.Info($"AddRequest = {add}");
             string message = ConditionAddOrder(add);
@@ -237,7 +237,7 @@ namespace JobScheduler.Controllers.Jobs
         //{
         //}
 
-        private string ConditionAddOrder(AddRequestDtoOrder RequestDto)
+        private string ConditionAddOrder(Post_OrderDto RequestDto)
         {
             string massage = null;
             //[조건1] order Id 가 null이거나 빈문자 이고 type이 트랜스포트일경우
@@ -245,7 +245,6 @@ namespace JobScheduler.Controllers.Jobs
             //orderId 조회
             var order = _repository.Orders.GetByid(RequestDto.id);
             if (order != null) massage = $"Check Order Id";
-           
 
             //[조건2]도착자Id가 null이거나 빈문자일경우
             if (IsInvalid(RequestDto.destinationId)) return massage = $"Check Order destinationId";
@@ -263,9 +262,6 @@ namespace JobScheduler.Controllers.Jobs
             //bool existTypes = Enum.IsDefined(typeof(OrderType), RequestDto.type);
             //if (!existTypes) return massage = $"Check Order Type";
 
-           
-
-            
             //[조건4]서브타입이 null이거나 빈문자일경우
             if (IsInvalid(RequestDto.subType)) return massage = $"Check Order subType";
             //orderSubType 빈문자를제외후 대문자로 변환

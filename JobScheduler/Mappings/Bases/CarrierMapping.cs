@@ -1,14 +1,12 @@
-﻿using Common.DTOs.Bases;
+﻿using Common.DTOs.MQTTs.Carriers;
+using Common.DTOs.Rests.Carriers;
 using Common.Models.Bases;
-using Common.Models.Jobs;
-using Common.Templates;
-using System.Reflection;
 
 namespace JOB.Mappings.Bases
 {
     public class CarrierMapping
     {
-        public Carrier ApiGetResourceResponse(ApiGetResponseDtoResourceCarrier model)
+        public Carrier ApiGetResourceResponse(Response_CarrierDto model)
         {
             var response = new Carrier
             {
@@ -22,7 +20,7 @@ namespace JOB.Mappings.Bases
             return response;
         }
 
-        public Carrier MqttUpdate(Carrier carrier, MqttSubscribeDtoCarrier Dto)
+        public Carrier MqttUpdate(Carrier carrier, Subscribe_CarrierDto Dto)
         {
             carrier.carrierId = Dto.carrierId;
             carrier.name = Dto.name;
@@ -32,7 +30,8 @@ namespace JOB.Mappings.Bases
 
             return carrier;
         }
-        public Carrier MqttCreate( MqttSubscribeDtoCarrier Dto)
+
+        public Carrier MqttCreate(Subscribe_CarrierDto Dto)
         {
             var response = new Carrier
             {

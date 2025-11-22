@@ -1,14 +1,14 @@
-﻿using Common.DTOs.Jobs;
+﻿using Common.DTOs.MQTTs.Orders;
+using Common.DTOs.Rests.Orders;
 using Common.Models.Jobs;
-using System.Data;
 
 namespace JOB.Mappings.Jobs
 {
     public class OrderMapping
     {
-        public ResponseDtoOrder Response(Order model)
+        public Get_OrderDto Response(Order model)
         {
-            var response = new ResponseDtoOrder()
+            var response = new Get_OrderDto()
             {
                 id = model.id,
                 type = model.type,
@@ -31,9 +31,9 @@ namespace JOB.Mappings.Jobs
             return response;
         }
 
-        public MqttPublishDtoOrder MqttPublish(Order model)
+        public Publish_OrderDto MqttPublish(Order model)
         {
-            var publish = new MqttPublishDtoOrder()
+            var publish = new Publish_OrderDto()
             {
                 id = model.id,
                 type = model.type,

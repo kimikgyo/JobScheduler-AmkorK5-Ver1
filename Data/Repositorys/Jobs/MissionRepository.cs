@@ -1,4 +1,5 @@
-﻿using Common.Models.Jobs;
+﻿using Common.Models.Bases;
+using Common.Models.Jobs;
 using Common.Templates;
 using Dapper;
 using log4net;
@@ -75,7 +76,7 @@ namespace Data.Repositorys.Jobs
                 foreach (var data in con.Query<Mission>("SELECT * FROM [Mission]"))
                 {
                     //파라메타를 Json으로 되어있던것을 다시 List로 변경한다.
-                    data.parameters = JsonSerializer.Deserialize<List<Parameta>>(data.parametersJson);
+                    data.parameters = JsonSerializer.Deserialize<List<Parameter>>(data.parametersJson);
                     data.preReports = JsonSerializer.Deserialize<List<PreReport>>(data.preReportsJson);
                     data.postReports = JsonSerializer.Deserialize<List<PostReport>>(data.postReportsJson);
                     _missions.Add(data);
@@ -271,12 +272,12 @@ namespace Data.Repositorys.Jobs
             }
         }
 
-        public List<Parameta> GetParametas(List<Mission> missions)
+        public List<Parameter> GetParametas(List<Mission> missions)
         {
             //파라메타 내용을 찾을때 사용
             //1. parameters 가 null 인 Mission은 제외
             //2. List<Mission> → 모든 parameters 를 하나의 열로 평탄화
-            //3. List<Parameta> 로 리턴
+            //3. List<Parameter> 로 리턴
             lock (_lock)
             {
                 return missions.Where(m => m.parameters != null).SelectMany(m => m.parameters).ToList();

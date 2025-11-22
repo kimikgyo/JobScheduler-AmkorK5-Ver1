@@ -28,7 +28,7 @@ namespace JOB.Mappings.Bases
 
                 foreach (var parameta in missionTemplateDto.parameters)
                 {
-                    var param = new Parameta
+                    var param = new Parameter
                     {
                         key = parameta.key,
                         value = parameta.value,

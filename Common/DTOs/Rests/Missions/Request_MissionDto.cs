@@ -1,4 +1,5 @@
-﻿using Common.Templates;
+﻿using Common.Models.Bases;
+using Common.Templates;
 using System.Text.Json.Serialization;
 
 namespace Common.DTOs.Rests.Missions
@@ -21,7 +22,7 @@ namespace Common.DTOs.Rests.Missions
         [JsonPropertyOrder(14)] public string state { get; set; }
         [JsonPropertyOrder(15)] public string specifiedWorkerId { get; set; }
         [JsonPropertyOrder(16)] public string assignedWorkerId { get; set; }
-        [JsonPropertyOrder(17)] public List<Parameta> parameters { get; set; }
+        [JsonPropertyOrder(17)] public List<Parameter> parameters { get; set; }
 
         // 사람용 요약 (디버거/로그에서 보기 좋게)
         public override string ToString()
@@ -30,7 +31,7 @@ namespace Common.DTOs.Rests.Missions
 
             if (parameters != null && parameters.Count > 0)
             {
-                // 리스트 안의 Parameta 각각을 { ... } 모양으로 변환
+                // 리스트 안의 Parameter 각각을 { ... } 모양으로 변환
                 var items = parameters
                     .Select(p => $"{{ key={p.key}, value={p.value} }}");
 

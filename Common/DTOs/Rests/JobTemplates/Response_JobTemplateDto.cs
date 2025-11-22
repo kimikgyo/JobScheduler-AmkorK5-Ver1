@@ -17,7 +17,7 @@ namespace Common.DTOs.Rests.JobTemplates
 
             if (missionTemplates != null && missionTemplates.Count > 0)
             {
-                // 리스트 안의 Parameta 각각을 { ... } 모양으로 변환
+                // 리스트 안의 Parameter 각각을 { ... } 모양으로 변환
                 var items = missionTemplates
                     .Select(p => $"{{ service = {p.service}" +
                                     $",type = {p.type}" +

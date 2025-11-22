@@ -1,4 +1,5 @@
 ﻿using Common.Models;
+using Common.Models.Bases;
 using Common.Models.Jobs;
 using Common.Models.Queues;
 using Common.Templates;
@@ -103,7 +104,7 @@ namespace JOB.JobQueues
 
                     foreach (var parameta in missionTemplate.parameters)
                     {
-                        Parameta param = missionParameter(missionTemplate, job, parameta, drumKeyCode, sourcelinkedFacility, destinatiolinkedFacility);
+                        Parameter param = missionParameter(missionTemplate, job, parameta, drumKeyCode, sourcelinkedFacility, destinatiolinkedFacility);
                         if (param != null)
                         {
                             mission.parameters.Add(param);
@@ -175,10 +176,10 @@ namespace JOB.JobQueues
             }
         }
 
-        private Parameta missionParameter(MissionTemplate missionTemplate, Job job, Parameta parameta, string drumKeyCode
+        private Parameter missionParameter(MissionTemplate missionTemplate, Job job, Parameter parameta, string drumKeyCode
                                          , string sourcelinkedFacility, string destinatiolinkedFacility)
         {
-            Parameta param = null;
+            Parameter param = null;
             if (parameta.value == null)
             {
                 switch (parameta.key)
@@ -186,7 +187,7 @@ namespace JOB.JobQueues
                     case "target":
                         if (missionTemplate.subType == nameof(MissionSubType.SOURCEMOVE))
                         {
-                            param = new Parameta
+                            param = new Parameter
                             {
                                 key = parameta.key,
                                 value = job.sourceId,
@@ -194,7 +195,7 @@ namespace JOB.JobQueues
                         }
                         else if (missionTemplate.subType == nameof(MissionSubType.DESTINATIONMOVE))
                         {
-                            param = new Parameta
+                            param = new Parameter
                             {
                                 key = parameta.key,
                                 value = job.destinationId,
@@ -202,7 +203,7 @@ namespace JOB.JobQueues
                         }
                         else
                         {
-                            param = new Parameta
+                            param = new Parameter
                             {
                                 key = parameta.key,
                                 value = parameta.value,
@@ -212,7 +213,7 @@ namespace JOB.JobQueues
 
                     case "targetlevel":
                         var batterysetting = _repository.Battery.GetAll();
-                        param = new Parameta
+                        param = new Parameter
                         {
                             key = parameta.key,
                             value = batterysetting.chargeEnd.ToString(),
@@ -223,7 +224,7 @@ namespace JOB.JobQueues
 
                         if (missionTemplate.subType == nameof(MissionSubType.SOURCEACTION))
                         {
-                            param = new Parameta
+                            param = new Parameter
                             {
                                 key = parameta.key,
                                 value = sourcelinkedFacility
@@ -231,7 +232,7 @@ namespace JOB.JobQueues
                         }
                         else if (missionTemplate.subType == nameof(MissionSubType.DESTINATIONACTION))
                         {
-                            param = new Parameta
+                            param = new Parameter
                             {
                                 key = parameta.key,
                                 value = destinatiolinkedFacility
@@ -240,7 +241,7 @@ namespace JOB.JobQueues
                         break;
 
                     case "drumKeyCode":
-                        param = new Parameta
+                        param = new Parameter
                         {
                             key = parameta.key,
                             value = drumKeyCode
@@ -254,7 +255,7 @@ namespace JOB.JobQueues
                             var map = _repository.Maps.GetBymapId(Sourceposition.mapId);
                             if (map != null)
                             {
-                                param = new Parameta
+                                param = new Parameter
                                 {
                                     key = parameta.key,
                                     value = $"{map.name}"
@@ -271,7 +272,7 @@ namespace JOB.JobQueues
                             var map = _repository.Maps.GetBymapId(Destposition.mapId);
                             if (map != null)
                             {
-                                param = new Parameta
+                                param = new Parameter
                                 {
                                     key = parameta.key,
                                     value = $"{map.name}"
@@ -283,7 +284,7 @@ namespace JOB.JobQueues
             }
             else
             {
-                param = new Parameta
+                param = new Parameter
                 {
                     key = parameta.key,
                     value = parameta.value,

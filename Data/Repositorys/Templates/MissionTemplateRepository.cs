@@ -1,4 +1,4 @@
-﻿using Common.Models.Jobs;
+﻿using Common.Models.Bases;
 using Common.Templates;
 
 namespace Data.Repositorys.Templates
@@ -84,12 +84,12 @@ namespace Data.Repositorys.Templates
             }
         }
 
-        public List<Parameta> GetParametas(List<MissionTemplate> missionTemplates)
+        public List<Parameter> GetParametas(List<MissionTemplate> missionTemplates)
         {
             //파라메타 내용을 찾을때 사용
             //1. parameters 가 null 인 Mission은 제외
             //2. List<Mission> → 모든 parameters 를 하나의 열로 평탄화
-            //3. List<Parameta> 로 리턴
+            //3. List<Parameter> 로 리턴
             lock (_lock)
             {
                 return missionTemplates.Where(m => m.parameters != null).SelectMany(m => m.parameters).ToList();

@@ -1,4 +1,5 @@
-﻿using Common.Templates;
+﻿using Common.Models.Bases;
+using Common.Templates;
 using System.Text.Json.Serialization;
 
 namespace Common.DTOs.MQTTs.Missions
@@ -21,7 +22,7 @@ namespace Common.DTOs.MQTTs.Missions
         [JsonPropertyOrder(14)] public string state { get; set; }
         [JsonPropertyOrder(15)] public string specifiedWorkerId { get; set; }            //order 지정된 Worker
         [JsonPropertyOrder(16)] public string assignedWorkerId { get; set; }             //할당된 Worker
-        [JsonPropertyOrder(17)] public List<Parameta> parameters { get; set; }
+        [JsonPropertyOrder(17)] public List<Parameter> parameters { get; set; }
         [JsonPropertyOrder(18)] public List<PreReport> preReports { get; set; }
         [JsonPropertyOrder(19)] public List<PostReport> postReports { get; set; }
 
@@ -33,7 +34,7 @@ namespace Common.DTOs.MQTTs.Missions
 
             if (parameters != null && parameters.Count > 0)
             {
-                // 리스트 안의 Parameta 각각을 { ... } 모양으로 변환
+                // 리스트 안의 Parameter 각각을 { ... } 모양으로 변환
                 var items = parameters
                     .Select(p => $"{{ key={p.key}, value={p.value} }}");
 
@@ -48,7 +49,7 @@ namespace Common.DTOs.MQTTs.Missions
 
             if (preReports != null && preReports.Count > 0)
             {
-                // 리스트 안의 Parameta 각각을 { ... } 모양으로 변환
+                // 리스트 안의 Parameter 각각을 { ... } 모양으로 변환
                 var items = preReports
                     .Select(p => $"{{ ceid={p.ceid}, eventName={p.eventName},rptid = {p.rptid} }}");
 
@@ -62,7 +63,7 @@ namespace Common.DTOs.MQTTs.Missions
 
             if (postReports != null && postReports.Count > 0)
             {
-                // 리스트 안의 Parameta 각각을 { ... } 모양으로 변환
+                // 리스트 안의 Parameter 각각을 { ... } 모양으로 변환
                 var items = postReports
                     .Select(p => $"{{ ceid={p.ceid}, eventName={p.eventName},rptid = {p.rptid} }}");
 

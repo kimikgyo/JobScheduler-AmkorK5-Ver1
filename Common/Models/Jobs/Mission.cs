@@ -1,4 +1,5 @@
-﻿using Common.Templates;
+﻿using Common.Models.Bases;
+using Common.Templates;
 using System.Data;
 using System.Text.Json.Serialization;
 
@@ -106,7 +107,7 @@ namespace Common.Models.Jobs
         [JsonPropertyOrder(19)] public DateTime? finishedAt { get; set; }
         [JsonPropertyOrder(20)] public DateTime? sequenceUpdatedAt { get; set; }  // 시퀀스가 마지막으로 변경된 시간 재정렬 발생 시 이 값이 갱신됨
         [JsonPropertyOrder(21)] public string parametersJson { get; set; }        // DB 파라메타를 저장하기 위하여
-        [JsonPropertyOrder(22)] public List<Parameta> parameters { get; set; } = new List<Parameta>();          // 명령 실행 시 필요한 추가 옵션을 JSON 문자열로 저장  예: 속도, 방향, 특수 처리 조건 등
+        [JsonPropertyOrder(22)] public List<Parameter> parameters { get; set; } = new List<Parameter>();          // 명령 실행 시 필요한 추가 옵션을 JSON 문자열로 저장  예: 속도, 방향, 특수 처리 조건 등
         [JsonPropertyOrder(23)] public string preReportsJson { get; set; }        //Mission 전에 보내지는 Report
         [JsonPropertyOrder(24)] public List<PreReport> preReports { get; set; } = new List<PreReport>();
         [JsonPropertyOrder(25)] public string postReportsJson { get; set; }        //Mission 이후에 보내지는 Report
@@ -121,7 +122,7 @@ namespace Common.Models.Jobs
 
             if (parameters != null && parameters.Count > 0)
             {
-                // 리스트 안의 Parameta 각각을 { ... } 모양으로 변환
+                // 리스트 안의 Parameter 각각을 { ... } 모양으로 변환
                 var items = parameters
                     .Select(p => $"{{ key={p.key}, value={p.value} }}");
 
@@ -136,7 +137,7 @@ namespace Common.Models.Jobs
 
             if (preReports != null && preReports.Count > 0)
             {
-                // 리스트 안의 Parameta 각각을 { ... } 모양으로 변환
+                // 리스트 안의 Parameter 각각을 { ... } 모양으로 변환
                 var items = preReports
                     .Select(p => $"{{ ceid={p.ceid}, eventName={p.eventName},rptid = {p.rptid} }}");
 
@@ -150,7 +151,7 @@ namespace Common.Models.Jobs
 
             if (postReports != null && postReports.Count > 0)
             {
-                // 리스트 안의 Parameta 각각을 { ... } 모양으로 변환
+                // 리스트 안의 Parameter 각각을 { ... } 모양으로 변환
                 var items = postReports
                     .Select(p => $"{{ ceid={p.ceid}, eventName={p.eventName},rptid = {p.rptid} }}");
 

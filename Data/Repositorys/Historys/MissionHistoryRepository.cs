@@ -138,7 +138,7 @@ namespace Data.Repositorys.Historys
                 {
                     foreach (var data in con.Query<Mission>(sql, new { orderId = orderId }))
                     {
-                        data.parameters = JsonSerializer.Deserialize<List<Parameta>>(data.parametersJson);
+                        data.parameters = JsonSerializer.Deserialize<List<Parameter>>(data.parametersJson);
                         histories.Add(data);
                     }
                 }
@@ -156,7 +156,7 @@ namespace Data.Repositorys.Historys
                 {
                     foreach (var data in con.Query<Mission>(sql, new { jobId = jobId }))
                     {
-                        data.parameters = JsonSerializer.Deserialize<List<Parameta>>(data.parametersJson);
+                        data.parameters = JsonSerializer.Deserialize<List<Parameter>>(data.parametersJson);
 
                         histories.Add(data);
                     }
@@ -175,7 +175,7 @@ namespace Data.Repositorys.Historys
                 {
                     foreach (var data in con.Query<Mission>(sql, new { start = start, end = end }))
                     {
-                        data.parameters = JsonSerializer.Deserialize<List<Parameta>>(data.parametersJson);
+                        data.parameters = JsonSerializer.Deserialize<List<Parameter>>(data.parametersJson);
                         histories.Add(data);
                     }
                 }

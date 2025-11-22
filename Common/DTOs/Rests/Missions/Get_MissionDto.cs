@@ -1,4 +1,5 @@
-﻿using Common.Templates;
+﻿using Common.Models.Bases;
+using Common.Templates;
 using System.Text.Json.Serialization;
 
 namespace Common.DTOs.Rests.Missions
@@ -25,7 +26,7 @@ namespace Common.DTOs.Rests.Missions
         [JsonPropertyOrder(18)] public DateTime? updatedAt { get; set; }
         [JsonPropertyOrder(19)] public DateTime? finishedAt { get; set; }
         [JsonPropertyOrder(20)] public DateTime? sequenceUpdatedAt { get; set; }  // 시퀀스가 마지막으로 변경된 시간 재정렬 발생 시 이 값이 갱신됨
-        [JsonPropertyOrder(21)] public List<Parameta> parameters { get; set; }
+        [JsonPropertyOrder(21)] public List<Parameter> parameters { get; set; }
         [JsonPropertyOrder(22)] public List<PreReport> preReports { get; set; }
         [JsonPropertyOrder(23)] public List<PostReport> postReports { get; set; }
 

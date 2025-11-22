@@ -111,7 +111,7 @@ namespace JOB.Services
             foreach (var worker in _repository.Workers.MiR_GetByActive()/*.Where(m => m.state == nameof(WorkerState.IDLE) && m.acsmissionId == null */)
             {
                 //[초기화] 충전 파라메터
-                Parameta ChargeEquest = null;
+                Parameter ChargeEquest = null;
 
                 //[조회] 현재 Worker에게 할당된 Mission
                 var missions = _repository.Missions.GetByAssignedWorkerId(worker.id).ToList();

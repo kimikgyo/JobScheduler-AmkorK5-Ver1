@@ -24,7 +24,7 @@ namespace Common.DTOs.Rests.JobTemplates
 
             if (parameters != null && parameters.Count > 0)
             {
-                // 리스트 안의 Parameta 각각을 { ... } 모양으로 변환
+                // 리스트 안의 Parameter 각각을 { ... } 모양으로 변환
                 var items = parameters
                     .Select(p => $"{{ key={p.key}, value={p.value} }}");
 
@@ -39,7 +39,7 @@ namespace Common.DTOs.Rests.JobTemplates
 
             if (preReports != null && preReports.Count > 0)
             {
-                // 리스트 안의 Parameta 각각을 { ... } 모양으로 변환
+                // 리스트 안의 Parameter 각각을 { ... } 모양으로 변환
                 var items = preReports
                     .Select(p => $"{{ ceid={p.ceid}, eventName={p.eventName},rptid = {p.rptid} }}");
 
@@ -53,7 +53,7 @@ namespace Common.DTOs.Rests.JobTemplates
 
             if (postReports != null && postReports.Count > 0)
             {
-                // 리스트 안의 Parameta 각각을 { ... } 모양으로 변환
+                // 리스트 안의 Parameter 각각을 { ... } 모양으로 변환
                 var items = postReports
                     .Select(p => $"{{ ceid={p.ceid}, eventName={p.eventName},rptid = {p.rptid} }}");
 

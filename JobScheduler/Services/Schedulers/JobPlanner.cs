@@ -27,7 +27,7 @@ namespace JOB.Services
                 Position destination = null;
                 bool selectJobflag = false;
                 JobTemplate selectJob = null;
-                var Job = _repository.Jobs.GetByOrderId(order.id,order.type,order.subType);
+                var Job = _repository.Jobs.GetByOrderId(order.id, order.type, order.subType);
                 if (Job != null) continue;
                 //JobTemplates 타입과 서브타입으로 조회한다
                 var jobTemplates = _repository.JobTemplates.GeyByOrderType(order.type, order.subType);
@@ -204,13 +204,13 @@ namespace JOB.Services
                     {
                         foreach (var job in jobTemplates)
                         {
-                            //var missionSource = job.missionTemplates.FirstOrDefault(s => s.type == nameof(MissionType.MOVE) && s.subType == nameof(MissionSubType.SOURCEMOVE));
-                            //var missionDest = job.missionTemplates.FirstOrDefault(s => s.type == nameof(MissionType.MOVE) && s.subType == nameof(MissionSubType.DESTINATIONMOVE));
-                            //if (missionSource != null && missionDest != null)
+                            var missionSource = job.missionTemplates.FirstOrDefault(s => s.type == nameof(MissionType.MOVE) && s.subType == nameof(MissionSubType.SOURCEMOVE));
+                            var missionDest = job.missionTemplates.FirstOrDefault(s => s.type == nameof(MissionType.MOVE) && s.subType == nameof(MissionSubType.DESTINATIONMOVE));
+                            if (missionSource != null && missionDest != null)
                             {
-                                //var paramSource = missionSource.parameters.FirstOrDefault(p => p.key == "target" && p.value == null);
-                                //var paramDest = missionDest.parameters.FirstOrDefault(p => p.key == "target" && p.value == null);
-                                //if (paramSource != null && paramDest != null)
+                                var paramSource = missionSource.parameters.FirstOrDefault(p => p.key == "target" && p.value == null);
+                                var paramDest = missionDest.parameters.FirstOrDefault(p => p.key == "target" && p.value == null);
+                                if (paramSource != null && paramDest != null)
                                 {
                                     jobTemplate = job;
                                     break;
@@ -352,15 +352,14 @@ namespace JOB.Services
             var batterySetting = _repository.Battery.GetAll();      //배터리 정보
             if (workers == null || workers.Count == 0) return;
             if (batterySetting == null) return;
-            //Job이 없을때 진행한다
-            var jobFindNotAssignedWorker = _repository.Jobs.GetAll().FirstOrDefault(j => IsInvalid(j.assignedWorkerId));
-            if (jobFindNotAssignedWorker != null) return;
 
-            List<Position> selectPositions = new List<Position>();
             foreach (var worker in workers)
             {
                 Position DestPosition = null;
                 if (IsInvalid(worker.state)) continue;
+                //Job이 없을때 진행한다
+                var jobFindNotAssignedWorker = _repository.Jobs.GetAll().FirstOrDefault(j => j.group == worker.group && IsInvalid(j.assignedWorkerId));
+                if (jobFindNotAssignedWorker != null) continue;
 
                 ////worker 진행중인 Job이 있는지 확인
                 var jobFindAssignedWorker = _repository.Jobs.GetByWorkerId(worker.id).FirstOrDefault();
@@ -376,43 +375,36 @@ namespace JOB.Services
                     //해당 워커 위치가 대기 위치인지 확인
                     var waitPositionOccupieds = _repository.Positions.MiR_GetIsOccupied(null, nameof(PositionSubType.WAIT));
                     var waitPositionOccupied = waitPositionOccupieds.FirstOrDefault(w => w.id == worker.PositionId);
-                    if (waitPositionOccupied != null)
+                    if (waitPositionOccupied == null)
                     {
-                        //worker가 대기하는 위치가 충전 위치가 아닐경우
-                        if (waitPositionOccupied.hasCharger == false)
-                        {
-                            //점유하고 있지않은 포지션에서 충전이 가능한 포지션을 찾는다
-                            var chargePositions = notOccupiedPositions.Where(r => r.hasCharger == true).ToList();
-                            if (chargePositions == null || chargePositions.Count == 0) continue;
-                            // 충전이 가능한 포지션중에서 가까운 포지션을 찾는다.
-                            DestPosition = _repository.Positions.FindNearestWayPoint(worker, chargePositions).FirstOrDefault();
-                        }
+                        //대기위치중 Worker가 갈수있는 대기위치를 선택한다.
+                        DestPosition = _repository.Positions.GetAll().FirstOrDefault(r => r.linkedRobotId == worker.id);
                     }
-                    else
-                    {
-                        // 워커에서 가장가까운 포지션로 정렬
-                        DestPosition = _repository.Positions.FindNearestWayPoint(worker, notOccupiedPositions).FirstOrDefault();
-                    }
+
                     if (DestPosition != null)
                     {
-                        var selectPosition = selectPositions.FirstOrDefault(s => s.id == DestPosition.id);
-                        if (selectPosition == null)
+                        //Wait템플릿 에서 확인후에 job을 setting
+                        var WaitTemplates = _repository.JobTemplates.GeyByOrderType(nameof(JobType.WAIT), nameof(JobSubType.WAIT));
+                        if (WaitTemplates != null)
                         {
-                            //Wait템플릿 에서 확인후에 job을 setting
-                            var WaitTemplates = _repository.JobTemplates.GeyByOrderType(nameof(JobType.WAIT), nameof(JobSubType.WAIT));
-                            if (WaitTemplates != null)
+                            if (DestPosition.mapId == worker.mapId)
                             {
-                                JobTemplate selectJob = null;
-                                selectJob = selectJobTemplate(WaitTemplates, null, DestPosition);
-                                if (selectJob != null)
-                                {
-                                    selectPositions.Add(DestPosition);
-                                    //Job이랑 미션 생성
-                                    _Queue.CreateJobMission(selectJob, null, null, 0, null
-                                                            , null, null, null
-                                                            , DestPosition.id, DestPosition.name, DestPosition.linkedFacility
-                                                            , worker.id, null);
-                                }
+                                WaitTemplates = WaitTemplates.Where(r => r.subType == nameof(JobSubType.WAIT)).ToList();
+                            }
+                            else
+                            {
+                                WaitTemplates = WaitTemplates.Where(r => r.subType == $"{nameof(JobSubType.WAIT)}WITHEV").ToList();
+                            }
+
+                            JobTemplate selectJob = null;
+                            selectJob = selectJobTemplate(WaitTemplates, null, DestPosition);
+                            if (selectJob != null)
+                            {
+                                //Job이랑 미션 생성
+                                _Queue.CreateJobMission(selectJob, null, null, 0, null
+                                                        , null, null, null
+                                                        , DestPosition.id, DestPosition.name, DestPosition.linkedFacility
+                                                        , worker.id, null);
                             }
                         }
                     }

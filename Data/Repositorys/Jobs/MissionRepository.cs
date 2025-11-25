@@ -76,9 +76,9 @@ namespace Data.Repositorys.Jobs
                 foreach (var data in con.Query<Mission>("SELECT * FROM [Mission]"))
                 {
                     //파라메타를 Json으로 되어있던것을 다시 List로 변경한다.
-                    data.parameters = JsonSerializer.Deserialize<List<Parameter>>(data.parametersJson);
-                    data.preReports = JsonSerializer.Deserialize<List<PreReport>>(data.preReportsJson);
-                    data.postReports = JsonSerializer.Deserialize<List<PostReport>>(data.postReportsJson);
+                    if (data.parametersJson != null) data.parameters = JsonSerializer.Deserialize<List<Parameter>>(data.parametersJson);
+                    if (data.preReportsJson != null) data.preReports = JsonSerializer.Deserialize<List<PreReport>>(data.preReportsJson);
+                    if (data.postReportsJson != null) data.postReports = JsonSerializer.Deserialize<List<PostReport>>(data.postReportsJson);
                     _missions.Add(data);
 
                     logger.Info($"Load:{data}");
@@ -240,6 +240,7 @@ namespace Data.Repositorys.Jobs
                 return _missions.Where(m => m.jobId == jobId).ToList();
             }
         }
+
         public List<Mission> GetByOrderId(string orderId)
         {
             lock (_lock)

@@ -15,6 +15,7 @@ namespace JOB.Mappings.Interfaces
         public JobTemplateMapping JobTemplates { get; private set; }
         public MiddlewareMapping Middlewares { get; private set; }
         public CarrierMapping Carriers { get; private set; }
+        public ElevatorMapping Elevators{ get; private set; }
 
         public UnitOfWorkMapping()
         {
@@ -32,6 +33,7 @@ namespace JOB.Mappings.Interfaces
             JobTemplates = new JobTemplateMapping();
             Middlewares = new MiddlewareMapping();
             Carriers = new CarrierMapping();
+            Elevators = new ElevatorMapping();
         }
 
         public void SaveChanges()

@@ -97,10 +97,17 @@ namespace JOB.MQTTs.Interfaces
                 case nameof(TopicType.carrier):
                     QueueStorage.MqttEnqueueSubscribeCarrier(subscribe);
                     break;
+
                 case nameof(TopicType.elevator):
                     QueueStorage.MqttEnqueueSubscribeElevator(subscribe);
                     break;
 
+                case nameof(TopicType.ui):
+                    if (subscribe.id == "elevator")
+                    {
+                        QueueStorage.MqttEnqueueSubscribeElevator(subscribe);
+                    }
+                    break;
             }
         }
 

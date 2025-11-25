@@ -68,6 +68,7 @@ namespace JOB.JobQueues
                         jobId = job.guid,
                         guid = Guid.NewGuid().ToString(),
                         carrierId = carrierId,
+                        name = missionTemplate.name,
                         service = missionTemplate.service,
                         type = missionTemplate.type,
                         subType = missionTemplate.subType,
@@ -249,6 +250,7 @@ namespace JOB.JobQueues
                         break;
 
                     case "SourceFloor":
+                        //출발지 Position 있는경우 
                         var Sourceposition = _repository.Positions.MiR_GetById(job.sourceId);
                         if (Sourceposition != null)
                         {
@@ -262,7 +264,25 @@ namespace JOB.JobQueues
                                 };
                             }
                         }
-                        break;
+                        else
+                        {
+                            //출발지 Position이 없는경우
+                            var worker = _repository.Workers.GetById(job.specifiedWorkerId);
+                            if(worker !=null)
+                            {
+                                var map = _repository.Maps.GetBymapId(worker.mapId);
+                                if (map != null)
+                                {
+                                    param = new Parameter
+                                    {
+                                        key = parameta.key,
+                                        value = $"{map.name}"
+                                    };
+                                }
+                            }
+
+                        }
+                            break;
 
                     case "DestinationFloor":
 

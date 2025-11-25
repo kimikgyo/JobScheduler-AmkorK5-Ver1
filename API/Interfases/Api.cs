@@ -211,7 +211,7 @@ namespace RestApi.Interfases
             try
             {
                 //수정본
-                var response = await _httpClient.DeleteAsync($"api/Workers/mission_queue/{id}");
+                var response = await _httpClient.DeleteAsync($"missions/worker/{id}");
                 var jsonResponse = await response.Content.ReadAsStringAsync();
 
                 var missionQueueResponse = new ApResponseDto

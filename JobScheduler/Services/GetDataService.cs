@@ -130,6 +130,8 @@ namespace JobScheduler.Services
                             }
                         }
                     }
+                    Resource = true;
+                    Template = true;
                     if (Resource && Template)
                     {
                         Complete = true;
@@ -185,6 +187,18 @@ namespace JobScheduler.Services
                 topic = "acs/elevator/service/mission"
             };
             mqttTopicSubscribes.Add(elevatorMissionTopic);
+
+            var elevatorRequestTopic = new MqttTopicSubscribe
+            {
+                topic = "acs/ui/elevator/request"
+            };
+            mqttTopicSubscribes.Add(elevatorRequestTopic);
+
+            var elevatorNO1StatusTopic = new MqttTopicSubscribe
+            {
+                topic = "acs/elevator/NO1/status"
+            };
+            mqttTopicSubscribes.Add(elevatorNO1StatusTopic);
 
             return mqttTopicSubscribes;
         }

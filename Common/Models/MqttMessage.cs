@@ -9,7 +9,8 @@
         mission,
         position,
         carrier,
-        elevator
+        elevator,
+        ui
     }
 
     public enum TopicSubType
@@ -18,14 +19,16 @@
         state,
         pose,
         mission,
-        status
+        status,
+        request,
+        response
     }
 
     public class MQTTSetting
     {
         public string id { get; set; }
         public string host { get; set; }
-        public string prot { get; set; }
+        public string port { get; set; }
     }
 
     public class MqttTopicSubscribe

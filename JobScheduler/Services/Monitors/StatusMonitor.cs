@@ -9,6 +9,7 @@ namespace JOB.Services
             inProgressControl();
             cancelAbortCompleteControl();
             jobCompleteControl();
+            MissionCompleteControl();
         }
 
         private void inProgressControl()
@@ -94,6 +95,20 @@ namespace JOB.Services
                     }
                 }
             }
+        }
+
+        private void MissionCompleteControl()
+        {
+
+            var missions = _repository.Missions.GetAll().Where(r => r.jobId == null).ToList();
+            if (missions.Count == 0 || missions == null) return;
+
+            foreach (var mission in missions)
+            {
+                if (mission.state == nameof(MissionState.COMPLETED) || mission.state == nameof(MissionState.SKIPPED)) 
+                _repository.Missions.Remove(mission);
+            }
+
         }
     }
 }

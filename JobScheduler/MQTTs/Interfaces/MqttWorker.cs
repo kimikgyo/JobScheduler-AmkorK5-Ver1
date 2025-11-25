@@ -37,7 +37,7 @@ namespace JOB.MQTTs
 
             string clientId = ConfigData.mQTTSetting.id;
             string serverhost = ConfigData.mQTTSetting.host;
-            string serverport = ConfigData.mQTTSetting.prot;
+            string serverport = ConfigData.mQTTSetting.port;
 
             _mqttOptions = new MqttClientOptionsBuilder()
                 .WithClientId(clientId)

@@ -14,5 +14,6 @@ namespace JOB.Mappings.Interfaces
         JobTemplateMapping JobTemplates { get; }
         MiddlewareMapping Middlewares { get; }
         CarrierMapping Carriers { get; }
+        ElevatorMapping Elevators{ get; }
     }
 }

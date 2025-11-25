@@ -54,7 +54,7 @@ namespace Common.Models.Jobs
         DESTINATIONSTOPOVERMOVE,
         WAITMOVE,
         RESETMOVE,
-        POSITIONMOVE,
+        POSITIONMOVE,   
         SOURCEMOVE,
         STOPOVERMOVE,
         ELEVATORWAITMOVE,
@@ -66,6 +66,7 @@ namespace Common.Models.Jobs
         LEFTTURN,
 
         //ACTION
+        MODECHANGE,
         SOURCEACTION,
         DESTINATIONACTION,
         ELEVATORSOURCEFLOOR,

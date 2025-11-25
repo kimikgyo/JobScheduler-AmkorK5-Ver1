@@ -1,6 +1,5 @@
 ﻿using Common.Models.Bases;
 using Common.Models.Jobs;
-using Common.Templates;
 using System.Text.Json;
 
 namespace JOB.Services
@@ -11,6 +10,7 @@ namespace JOB.Services
         {
             postMissionControl();
             cancelControl();
+            ElevatorModeChange();
         }
 
         /// <summary>
@@ -18,13 +18,63 @@ namespace JOB.Services
         /// </summary>
         private void cancelControl()
         {
-            //[조회] Cancel Job 조회
-            var CancelJobs = _repository.Jobs.GetAll().Where(j => j.terminateState == nameof(TerminateState.INITED)).ToList();
+            var jobs = _repository.Jobs.GetAll();
 
-            foreach (var CancelJob in CancelJobs)
+            terminateState_Null(jobs);
+            terminateState_Inited(jobs);
+            terminateState_Executing(jobs);
+        }
+
+        private void terminateState_Executing(List<Job> jobs)
+        {
+            var terminateState_EXECUTING_Jobs = jobs.Where(j => j.terminateState == nameof(TerminateState.EXECUTING)).ToList();
+            if (terminateState_EXECUTING_Jobs == null || terminateState_EXECUTING_Jobs.Count == 0) return;
+
+            foreach (var terminateState_EXECUTING_Job in terminateState_EXECUTING_Jobs)
             {
-                var missions = _repository.Missions.GetByJobId(CancelJob.guid);
-                if (CancelJob.terminator.ToUpper() == "INATECH" || CancelJob.terminator.ToUpper() == "TABLET")
+                var missions = _repository.Missions.GetByJobId(terminateState_EXECUTING_Job.guid);
+
+                var unlockMissions = missions.Where(m => m.isLocked == false).ToList();
+                var executingMission = unlockMissions.FirstOrDefault(m => (m.state == nameof(MissionState.PENDING))
+                                                            || (m.state == nameof(MissionState.EXECUTING))
+                                                            || (m.state == nameof(MissionState.COMMANDREQUESTCOMPLETED)));
+
+                if (executingMission != null)
+                {
+                    deleteMission(executingMission);
+                }
+            }
+        }
+
+        private void terminateState_Null(List<Job> jobs)
+        {
+            var terminateState_Null_jobs = jobs.Where(j => j.terminateState == null).ToList();
+            if (terminateState_Null_jobs == null || terminateState_Null_jobs.Count == 0) return;
+
+            foreach (var terminateState_Null_Job in terminateState_Null_jobs)
+            {
+                var Cancelmission = _repository.Missions.GetByJobId(terminateState_Null_Job.guid).Where(r => r.state == nameof(MissionState.CANCELED)).FirstOrDefault();
+                if (Cancelmission != null)
+                {
+                    terminateState_Null_Job.terminationType = nameof(TerminateType.CANCEL);
+                    terminateState_Null_Job.terminateState = nameof(TerminateState.INITED);
+                    terminateState_Null_Job.terminatingAt = DateTime.Now;
+                    terminateState_Null_Job.terminator = "JobScheduler";
+                    updateStateJob(terminateState_Null_Job, terminateState_Null_Job.state, true);
+                }
+            }
+        }
+
+        //누군가에 Cancel 을 전달 받은경우.
+        private void terminateState_Inited(List<Job> jobs)
+        {
+            var terminateState_INITED_Jobs = jobs.Where(j => j.terminateState == nameof(TerminateState.INITED)).ToList();
+            if (terminateState_INITED_Jobs == null || terminateState_INITED_Jobs.Count == 0) return;
+
+            foreach (var terminateState_INITED_Job in terminateState_INITED_Jobs)
+            {
+                var missions = _repository.Missions.GetByJobId(terminateState_INITED_Job.guid);
+                if (terminateState_INITED_Job.terminator.ToUpper() == "INATECH")
                 {
                     //관리자가 취소할경우
                     var cancelMissions = missions.Where(m => m.state != nameof(MissionState.COMPLETED)).ToList();
@@ -33,13 +83,14 @@ namespace JOB.Services
                         updateStateMission(cancelMission, nameof(MissionState.CANCELED));
                     }
 
-                    CancelJob.terminateState = nameof(TerminateState.EXECUTING);
-                    CancelJob.terminatingAt = DateTime.Now;
-                    updateStateJob(CancelJob, CancelJob.state, true);
-                    var order = _repository.Orders.GetByid(CancelJob.orderId);
+                    terminateState_INITED_Job.terminateState = nameof(TerminateState.EXECUTING);
+                    terminateState_INITED_Job.terminatingAt = DateTime.Now;
+                    updateStateJob(terminateState_INITED_Job, terminateState_INITED_Job.state, true);
+
+                    var order = _repository.Orders.GetByid(terminateState_INITED_Job.orderId);
                     if (order != null)
                     {
-                        switch (CancelJob.terminationType)
+                        switch (terminateState_INITED_Job.terminationType)
                         {
                             case nameof(TerminateType.CANCEL):
                                 updateStateOrder(order, OrderState.Canceling, true);
@@ -53,19 +104,21 @@ namespace JOB.Services
                 }
                 else
                 {
-                    //상위에서 취소할경우
+                    // 상위에서 취소할경우 unlock 일경우
                     var unlockMissions = missions.Where(m => m.isLocked == false).ToList();
-                    var cancelPossibleMission = unlockMissions.Where(m => m.state != nameof(MissionState.CANCELED)
-                                                                       && m.state != nameof(MissionState.PENDING)
+
+                    // 미션을 전송완료 하거나 진행중인것이 아닌 미션
+                    var cancelPossibleMission = unlockMissions.Where(m => m.state != nameof(MissionState.PENDING)
                                                                        && m.state != nameof(MissionState.COMMANDREQUESTCOMPLETED)
                                                                        && m.state != nameof(MissionState.EXECUTING)
-                                                                       && m.state != nameof(MissionState.COMPLETED)).FirstOrDefault();
+                                                                        && m.state != nameof(MissionState.COMPLETED)
+                                                                       ).FirstOrDefault();
 
                     if (cancelPossibleMission == null)
                     {
                         //취소할 Mission이없을경우
-                        CancelJob.terminateState = nameof(TerminateState.FAILED);
-                        updateStateJob(CancelJob, CancelJob.state, true);
+                        terminateState_INITED_Job.terminateState = nameof(TerminateState.FAILED);
+                        updateStateJob(terminateState_INITED_Job, terminateState_INITED_Job.state, true);
                     }
                     else
                     {
@@ -77,14 +130,14 @@ namespace JOB.Services
                             updateStateMission(cancelMission, nameof(MissionState.CANCELED));
                         }
 
-                        CancelJob.terminateState = nameof(TerminateState.EXECUTING);
-                        CancelJob.terminatingAt = DateTime.Now;
-                        updateStateJob(CancelJob, CancelJob.state, true);
+                        terminateState_INITED_Job.terminateState = nameof(TerminateState.EXECUTING);
+                        terminateState_INITED_Job.terminatingAt = DateTime.Now;
+                        updateStateJob(terminateState_INITED_Job, terminateState_INITED_Job.state, true);
 
-                        var order = _repository.Orders.GetByid(CancelJob.orderId);
+                        var order = _repository.Orders.GetByid(terminateState_INITED_Job.orderId);
                         if (order != null)
                         {
-                            switch (CancelJob.terminationType)
+                            switch (terminateState_INITED_Job.terminationType)
                             {
                                 case nameof(TerminateType.CANCEL):
                                     updateStateOrder(order, OrderState.Canceling, true);
@@ -186,8 +239,11 @@ namespace JOB.Services
                 case nameof(MissionType.ACTION):
                     if (mission.subType == nameof(MissionSubType.DOORCLOSE))
                     {
-                        var elevatorMoveMissions = _repository.Missions.GetAll().Where(r => r.subType == nameof(MissionSubType.ELEVATORENTERMOVE)
+                        var elevatorMoveMissions = _repository.Missions.GetAll().Where(r => r.subType == nameof(MissionSubType.ELEVATORWAITMOVE)
+                                                                                        || r.subType == nameof(MissionSubType.ELEVATORENTERMOVE)
                                                                                         || r.subType == nameof(MissionSubType.ELEVATOREXITMOVE)
+                                                                                        || r.subType == nameof(MissionSubType.RIGHTTURN)
+                                                                                        || r.subType == nameof(MissionSubType.LEFTTURN)
                                                                                         || r.subType == nameof(MissionSubType.SWITCHINGMAP)).ToList();
                         var runmission = _repository.Missions.GetByRunMissions(elevatorMoveMissions).FirstOrDefault();
 
@@ -220,18 +276,26 @@ namespace JOB.Services
             {
                 case nameof(MissionSubType.ELEVATORWAITMOVE):
                     //엘리베이터 대기위치 이고 점유중인 포지션이 아니고 현재워커와 맵아이디가 일치하는 것을 가지고온다.
-                    var elevatorWaitpositions = _repository.Positions.MiR_GetBySubType(nameof(PositionSubType.ELEVATORWAIT));
-                    var waitPosition = elevatorWaitpositions.FirstOrDefault(r => r.mapId == assignedWorker.mapId);
+                    //var elevatorWaitpositions = _repository.Positions.MiR_GetBySubType(nameof(PositionSubType.ELEVATORWAIT));
+                    //var waitPosition = elevatorWaitpositions.FirstOrDefault(r => r.mapId == assignedWorker.mapId);
 
-                    //var waitPositionNotOccupieds = _repository.Positions.MiR_GetNotOccupied(null, nameof(PositionSubType.ELEVATORWAIT));
-                    //var waitPosition = waitPositionNotOccupieds.FirstOrDefault(r => r.mapId == assignedWorker.mapId);
+                    //엘리베이터 대기위치 점유 상황을 판단하여 점유하고있지않은 포지션으로 전달한다.
+                    var waitPositionNotOccupieds = _repository.Positions.MiR_GetNotOccupied(null, nameof(PositionSubType.ELEVATORWAIT));
+                    var waitPosition = waitPositionNotOccupieds.FirstOrDefault(r => r.mapId == assignedWorker.mapId);
 
                     var waitparam = mission.parameters.FirstOrDefault(r => r.key == "target");
 
-                    if (waitPosition != null && waitparam.value == null)
+                    if (waitPosition != null)
                     {
-                        waitparam.value = waitPosition.id;
-                        completed = true;
+                        if (waitparam.value == null)
+                        {
+                            waitparam.value = waitPosition.id;
+                            completed = true;
+                        }
+                        else if (waitparam.value == waitPosition.id)
+                        {
+                            completed = true;
+                        }
                     }
 
                     break;
@@ -522,6 +586,41 @@ namespace JOB.Services
             //[조회] Worker 기준 Mission 목록 반환(시퀀스 순으로 정렬한다)
             _missions = _repository.Missions.GetByAssignedWorkerId(worker.id).OrderBy(s => s.sequence).ToList();
             return _missions;
+        }
+
+        private void ElevatorModeChange()
+        {
+            bool CommandRequst = false;
+            //엘리베이터 모드체인지 미션
+            var mission = _repository.Missions.GetAll().FirstOrDefault(m => m.service == nameof(Service.ELEVATOR) && m.type == nameof(MissionType.ACTION) && m.subType == nameof(MissionSubType.MODECHANGE));
+            if (mission != null && mission.state == nameof(MissionState.WAITING))
+            {
+                var elevatorApi = _repository.ServiceApis.GetAll().FirstOrDefault(r => r.type == "elevator");
+                if (elevatorApi != null)
+                {
+                    //[조건3] API 형식에 맞추어서 Mapping 을 한다.
+                    var mapping_mission = _mapping.Missions.ApiRequestDtoPostMission(mission);
+                    if (mapping_mission != null)
+                    {
+                        //[조건4] Service 로 Api Mission 전송을 한다.
+                        var postmission = elevatorApi.Api.ElevatorPostMissionQueueAsync(mapping_mission).Result;
+                        if (postmission != null)
+                        {
+                            //[조건5] 상태코드 200~300 까지는 완료 처리
+                            if (postmission.statusCode >= 200 && postmission.statusCode < 300)
+                            {
+                                EventLogger.Info($"PostMission Success = Service = {nameof(Service.ELEVATOR)}, Message = {postmission.statusText}, MissionName = {mission.name}, MissionId = {mission.guid}, AssignedWorkerId = {mission.assignedWorkerId}");
+                                CommandRequst = true;
+                            }
+                            else EventLogger.Info($"PostMission Failed = Service = {nameof(Service.ELEVATOR)}, Message = {postmission.message}, MissionName = {mission.name}, MissionId = {mission.guid}, AssignedWorkerId = {mission.assignedWorkerId}");
+                        }
+                    }
+                }
+                if (CommandRequst)
+                {
+                    updateStateMission(mission, nameof(MissionState.COMMANDREQUESTCOMPLETED), true);
+                }
+            }
         }
     }
 }

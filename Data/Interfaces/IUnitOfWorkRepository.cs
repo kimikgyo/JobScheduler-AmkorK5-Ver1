@@ -1,4 +1,5 @@
 ﻿using Data.Repositorys.Carriers;
+using Data.Repositorys.Elevators;
 using Data.Repositorys.Historys;
 using Data.Repositorys.Jobs;
 using Data.Repositorys.Maps;
@@ -20,6 +21,7 @@ namespace Data.Interfaces
         PositionRepository Positions { get; }
         WorkerRepository Workers { get; }
         MiddlewareRepogistory Middlewares { get; }
+        ElevatorRepository Elevator { get; }
 
         #endregion Base
 

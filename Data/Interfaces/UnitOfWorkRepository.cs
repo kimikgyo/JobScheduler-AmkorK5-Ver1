@@ -1,4 +1,5 @@
 ﻿using Data.Repositorys.Carriers;
+using Data.Repositorys.Elevators;
 using Data.Repositorys.Historys;
 using Data.Repositorys.Jobs;
 using Data.Repositorys.Maps;
@@ -31,6 +32,7 @@ namespace Data.Interfaces
         public WorkerRepository Workers { get; private set; }
         public PositionRepository Positions { get; private set; }
         public MiddlewareRepogistory Middlewares { get; private set; }
+        public ElevatorRepository Elevator { get; private set; }
 
         #endregion Base
 
@@ -71,6 +73,7 @@ namespace Data.Interfaces
             Workers = new WorkerRepository(connectionString);
             Positions = new PositionRepository(connectionString);
             Middlewares = new MiddlewareRepogistory(connectionString);
+            Elevator = new ElevatorRepository(connectionString);
 
             #endregion Base
 

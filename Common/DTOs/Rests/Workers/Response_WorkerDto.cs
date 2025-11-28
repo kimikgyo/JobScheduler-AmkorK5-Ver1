@@ -4,7 +4,7 @@ using System.Text.Json.Serialization;
 
 namespace Common.DTOs.Rests.Workers
 {
-    public class Response_Worker
+    public class Response_WorkerDto
     {
         [JsonPropertyOrder(1)] public string _id { get; set; }
         [JsonPropertyOrder(2)] public string source { get; set; }

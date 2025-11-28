@@ -6,7 +6,7 @@ namespace JOB.Mappings.Bases
 {
     public class WorkerMapping
     {
-        public Worker ApiGetResourceResponse(Response_Worker model)
+        public Worker ApiGetResourceResponse(Response_WorkerDto model)
         {
             var response = new Worker()
             {

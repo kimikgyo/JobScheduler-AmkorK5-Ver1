@@ -2,7 +2,7 @@
 
 namespace Common.DTOs.Rests.Positions
 {
-    public class Response_Position
+    public class Response_PositionDto
     {
         [JsonPropertyOrder(1)] public string _id { get; set; }
         [JsonPropertyOrder(2)] public string positionId { get; set; }

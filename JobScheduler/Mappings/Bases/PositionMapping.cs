@@ -6,7 +6,7 @@ namespace JOB.Mappings.Bases
 {
     public class PositionMapping
     {
-        public Position ApiGetResourceResponse(Response_Position model)
+        public Position ApiGetResourceResponse(Response_PositionDto model)
         {
             var response = new Position
             {
@@ -30,9 +30,9 @@ namespace JOB.Mappings.Bases
             return response;
         }
 
-        public Publish_Position MqttPublish(Position model)
+        public Publish_PositionDto MqttPublish(Position model)
         {
-            var publish = new Publish_Position()
+            var publish = new Publish_PositionDto()
             {
                 id = model.id,
                 source = model.source,

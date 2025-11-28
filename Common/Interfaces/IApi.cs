@@ -11,11 +11,11 @@ namespace Common.Interfaces
     {
         Uri BaseAddress { get; }
 
-        Task<List<Response_Worker>> GetResourceWorker();
+        Task<List<Response_WorkerDto>> GetResourceWorker();
 
         Task<List<Response_MapDto>> GetResourceMap();
 
-        Task<List<Response_Position>> GetResourcePosition();
+        Task<List<Response_PositionDto>> GetResourcePosition();
 
         Task<List<Response_CarrierDto>> GetResourceCarrier();
 
@@ -23,18 +23,18 @@ namespace Common.Interfaces
 
         Task<List<Response_JobTemplateDto>> AmkorGetResourceJobTemplate();
 
-        Task<ApResponseDto> WorkerPostMissionQueueAsync(object value);
+        Task<ApiResponseDto> WorkerPostMissionQueueAsync(object value);
 
-        Task<ApResponseDto> ElevatorPostMissionQueueAsync(object value);
+        Task<ApiResponseDto> ElevatorPostMissionQueueAsync(object value);
 
-        Task<ApResponseDto> MiddlewarePostMissionQueueAsync(object value);
+        Task<ApiResponseDto> MiddlewarePostMissionQueueAsync(object value);
 
-        Task<ApResponseDto> WorkerDeleteMissionQueueAsync(string id);
+        Task<ApiResponseDto> WorkerDeleteMissionQueueAsync(string id);
 
-        Task<ApResponseDto> MiddlewareDeleteMissionQueueAsync(string id);
+        Task<ApiResponseDto> MiddlewareDeleteMissionQueueAsync(string id);
 
-        Task<ApResponseDto> ElevatorDeletetMissionQueueAsync(string id);
+        Task<ApiResponseDto> ElevatorDeletetMissionQueueAsync(string id);
         
-        Task<ApResponseDto> PositionPatchAsync(string id, object value);
+        Task<ApiResponseDto> PositionPatchAsync(string id, object value);
     }
 }

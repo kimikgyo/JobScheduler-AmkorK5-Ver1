@@ -377,7 +377,7 @@ namespace JobScheduler.Services
             }
         }
 
-        private void ReloadWorker(List<Response_Worker> dtoResourceWorkers)
+        private void ReloadWorker(List<Response_WorkerDto> dtoResourceWorkers)
         {
             List<Worker> Reload = new List<Worker>();
             List<Middleware> ReloadMiddlewares = new List<Middleware>();
@@ -489,7 +489,7 @@ namespace JobScheduler.Services
             }
         }
 
-        private void ReloadPosition(List<Response_Position> dtoResourcePositions)
+        private void ReloadPosition(List<Response_PositionDto> dtoResourcePositions)
         {
             List<Position> Reload = new List<Position>();
             //update Add

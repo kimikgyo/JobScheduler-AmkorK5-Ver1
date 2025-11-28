@@ -2,7 +2,7 @@
 
 namespace Common.DTOs.MQTTs.Positions
 {
-    public class Publish_Position
+    public class Publish_PositionDto
     {
         [JsonPropertyOrder(1)] public string id { get; set; }
         [JsonPropertyOrder(2)] public string source { get; set; }

@@ -8,125 +8,131 @@ namespace JOB.Services
     {
         private void JobPlanner()
         {
-            createJob();
+            orderCreateJob();
+
             //createWaitControl();
             //createChargeControl();
+        }
+
+        private void orderCreateJob()
+        {
+            var initStatusOrders = _repository.Orders.GetByOrderStatus(nameof(OrderState.Queued));
+
+            foreach (var initStatusOrder in initStatusOrders)
+            {
+                var Job = _repository.Jobs.GetByOrderId(initStatusOrder.id, initStatusOrder.type, initStatusOrder.subType);
+                if (Job != null) continue;
+
+                bool reValue = createJob_Mission(initStatusOrder.type, initStatusOrder.subType
+                                                , initStatusOrder.id, initStatusOrder.carrierId, initStatusOrder.priority, initStatusOrder.drumKeyCode
+                                                , initStatusOrder.sourceId, initStatusOrder.destinationId, initStatusOrder.specifiedWorkerId, initStatusOrder.assignedWorkerId);
+
+                if (reValue == false)
+                {
+                    //템플릿에 없는경우
+                    initStatusOrder.state = nameof(OrderState.JobTemplateNotFind);
+                    _Queue.RemoveOrder(initStatusOrder, DateTime.Now);
+                    EventLogger.Info($"JobTemplate NotFind, OrderId = {initStatusOrder.id}");
+                }
+            }
         }
 
         /// <summary>
         /// Job 생성
         /// Job템플릿에서 선택하여서 Job 생성
         /// </summary>
-        private void createJob()
+        private bool createJob_Mission(string jobType, string jobSubtype
+                                     , string orderId, string carrierId, int priority, string drumKeyCode
+                                     , string sourceId, string destinationId
+                                     , string specifiedWorkerId, string assignedWorkerId)
         {
-            var initStatusOrders = _repository.Orders.GetByOrderStatus(nameof(OrderState.Queued));
+            bool reValue = false;
+            Position source = null;
+            Position destination = null;
+            bool selectJobflag = false;
+            JobTemplate selectJob = null;
 
-            foreach (var order in initStatusOrders)
+            //JobTemplates 타입과 서브타입으로 조회한다
+            var jobTemplates = _repository.JobTemplates.GeyByOrderType(jobType, jobSubtype);
+            //JobTemplates 조회가 되지않으면 //템플릿에 없는경우;
+            if (jobTemplates == null || jobTemplates.Count == 0) return reValue;
+
+            //도착지 포지션 조회
+            destination = _repository.Positions.MiR_GetById(destinationId);
+            if (destination == null) return reValue;
+
+            //orderType 빈문자를제외후 대문자로 변환
+            string orderType = jobType;
+
+            //orderSubType 빈문자를제외후 대문자로 변환
+            string orderSubType = jobSubtype;
+
+            switch (orderType)
             {
-                Position source = null;
-                Position destination = null;
-                bool selectJobflag = false;
-                JobTemplate selectJob = null;
-                var Job = _repository.Jobs.GetByOrderId(order.id, order.type, order.subType);
-                if (Job != null) continue;
-                //JobTemplates 타입과 서브타입으로 조회한다
-                var jobTemplates = _repository.JobTemplates.GeyByOrderType(order.type, order.subType);
-                //JobTemplates 조회가 되지않으면 continue;
-                if (jobTemplates == null || jobTemplates.Count == 0)
-                {
-                    //템플릿에 없는경우
-                    order.state = nameof(OrderState.JobTemplateNotFind);
-                    _Queue.RemoveOrder(order, DateTime.Now);
-                    EventLogger.Info($"JobTemplate NotFind, OrderId = {order.id}");
-                    continue;
-                }
-
-                //도착지 포지션 조회
-                destination = _repository.Positions.MiR_GetById(order.destinationId);
-                if (destination == null) continue;
-
-                //orderType 빈문자를제외후 대문자로 변환
-                string orderType = order.type;
-
-                //orderSubType 빈문자를제외후 대문자로 변환
-                string orderSubType = order.subType;
-
-                switch (orderType)
-                {
-                    case nameof(JobType.TRANSPORT):
-                    case nameof(JobType.TRANSPORTCHEMICALSUPPLY):
-                    case nameof(JobType.TRANSPORTCHEMICALRECOVERY):
-                    case nameof(JobType.TRANSPORTSLURRYSUPPLY):
-                    case nameof(JobType.TRANSPORTSLURRYRECOVERY):
-
-                        if (IsInvalid(order.sourceId))
-                        {
-                            //지정 Worker 조회
-                            var worker = _repository.Workers.MiR_GetById(order.specifiedWorkerId);
-                            if (worker == null) break;
-                            //Worker그룹과 JobTemplate 그룹을 비교하여 조회한다
-                            jobTemplates = jobTemplates.Where(jt => jt.group == worker.group).ToList();
-                            //조회한내용이없으면 continue
-                            if (jobTemplates == null || jobTemplates.Count == 0) break;
-                            if (worker.mapId != destination.mapId)
-                            {
-                                jobTemplates = jobTemplates.Where(m => m.subType == $"{order.subType}WITHEV").ToList();
-                                if (jobTemplates == null || jobTemplates.Count == 0) break;
-                            }
-                        }
-                        else
-                        {
-                            //출발지 조회
-                            source = _repository.Positions.MiR_GetById(order.sourceId);
-                            if (source == null) break;
-
-                            //그룹 조회
-                            jobTemplates = jobTemplates.Where(m => m.group == source.group).ToList();
-                            if (jobTemplates == null || jobTemplates.Count == 0) break;
-
-                            if (source.mapId != destination.mapId)
-                            {
-                                jobTemplates = jobTemplates.Where(m => m.subType == $"{order.subType}WITHEV").ToList();
-                                if (jobTemplates == null || jobTemplates.Count == 0) break;
-                            }
-                        }
-                        selectJob = selectJobTemplate(jobTemplates, source, destination);
-
-                        break;
-
-                    case nameof(JobType.MOVE):
-                    case nameof(JobType.CHARGE):
-                    case nameof(JobType.WAIT):
-                    case nameof(JobType.RESET):
-                        if (order.sourceId != null) source = _repository.Positions.MiR_GetById(order.sourceId);
-                        selectJob = selectJobTemplate(jobTemplates, source, destination);
-                        break;
-                }
-                if (selectJob != null)
-                {
-                    if (source == null)
+                case nameof(JobType.TRANSPORT):
+                case nameof(JobType.TRANSPORTCHEMICALSUPPLY):
+                case nameof(JobType.TRANSPORTCHEMICALRECOVERY):
+                case nameof(JobType.TRANSPORTSLURRYSUPPLY):
+                case nameof(JobType.TRANSPORTSLURRYRECOVERY):
+                case nameof(JobType.MOVE):
+                case nameof(JobType.CHARGE):
+                case nameof(JobType.WAIT):
+                case nameof(JobType.RESET):
+                    if (IsInvalid(sourceId))
                     {
-                        _Queue.CreateJobMission(selectJob, order.id, order.carrierId, order.priority, order.drumKeyCode
-                                                , null, null, null
-                                                , destination.id, destination.name, destination.linkedFacility
-                                                , order.specifiedWorkerId, order.assignedWorkerId);
+                        //지정 Worker 조회
+                        var worker = _repository.Workers.MiR_GetById(specifiedWorkerId);
+                        if (worker == null) break;
+                        //Worker그룹과 JobTemplate 그룹을 비교하여 조회한다
+                        jobTemplates = jobTemplates.Where(jt => jt.group == worker.group).ToList();
+                        //조회한내용이없으면 continue
+                        if (jobTemplates == null || jobTemplates.Count == 0) break;
+                        if (worker.mapId != destination.mapId)
+                        {
+                            jobTemplates = jobTemplates.Where(m => m.subType == $"{jobSubtype}WITHEV").ToList();
+                            if (jobTemplates == null || jobTemplates.Count == 0) break;
+                        }
                     }
                     else
                     {
-                        _Queue.CreateJobMission(selectJob, order.id, order.carrierId, order.priority, order.drumKeyCode
-                                                , source.id, source.name, source.linkedFacility
-                                                , destination.id, destination.name, destination.linkedFacility
-                                                , order.specifiedWorkerId, order.assignedWorkerId);
+                        //출발지 조회
+                        source = _repository.Positions.MiR_GetById(sourceId);
+                        if (source == null) break;
+
+                        //그룹 조회
+                        jobTemplates = jobTemplates.Where(m => m.group == source.group).ToList();
+                        if (jobTemplates == null || jobTemplates.Count == 0) break;
+
+                        if (source.mapId != destination.mapId)
+                        {
+                            jobTemplates = jobTemplates.Where(m => m.subType == $"{jobSubtype}WITHEV").ToList();
+                            if (jobTemplates == null || jobTemplates.Count == 0) break;
+                        }
                     }
+                    selectJob = selectJobTemplate(jobTemplates, source, destination);
+
+                    break;
+            }
+            if (selectJob != null)
+            {
+                if (source == null)
+                {
+                    _Queue.CreateJobMission(selectJob, orderId, carrierId, priority, drumKeyCode
+                                            , null, null, null
+                                            , destination.id, destination.name, destination.linkedFacility
+                                            , specifiedWorkerId, assignedWorkerId);
+                    reValue = true;
                 }
                 else
                 {
-                    //템플릿에 없는경우
-                    order.state = nameof(OrderState.JobTemplateNotFind);
-                    _Queue.RemoveOrder(order, DateTime.Now);
-                    EventLogger.Info($"JobTemplate NotFind, OrderId = {order.id}");
+                    _Queue.CreateJobMission(selectJob, orderId, carrierId, priority, drumKeyCode
+                                            , source.id, source.name, source.linkedFacility
+                                            , destination.id, destination.name, destination.linkedFacility
+                                            , specifiedWorkerId, assignedWorkerId);
+                    reValue = true;
                 }
             }
+            return reValue;
         }
 
         private JobTemplate selectJobTemplate(List<JobTemplate> jobTemplates, Position source, Position destination)
@@ -383,30 +389,7 @@ namespace JOB.Services
 
                     if (DestPosition != null)
                     {
-                        //Wait템플릿 에서 확인후에 job을 setting
-                        var WaitTemplates = _repository.JobTemplates.GeyByOrderType(nameof(JobType.WAIT), nameof(JobSubType.WAIT));
-                        if (WaitTemplates != null)
-                        {
-                            if (DestPosition.mapId == worker.mapId)
-                            {
-                                WaitTemplates = WaitTemplates.Where(r => r.subType == nameof(JobSubType.WAIT)).ToList();
-                            }
-                            else
-                            {
-                                WaitTemplates = WaitTemplates.Where(r => r.subType == $"{nameof(JobSubType.WAIT)}WITHEV").ToList();
-                            }
-
-                            JobTemplate selectJob = null;
-                            selectJob = selectJobTemplate(WaitTemplates, null, DestPosition);
-                            if (selectJob != null)
-                            {
-                                //Job이랑 미션 생성
-                                _Queue.CreateJobMission(selectJob, null, null, 0, null
-                                                        , null, null, null
-                                                        , DestPosition.id, DestPosition.name, DestPosition.linkedFacility
-                                                        , worker.id, null);
-                            }
-                        }
+                        createJob_Mission(nameof(JobType.WAIT), nameof(JobSubType.WAIT), null, null, 0, null, null, DestPosition.id, worker.id, null);
                     }
                 }
             }

@@ -1,5 +1,6 @@
 ﻿using Common.Models.Bases;
 using Common.Models.Jobs;
+using System.Reflection;
 using System.Text.Json;
 
 namespace JOB.Services
@@ -275,28 +276,12 @@ namespace JOB.Services
             switch (mission.subType)
             {
                 case nameof(MissionSubType.ELEVATORWAITMOVE):
-                    //엘리베이터 대기위치 이고 점유중인 포지션이 아니고 현재워커와 맵아이디가 일치하는 것을 가지고온다.
-                    //var elevatorWaitpositions = _repository.Positions.MiR_GetBySubType(nameof(PositionSubType.ELEVATORWAIT));
-                    //var waitPosition = elevatorWaitpositions.FirstOrDefault(r => r.mapId == assignedWorker.mapId);
 
                     //엘리베이터 대기위치 점유 상황을 판단하여 점유하고있지않은 포지션으로 전달한다.
                     var waitPositionNotOccupieds = _repository.Positions.MiR_GetNotOccupied(null, nameof(PositionSubType.ELEVATORWAIT));
-                    var waitPosition = waitPositionNotOccupieds.FirstOrDefault(r => r.mapId == assignedWorker.mapId);
+                    if (waitPositionNotOccupieds == null || waitPositionNotOccupieds.Count == 0) break;
 
-                    var waitparam = mission.parameters.FirstOrDefault(r => r.key == "target");
-
-                    if (waitPosition != null)
-                    {
-                        if (waitparam.value == null)
-                        {
-                            waitparam.value = waitPosition.id;
-                            completed = true;
-                        }
-                        else if (waitparam.value == waitPosition.id)
-                        {
-                            completed = true;
-                        }
-                    }
+                    completed = elevatorWaitParameterMapping(waitPositionNotOccupieds, mission, assignedWorker);
 
                     break;
 
@@ -329,19 +314,10 @@ namespace JOB.Services
                     break;
 
                 case nameof(MissionSubType.ELEVATOREXITMOVE):
-                    var elevatorExitpositions = _repository.Positions.MiR_GetBySubType(nameof(PositionSubType.ELEVATOREXIT));
-                    var exitPosition = elevatorExitpositions.FirstOrDefault(r => r.mapId == assignedWorker.mapId);
+                    var elevatorExitpositions = _repository.Positions.MiR_GetNotOccupied(null, nameof(PositionSubType.ELEVATOREXIT));
+                    if (elevatorExitpositions == null || elevatorExitpositions.Count == 0) break;
 
-                    //var waitPositionNotOccupieds = _repository.Positions.MiR_GetNotOccupied(null, nameof(PositionSubType.ELEVATOREXIT));
-                    //var waitPosition = waitPositionNotOccupieds.FirstOrDefault(r => r.mapId == assignedWorker.mapId);
-
-                    var exitparam = mission.parameters.FirstOrDefault(r => r.key == "target");
-
-                    if (exitPosition != null && exitparam.value == null)
-                    {
-                        exitparam.value = exitPosition.id;
-                        completed = true;
-                    }
+                    completed = elevatorExitParameterMapping(elevatorExitpositions, mission, assignedWorker);
 
                     break;
 
@@ -352,20 +328,84 @@ namespace JOB.Services
             return completed;
         }
 
+        private bool elevatorExitParameterMapping(List<Position> positions, Mission mission, Worker worker)
+        {
+            bool completed = false;
+            var Position = positions.FirstOrDefault(r => r.mapId == worker.mapId);
+            if (Position != null)
+            {
+                var param = mission.parameters.FirstOrDefault(r => r.key == "target");
+                if (param.value == null)
+                {
+                    param.value = Position.id;
+                    mission.parametersJson = JsonSerializer.Serialize(mission.parameters);
+                    _repository.Missions.Update(mission);
+                    completed = true;
+                }
+                if (completed == true)
+                {
+                    //직접 파라메타를 변경하는것이기때문에 포지션점유를 업데이트한다
+                    updateOccupied(Position, true);
+                }
+            }
+
+            return completed;
+        }
+
+        private bool elevatorWaitParameterMapping(List<Position> positions, Mission mission, Worker worker)
+        {
+            bool completed = false;
+            var Position = positions.FirstOrDefault(r => r.mapId == worker.mapId);
+            if (Position != null)
+            {
+                var param = mission.parameters.FirstOrDefault(r => r.key == "target");
+
+                if (param.value == null)
+                {
+                    param.value = Position.id;
+                    mission.parametersJson = JsonSerializer.Serialize(mission.parameters);
+                    _repository.Missions.Update(mission);
+                    completed = true;
+                }
+                else if (param.value == Position.id)
+                {
+                    completed = true;
+                }
+
+                if (completed == true)
+                {
+                    //직접 파라메타를 변경하는것이기때문에 포지션점유를 업데이트한다
+                    updateOccupied(Position, true);
+                }
+            }
+
+            return completed;
+        }
+
         private bool elevatorEnterParameterMapping(List<Position> positions, Mission mission, Worker worker)
         {
             bool completed = false;
-            var enterPosition = positions.FirstOrDefault(r => r.mapId == worker.mapId);
-            if (enterPosition != null)
+            var Position = positions.FirstOrDefault(r => r.mapId == worker.mapId);
+            if (Position != null)
             {
                 //이동 포지션 적용
                 var param = mission.parameters.FirstOrDefault(r => r.key == "target");
                 if (param.value == null)
                 {
-                    param.value = enterPosition.id;
+                    param.value = Position.id;
                     mission.parametersJson = JsonSerializer.Serialize(mission.parameters);
                     _repository.Missions.Update(mission);
                     completed = true;
+                }
+                else if (param.value == Position.id)
+                {
+                    completed = true;
+                }
+
+                if (completed == true)
+                {
+                    //직접 파라메타를 변경하는것이기때문에 포지션점유를 업데이트한다
+                    updateOccupied(Position, true);
                 }
             }
 
@@ -393,147 +433,19 @@ namespace JOB.Services
                             mapSwitchParam.value = mapSwitchPosition.id;
                             switchMapMission.parametersJson = JsonSerializer.Serialize(switchMapMission.parameters);
                             _repository.Missions.Update(switchMapMission);
+
                             completed = true;
+                        }
+                        if (completed == true)
+                        {
+                            //직접 파라메타를 변경하는것이기때문에 포지션점유를 업데이트한다
+                            updateOccupied(mapSwitchPosition, true);
                         }
                     }
                 }
             }
+
             return completed;
-        }
-
-        /// <summary>
-        /// [Sub] postMissionControl
-        /// 미션 전송 ACS -> Service
-        /// </summary>
-        /// <param name="mission"></param>
-        /// <returns></returns>
-        private bool postMission(Mission mission)
-        {
-            bool CommandRequst = false;
-            //[조건1] 미션 상태가 COMMANDREQUEST 다르면 COMMANDREQUEST 로 상태변경한다
-
-            updateStateMission(mission, nameof(MissionState.COMMANDREQUEST), true);
-
-            switch (mission.service)
-            {
-                case nameof(Service.WORKER):
-                    //[조건2] Service Api를 조회한다.
-                    var workerApi = _repository.ServiceApis.GetAll().FirstOrDefault(r => r.type == "worker");
-                    if (workerApi != null)
-                    {
-                        bool elevatorparamMapping = workerElevatorParameterMapping(mission);
-                        if (elevatorparamMapping)
-                        {
-                            //[조건3] API 형식에 맞추어서 Mapping 을 한다.
-                            var mapping_mission = _mapping.Missions.ApiRequestDtoPostMission(mission);
-                            if (mapping_mission != null)
-                            {
-                                //[조건4] Service 로 Api Mission 전송을 한다.
-                                var postmission = workerApi.Api.WorkerPostMissionQueueAsync(mapping_mission).Result;
-                                if (postmission != null)
-                                {
-                                    //[조건5] 상태코드 200~300 까지는 완료 처리
-                                    if (postmission.statusCode >= 200 && postmission.statusCode < 300)
-                                    {
-                                        EventLogger.Info($"PostMission Success = Service = {nameof(Service.WORKER)}, Message = {postmission.statusText}, MissionName = {mission.name}, MissionId = {mission.guid}, AssignedWorkerId = {mission.assignedWorkerId}");
-                                        CommandRequst = true;
-                                    }
-                                    else EventLogger.Info($"PostMission Failed = Service = {nameof(Service.WORKER)}, Message = {postmission.message}, MissionName = {mission.name}, MissionId = {mission.guid}, AssignedWorkerId = {mission.assignedWorkerId}");
-                                }
-                            }
-                        }
-                    }
-
-                    break;
-
-                case nameof(Service.MIDDLEWARE):
-                    //미들웨어 전송 API로
-                    var middlewareApi = _repository.ServiceApis.GetAll().FirstOrDefault(r => r.type == "worker");
-                    if (middlewareApi != null)
-                    {
-                        var mapping_mission = _mapping.Missions.ApiRequestDtoPostMission(mission);
-                        if (mapping_mission != null)
-                        {
-                            var postmission = middlewareApi.Api.MiddlewarePostMissionQueueAsync(mapping_mission).Result;
-                            if (postmission != null)
-                            {
-                                if (postmission.statusCode >= 200 && postmission.statusCode < 300)
-                                {
-                                    EventLogger.Info($"PostMission Success = Service = {nameof(Service.MIDDLEWARE)}, Message = {postmission.statusText}, MissionId = {mission.guid}, AssignedWorkerId = {mission.assignedWorkerId}");
-                                    CommandRequst = true;
-                                }
-                                else EventLogger.Info($"PostMission Failed = Service = {nameof(Service.MIDDLEWARE)}, Message = {postmission.message}, MissionId = {mission.guid}, AssignedWorkerId = {mission.assignedWorkerId}");
-                            }
-                        }
-                    }
-                    break;
-
-                case nameof(Service.ELEVATOR):
-                    var elevatorApi = _repository.ServiceApis.GetAll().FirstOrDefault(r => r.type == "elevator");
-                    if (elevatorApi != null)
-                    {
-                        //[조건3] API 형식에 맞추어서 Mapping 을 한다.
-                        var mapping_mission = _mapping.Missions.ApiRequestDtoPostMission(mission);
-                        if (mapping_mission != null)
-                        {
-                            //[조건4] Service 로 Api Mission 전송을 한다.
-                            var postmission = elevatorApi.Api.ElevatorPostMissionQueueAsync(mapping_mission).Result;
-                            if (postmission != null)
-                            {
-                                //[조건5] 상태코드 200~300 까지는 완료 처리
-                                if (postmission.statusCode >= 200 && postmission.statusCode < 300)
-                                {
-                                    EventLogger.Info($"PostMission Success = Service = {nameof(Service.ELEVATOR)}, Message = {postmission.statusText}, MissionName = {mission.name}, MissionId = {mission.guid}, AssignedWorkerId = {mission.assignedWorkerId}");
-                                    CommandRequst = true;
-                                }
-                                else EventLogger.Info($"PostMission Failed = Service = {nameof(Service.ELEVATOR)}, Message = {postmission.message}, MissionName = {mission.name}, MissionId = {mission.guid}, AssignedWorkerId = {mission.assignedWorkerId}");
-                            }
-                        }
-                    }
-                    break;
-            }
-            if (CommandRequst)
-            {
-                updateStateMission(mission, nameof(MissionState.COMMANDREQUESTCOMPLETED), true);
-            }
-            return CommandRequst;
-        }
-
-        /// <summary>
-        /// postDeleteMission
-        /// 미션 삭제 요청 ACS -> Service
-        /// </summary>
-        /// <param name="mission"></param>
-        private void deleteMission(Mission mission)
-        {
-            switch (mission.service)
-            {
-                case nameof(Service.WORKER):
-                    //Worker 전송 API로
-                    var workerApi = _repository.ServiceApis.GetAll().FirstOrDefault(r => r.type == "worker");
-                    if (workerApi != null)
-                    {
-                        var postmission = workerApi.Api.WorkerDeleteMissionQueueAsync(mission.guid).Result;
-                        if (postmission != null)
-                        {
-                            if (postmission.statusCode >= 200 && postmission.statusCode < 300)
-                            {
-                                EventLogger.Info($"DeleteMission Success = Service = {nameof(Service.WORKER)}, Message = {postmission.statusText}, MissionId = {mission.guid}, AssignedWorkerId = {mission.assignedWorkerId}");
-                            }
-                            else EventLogger.Info($"DeleteMission Failed = Service = {nameof(Service.WORKER)}, Message = {postmission.message}, MissionId = {mission.guid}, AssignedWorkerId = {mission.assignedWorkerId}");
-                        }
-                    }
-
-                    break;
-
-                case nameof(Service.MIDDLEWARE):
-
-                    break;
-
-                case nameof(Service.ELEVATOR):
-
-                    break;
-            }
         }
 
         /// <summary>
@@ -591,34 +503,24 @@ namespace JOB.Services
         private void ElevatorModeChange()
         {
             bool CommandRequst = false;
-            //엘리베이터 모드체인지 미션
-            var mission = _repository.Missions.GetAll().FirstOrDefault(m => m.service == nameof(Service.ELEVATOR) && m.type == nameof(MissionType.ACTION) && m.subType == nameof(MissionSubType.MODECHANGE));
+            var missions = _repository.Missions.GetAll();
+            if (missions == null || missions.Count() == 0) return;
+
+            var mission = missions.FirstOrDefault(m => m.service == nameof(Service.ELEVATOR) && m.type == nameof(MissionType.ACTION) && m.subType == nameof(MissionSubType.MODECHANGE));
             if (mission != null && mission.state == nameof(MissionState.WAITING))
             {
-                var elevatorApi = _repository.ServiceApis.GetAll().FirstOrDefault(r => r.type == "elevator");
-                if (elevatorApi != null)
+                //엘리베이터 모드체인지 미션
+                var Jobs = _repository.Jobs.GetAll();
+                //JOb 중에 WITHEV 미션을 가지고 있고 워커가 지정되어 이 되어있지않을 경우 !!! 
+                var withEv_Job = Jobs.FirstOrDefault(r => r.subType.Contains("WITHEV") && !IsInvalid(r.assignedWorkerId));
+                if (withEv_Job == null)
                 {
-                    //[조건3] API 형식에 맞추어서 Mapping 을 한다.
-                    var mapping_mission = _mapping.Missions.ApiRequestDtoPostMission(mission);
-                    if (mapping_mission != null)
+                    CommandRequst = ElevatorPostMission(mission);
+
+                    if (CommandRequst)
                     {
-                        //[조건4] Service 로 Api Mission 전송을 한다.
-                        var postmission = elevatorApi.Api.ElevatorPostMissionQueueAsync(mapping_mission).Result;
-                        if (postmission != null)
-                        {
-                            //[조건5] 상태코드 200~300 까지는 완료 처리
-                            if (postmission.statusCode >= 200 && postmission.statusCode < 300)
-                            {
-                                EventLogger.Info($"PostMission Success = Service = {nameof(Service.ELEVATOR)}, Message = {postmission.statusText}, MissionName = {mission.name}, MissionId = {mission.guid}, AssignedWorkerId = {mission.assignedWorkerId}");
-                                CommandRequst = true;
-                            }
-                            else EventLogger.Info($"PostMission Failed = Service = {nameof(Service.ELEVATOR)}, Message = {postmission.message}, MissionName = {mission.name}, MissionId = {mission.guid}, AssignedWorkerId = {mission.assignedWorkerId}");
-                        }
+                        updateStateMission(mission, nameof(MissionState.COMMANDREQUESTCOMPLETED), true);
                     }
-                }
-                if (CommandRequst)
-                {
-                    updateStateMission(mission, nameof(MissionState.COMMANDREQUESTCOMPLETED), true);
                 }
             }
         }

@@ -100,11 +100,32 @@ namespace JOB.MQTTs
 
         public async Task PublishAsync(string topic, string payload)
         {
+            bool retain = false;
+            ////retain 적용해야 하는 특정 Topic
+            //string retainTopic = "acs/elevator/NO1/status";
+
+            //// 현재 Topic이 retain 토픽인지 체크
+            //if (topic == retainTopic)
+            //{
+            //    retain = true;
+            //}
+
             var message = new MqttApplicationMessageBuilder()
+                // 메시지를 보낼 Topic 지정
+                // 예: "acs/worker/123/state"
                 .WithTopic(topic)
+                // 메시지 Payload(내용) 설정
+                // byte[] 또는 string → 브로커로 전달될 실제 데이터
                 .WithPayload(payload)
+                // QoS(전달품질) 설정: ExactlyOnce
+                // - AtMostOnce(0): 최대 1번 (빠르지만 유실 가능)
+                // - AtLeastOnce(1): 최소 1번 (중복 가능)
+                // - ExactlyOnce(2): 정확히 1번 (가장 안정적, 속도는 느림)
                 .WithQualityOfServiceLevel(MQTTnet.Protocol.MqttQualityOfServiceLevel.ExactlyOnce)
-                .WithRetainFlag(false)
+                // Retain(리테인) 플래그 설정
+                // false = retain 사용 안 함 (메시지 보관 X)
+                // true  = retain 사용 (브로커가 마지막 메시지를 저장)
+                .WithRetainFlag(retain)
                 .Build();
 
             await _publishMessageChannel.Writer.WriteAsync(message, _cancellationTokenSource.Token);

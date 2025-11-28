@@ -24,6 +24,14 @@ namespace JOB.Services
             var batterySetting = _repository.Battery.GetAll();
             if (batterySetting == null) return;
 
+            //엘리베이터가 NOTAGV모드일경우 층간이송 워커에게할당하지 않는다.
+            var elevator = _repository.Elevator.GetById("NO1");
+            if(elevator == null || elevator.mode == "NOTAGVMODE" || elevator.state == "PROTOCOLERROR")
+            {
+                UnAssignedWorkerJobs = UnAssignedWorkerJobs.Where(r => r.subType.EndsWith("WITHEV") == false).ToList();
+            }
+
+
             //순차적용
             firstJob(UnAssignedWorkerJobs, batterySetting);
             //거리순 적용

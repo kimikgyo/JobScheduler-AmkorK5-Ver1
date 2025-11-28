@@ -19,7 +19,7 @@ namespace JOB.Services
         public readonly IUnitOfWorkJobMissionQueue _Queue;
         public readonly IUnitOfWorkMapping _mapping;
         public readonly IUnitofWorkMqttQueue _mqttQueue;
-
+        private readonly object _positionLock = new object();
         private MainService main = null;
 
         //    현재 실행 중인 작업들을 추적하기 위한 리스트
@@ -229,10 +229,13 @@ namespace JOB.Services
 
         public void updateOccupied(Position position, bool flag)
         {
-            if (position.isOccupied != flag)
+            lock (_positionLock)
             {
-                position.isOccupied = flag;
-                _repository.Positions.update(position);
+                if (position.isOccupied != flag)
+                {
+                    position.isOccupied = flag;
+                    _repository.Positions.update(position);
+                }
             }
         }
 

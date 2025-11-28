@@ -33,6 +33,8 @@ namespace Common.Interfaces
 
         Task<ApResponseDto> MiddlewareDeleteMissionQueueAsync(string id);
 
+        Task<ApResponseDto> ElevatorDeletetMissionQueueAsync(string id);
+        
         Task<ApResponseDto> PositionPatchAsync(string id, object value);
     }
 }

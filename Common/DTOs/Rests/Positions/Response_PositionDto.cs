@@ -21,10 +21,11 @@ namespace Common.DTOs.Rests.Positions
         [JsonPropertyOrder(15)] public string linkedFacility { get; set; }
         [JsonPropertyOrder(16)] public string linkedRobotId { get; set; }
         [JsonPropertyOrder(17)] public bool hasCharger { get; set; }
-        [JsonPropertyOrder(18)] public DateTime createdAt { get; set; }
-        [JsonPropertyOrder(19)] public DateTime updatedAt { get; set; }
-        [JsonPropertyOrder(20)] public string createdBy { get; set; }
-        [JsonPropertyOrder(21)] public string updatedBy { get; set; }
+        [JsonPropertyOrder(18)] public bool nodeType { get; set; }
+        [JsonPropertyOrder(19)] public DateTime createdAt { get; set; }
+        [JsonPropertyOrder(20)] public DateTime updatedAt { get; set; }
+        [JsonPropertyOrder(21)] public string createdBy { get; set; }
+        [JsonPropertyOrder(22)] public string updatedBy { get; set; }
 
         public override string ToString()
         {
@@ -47,6 +48,7 @@ namespace Common.DTOs.Rests.Positions
                 $",linkedFacility = {linkedFacility,-5}" +
                 $",linkedRobotId = {linkedRobotId,-5}" +
                 $",hasCharger = {hasCharger,-5}" +
+                $",nodeType = {nodeType,-5}" +
                 $",createdAt = {createdAt,-5}" +
                 $",updatedAt = {updatedAt,-5}" +
                 $",createdBy = {createdBy,-5}" +
@@ -62,5 +64,4 @@ namespace Common.DTOs.Rests.Positions
         //    });
         //}
     }
-
 }

@@ -35,7 +35,6 @@ namespace JobScheduler.Services
         {
             bool Complete = false;
             bool Resource = false;
-            bool Template = false;
 
             bool GetWorkerData = false;
             bool ResourceData = false;
@@ -110,29 +109,9 @@ namespace JobScheduler.Services
                                 Resource = true;
                             }
                         }
-                        if (serviceApi.type == "Template")
-                        {
-                            _repository.JobTemplates.Delete();
-                            var JobTemplates = await serviceApi.Api.AmkorGetResourceJobTemplate();
-                            if (JobTemplates == null)
-                            {
-                                _eventlog.Info($"{nameof(JobTemplates)}GetDataFail");
-                                break;
-                            }
-                            else
-                            {
-                                foreach (var getJobTemplate in JobTemplates)
-                                {
-                                    var JobTemplate = _mapping.JobTemplates.ApiGetResourceResponse(getJobTemplate);
-                                    _repository.JobTemplates.Add(JobTemplate);
-                                }
-                                Template = true;
-                            }
-                        }
                     }
                     Resource = true;
-                    Template = true;
-                    if (Resource && Template)
+                    if (Resource)
                     {
                         Complete = true;
                         ConfigData.SubscribeTopics = suscreibeTopicsAdd();
@@ -207,7 +186,6 @@ namespace JobScheduler.Services
         {
             bool Complete = false;
             bool Resource = false;
-            bool Template = false;
 
             bool GetWorkerData = false;
             bool ResourceData = false;
@@ -253,28 +231,8 @@ namespace JobScheduler.Services
                                 Resource = true;
                             }
                         }
-                        if (serviceApi.type == "Template")
-                        {
-                            var JobTemplates = await serviceApi.Api.AmkorGetResourceJobTemplate();
-                            if (JobTemplates == null)
-                            {
-                                _eventlog.Info($"{nameof(JobTemplates)}GetDataFail");
-                                break;
-                            }
-                            else
-                            {
-                                //JobTemplate경우 전부 삭제후 다시 가지고와도됨!
-                                _repository.JobTemplates.Delete();
-                                foreach (var getJobTemplate in JobTemplates)
-                                {
-                                    var JobTemplate = _mapping.JobTemplates.ApiGetResourceResponse(getJobTemplate);
-                                    _repository.JobTemplates.Add(JobTemplate);
-                                }
-                                Template = true;
-                            }
-                        }
                     }
-                    if (Resource && Template)
+                    if (Resource)
                     {
                         Complete = true;
                         ConfigData.SubscribeTopics = mqttTopicSubscribes;

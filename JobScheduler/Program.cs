@@ -8,6 +8,8 @@ using JobScheduler.Services;
 using log4net;
 using log4net.Config;
 using Microsoft.OpenApi.Models;
+using System.Net;
+using System.Net.Sockets;
 using System.Reflection;
 
 // log4net 설정 로딩
@@ -37,11 +39,25 @@ try
         });
     });
 
+    // === 기본 NIC IP 조회 함수 ===
+    string GetLocalIPAddress()
+    {
+        return Dns.GetHostEntry(Dns.GetHostName())
+            .AddressList
+            .FirstOrDefault(ip =>
+                ip.AddressFamily == AddressFamily.InterNetwork &&
+                !ip.ToString().StartsWith("169.") &&
+                !ip.ToString().StartsWith("127.")
+            )?.ToString() ?? "0.0.0.0";
+    }
+
+    // === 기본 NIC IP 자동 찾기 ===
+    string localIp = GetLocalIPAddress();
 
     //Kestrel 설정을 appsettings.json에서 읽어오도록 설정
     builder.WebHost.ConfigureKestrel(options =>
     {
-        options.Configure(builder.Configuration.GetSection("Kestrel"));
+        options.ListenAnyIP(5189); // 압도적으로 가장 편한 방법 ★
     });
 
     #region 의존성 주입 [DI설명 및 설정]

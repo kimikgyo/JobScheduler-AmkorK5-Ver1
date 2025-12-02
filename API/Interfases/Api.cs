@@ -1,6 +1,7 @@
 ﻿using Common.DTOs.Rests.Carriers;
 using Common.DTOs.Rests.JobTemplates;
 using Common.DTOs.Rests.Maps;
+using Common.DTOs.Rests.Nodes_Edges;
 using Common.DTOs.Rests.Positions;
 using Common.DTOs.Rests.Workers;
 using Common.Interfaces;
@@ -87,25 +88,16 @@ namespace RestApi.Interfases
             }
         }
 
-        public async Task<List<Response_JobTemplateDto>> STIGetResourceJobTemplate()
+        public async Task<Response_Node_EdgeDto> Post_Routes_Plan_Async(object value)
         {
-            try
-            {
-                string jsonString = await _httpClient.GetStringAsync("api/JobTemplates/STI");
-                return await _httpClient.GetFromJsonAsync<List<Response_JobTemplateDto>>("api/JobTemplates/STI");
-            }
-            //catch (Exception ex) when (True(() => _logger.Error(ex)))
-            catch (Exception ex) when (True(() => ApiLogger.Error($"IPAddress = {_httpClient.BaseAddress}" + "\r\n" + ex)))
-            {
-                return null;
-            }
-        }
+            if (!AcceptFilterUtility.WriteAccepted) { ApiLogger.Error($"IPAddress = {_httpClient.BaseAddress}" + "\r\n" + $"-- API NOT ALLOWED. [{nameof(ElevatorPostMissionQueueAsync)}] --"); return null; }
 
-        public async Task<List<Response_JobTemplateDto>> AmkorGetResourceJobTemplate()
-        {
             try
             {
-                return await _httpClient.GetFromJsonAsync<List<Response_JobTemplateDto>>("api/JobTemplates/Amkor");
+                //기존
+                var response = await _httpClient.PostAsJsonAsync("api/routes/plan", value);
+                var jsonResponse = await response.Content.ReadAsStringAsync();
+                return JsonConvert.DeserializeObject<Response_Node_EdgeDto>(jsonResponse);
             }
             //catch (Exception ex) when (True(() => _logger.Error(ex)))
             catch (Exception ex) when (True(() => ApiLogger.Error($"IPAddress = {_httpClient.BaseAddress}" + "\r\n" + ex)))
@@ -204,14 +196,14 @@ namespace RestApi.Interfases
             }
         }
 
-        public async Task<ApiResponseDto> MiddlewarePostMissionQueueAsync(object value)
+        public async Task<ApiResponseDto> WorkerDeleteMissionQueueAsync(string id)
         {
-            if (!AcceptFilterUtility.WriteAccepted) { ApiLogger.Error($"IPAddress = {_httpClient.BaseAddress}" + "\r\n" + $"-- API NOT ALLOWED. [{nameof(MiddlewarePostMissionQueueAsync)}] --"); return null; }
+            if (!AcceptFilterUtility.WriteAccepted) { ApiLogger.Error($"IPAddress = {_httpClient.BaseAddress}" + "\r\n" + $"-- API NOT ALLOWED. [{nameof(WorkerDeleteMissionQueueAsync)}] --"); return null; }
 
             try
             {
                 //수정본
-                var response = await _httpClient.PostAsJsonAsync("missions/middleware", value);
+                var response = await _httpClient.DeleteAsync($"missions/worker/{id}");
                 var jsonResponse = await response.Content.ReadAsStringAsync();
 
                 var missionQueueResponse = new ApiResponseDto
@@ -234,14 +226,14 @@ namespace RestApi.Interfases
             }
         }
 
-        public async Task<ApiResponseDto> WorkerDeleteMissionQueueAsync(string id)
+        public async Task<ApiResponseDto> MiddlewarePostMissionQueueAsync(object value)
         {
-            if (!AcceptFilterUtility.WriteAccepted) { ApiLogger.Error($"IPAddress = {_httpClient.BaseAddress}" + "\r\n" + $"-- API NOT ALLOWED. [{nameof(WorkerDeleteMissionQueueAsync)}] --"); return null; }
+            if (!AcceptFilterUtility.WriteAccepted) { ApiLogger.Error($"IPAddress = {_httpClient.BaseAddress}" + "\r\n" + $"-- API NOT ALLOWED. [{nameof(MiddlewarePostMissionQueueAsync)}] --"); return null; }
 
             try
             {
                 //수정본
-                var response = await _httpClient.DeleteAsync($"missions/worker/{id}");
+                var response = await _httpClient.PostAsJsonAsync("missions/middleware", value);
                 var jsonResponse = await response.Content.ReadAsStringAsync();
 
                 var missionQueueResponse = new ApiResponseDto

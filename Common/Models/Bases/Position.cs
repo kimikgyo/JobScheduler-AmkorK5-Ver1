@@ -34,6 +34,7 @@ namespace Common.Models.Jobs
         [JsonPropertyOrder(14)] public string linkedFacility { get; set; }
         [JsonPropertyOrder(15)] public string linkedRobotId { get; set; }
         [JsonPropertyOrder(16)] public bool hasCharger { get; set; }
+        [JsonPropertyOrder(17)] public string nodeType { get; set; }
 
         public override string ToString()
         {
@@ -53,7 +54,8 @@ namespace Common.Models.Jobs
                 $",isOccupied = {isOccupied,-5}" +
                 $",linkedFacility = {linkedFacility,-5}" +
                 $",linkedRobotId = {linkedRobotId,-5}" +
-                $",hasCharger = {hasCharger,-5}";
+                $",hasCharger = {hasCharger,-5}" + 
+                $",nodeType = {nodeType,-5}";
         }
 
         //public string ToJson(bool indented = false)

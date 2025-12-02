@@ -1,6 +1,7 @@
 ﻿using Common.DTOs.Rests.Carriers;
 using Common.DTOs.Rests.JobTemplates;
 using Common.DTOs.Rests.Maps;
+using Common.DTOs.Rests.Nodes_Edges;
 using Common.DTOs.Rests.Positions;
 using Common.DTOs.Rests.Workers;
 using Common.Models.Bases;
@@ -19,10 +20,6 @@ namespace Common.Interfaces
 
         Task<List<Response_CarrierDto>> GetResourceCarrier();
 
-        Task<List<Response_JobTemplateDto>> STIGetResourceJobTemplate();
-
-        Task<List<Response_JobTemplateDto>> AmkorGetResourceJobTemplate();
-
         Task<ApiResponseDto> WorkerPostMissionQueueAsync(object value);
 
         Task<ApiResponseDto> ElevatorPostMissionQueueAsync(object value);
@@ -36,5 +33,7 @@ namespace Common.Interfaces
         Task<ApiResponseDto> ElevatorDeletetMissionQueueAsync(string id);
         
         Task<ApiResponseDto> PositionPatchAsync(string id, object value);
+
+        Task<Response_Node_EdgeDto> Post_Routes_Plan_Async(object value);
     }
 }

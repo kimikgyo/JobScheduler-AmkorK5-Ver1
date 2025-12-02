@@ -1,8 +1,8 @@
 ﻿using Common.DTOs.Rests.Orders;
 using Common.Models.Jobs;
 using Common.Models.Queues;
-using Common.Templates;
 using Data.Interfaces;
+using JOB.JobQueues.Process;
 using JOB.Mappings.Interfaces;
 using JOB.MQTTs.Interfaces;
 
@@ -17,64 +17,65 @@ namespace JOB.JobQueues.Interfaces
             _queueProcess = new QueueProcess(repository, mqttQueue, mapping);
         }
 
-        public void CreateOrder(Post_OrderDto orderAddRequest)
+        public void Create_Order(Post_OrderDto post_OrderDto)
         {
-            QueueStorage.AddEnqueueOrder(new AddOrder
+            QueueStorage.Add_Order_Enqueue(new Add_Order
             {
-                AddRequestOrder = orderAddRequest
+                post_Order = post_OrderDto
             });
-            _queueProcess.AddOrder();
+            _queueProcess.Add_Order();
         }
 
-        public void RemoveOrder(Order target, DateTime? finishedAt)
+        public void Remove_Order(Order target, DateTime? finishedAt)
         {
-            QueueStorage.RemoveEnqueueOrder(new RemoveOrder
+            QueueStorage.Remove_Order_Enqueue(new Remove_Order
             {
                 orderTarget = target,
                 finishedAt = finishedAt,
             });
-            _queueProcess.RemoveOrder();
+            _queueProcess.Remove_Order_Job_Mission();
         }
 
-        public void CreateJobMission(JobTemplate jobTemplate, string orderId, string carrierId, int priority, string drumKeyCode
+        public void Create_Job(string group, string orderId, string type, string subtype, string carrierId, int priority, string drumKeyCode
                                     , string sourceId, string sourceName, string sourcelinkedFacility
                                     , string destinationId, string destinationName, string destinationlinkedFacility
                                     , string specifiedWorkerId, string assignedWorkerId)
         {
-            QueueStorage.AddEnqueueJobMission(new AddJobMission
+            QueueStorage.Add_Job_Enqueue(new Add_Job
             {
                 orderId = orderId,
+                type = type,
+                subtype = subtype,
                 carrierId = carrierId,
                 drumKeyCode = drumKeyCode,
-                groupId = jobTemplate.group,
+                groupId = group,
                 sourceId = sourceId,
                 destinationId = destinationId,
                 priority = priority,
                 specifiedWorkerId = specifiedWorkerId,
                 assignedWorkerId = assignedWorkerId,
-                jobTemplate = jobTemplate,
                 sourceName = sourceName,
                 destinationName = destinationName,
                 sourcelinkedFacility = sourcelinkedFacility,
                 destinationlinkedFacility = destinationlinkedFacility,
             });
 
-            _queueProcess.AddJob_Mission();
+            _queueProcess.Add_Job();
         }
 
-        public void RemoveJobMission(Job job, DateTime? finishedAt)
+        public void Remove_Job(Job job, DateTime? finishedAt)
         {
-            QueueStorage.RemoveEnqueueJobMission(new RemoveJobMission
+            QueueStorage.Remove_Job_Enqueue(new Remove_Job
             {
                 job = job,
                 finishedAt = finishedAt
             });
-            _queueProcess.RemoveJob_Mission();
+            _queueProcess.Remove_Job_Mission();
         }
 
         public void ProcessAllOrder()
         {
-            _queueProcess.AddOrder();
+            _queueProcess.Add_Order();
             _queueProcess.RemoveOrder();
         }
 

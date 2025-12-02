@@ -238,11 +238,11 @@ namespace Data.Repositorys.Jobs
             }
         }
 
-        public Job GetByOrderId(string orderId, string type, string subType)
+        public Job GetByOrderId(string orderId)
         {
             lock (_lock)
             {
-                return _jobs.FirstOrDefault(m => m.orderId == orderId && m.type == type && (m.subType == subType || m.subType == $"{subType}WITHEV"));
+                return _jobs.FirstOrDefault(m => m.orderId == orderId);
             }
         }
 

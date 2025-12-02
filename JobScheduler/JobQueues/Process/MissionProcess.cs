@@ -5,60 +5,14 @@ using Common.Models.Queues;
 using Common.Templates;
 using System.Text.Json;
 
-namespace JOB.JobQueues
+namespace JOB.JobQueues.Process
 {
     public partial class QueueProcess
     {
-        public void AddJob_Mission()
+        public void Add_Mission()
         {
             while (QueueStorage.AddTryDequeueJobMission(out var cmd))
             {
-                var orderId = cmd.orderId;
-                var carrierId = cmd.carrierId;
-                var drumKeyCode = cmd.drumKeyCode;
-                var priority = cmd.priority;
-                var sourceId = cmd.sourceId;
-                var destinationId = cmd.destinationId;
-                var specifiedWorkerId = cmd.specifiedWorkerId;
-                var assignedWorkerId = cmd.assignedWorkerId;
-                var jobTemplate = cmd.jobTemplate;
-                var sourceName = cmd.sourceName;
-                var destinationName = cmd.destinationName;
-                var sourcelinkedFacility = cmd.sourcelinkedFacility;
-                var destinatiolinkedFacility = cmd.destinationlinkedFacility;
-                var job = new Job
-                {
-                    guid = Guid.NewGuid().ToString(),
-                    group = jobTemplate.group,
-                    name = $"{sourceName}to{destinationName}",
-                    orderId = orderId,
-                    type = jobTemplate.type,
-                    subType = jobTemplate.subType,
-                    sequence = 0,
-                    carrierId = carrierId,
-                    drumKeyCode = drumKeyCode,
-                    priority = priority,
-                    sourceId = sourceId,
-                    sourceName = sourceName,
-                    sourcelinkedFacility = sourcelinkedFacility,
-                    destinationId = destinationId,
-                    destinationName = destinationName,
-                    destinationlinkedFacility = destinatiolinkedFacility,
-                    isLocked = jobTemplate.isLocked,
-                    state = nameof(JobState.INIT),
-                    specifiedWorkerId = specifiedWorkerId,
-                    assignedWorkerId = assignedWorkerId,
-                    createdAt = DateTime.Now,
-                    updatedAt = null,
-                    finishedAt = null,
-                    terminationType = null,
-                    terminateState = null,
-                    terminator = null,
-                    terminatingAt = null,
-                    terminatedAt = null
-                };
-
-                List<Mission> _Createmissions = new List<Mission>();
                 int missionsequence = 1;
                 foreach (var missionTemplate in jobTemplate.missionTemplates)
                 {
@@ -117,13 +71,10 @@ namespace JOB.JobQueues
                     mission.parametersJson = JsonSerializer.Serialize(mission.parameters);
                     mission.preReportsJson = JsonSerializer.Serialize(mission.preReports);
                     mission.postReportsJson = JsonSerializer.Serialize(mission.postReports);
-                    _Createmissions.Add(mission);
                     missionsequence++;
-                }
-
-                if (job != null && _Createmissions.Count > 0)
-                {
-                    create(orderId, jobTemplate, job, _Createmissions);
+                    _repository.Missions.Add(mission);
+                    _repository.MissionHistorys.Add(mission);
+                    _mqttQueue.MqttPublishMessage(TopicType.mission, TopicSubType.status, _mapping.Missions.MqttPublish(mission));
                 }
             }
         }
@@ -147,34 +98,6 @@ namespace JOB.JobQueues
             }
 
             return reValue;
-        }
-
-        private void create(string orderId, JobTemplate jobTemplate, Job job, List<Mission> missions)
-        {
-            _repository.Jobs.Add(job);
-            _repository.JobHistorys.Add(job);
-            _mqttQueue.MqttPublishMessage(TopicType.job, TopicSubType.status, _mapping.Jobs.MqttPublish(job));
-
-            foreach (var mission in missions)
-            {
-                _repository.Missions.Add(mission);
-                _repository.MissionHistorys.Add(mission);
-                _mqttQueue.MqttPublishMessage(TopicType.mission, TopicSubType.status, _mapping.Missions.MqttPublish(mission));
-            }
-
-            if (orderId != null)
-            {
-                var order = _repository.Orders.GetByIdAndTypeAndSubType(orderId, jobTemplate.type, jobTemplate.subType);
-                if (order != null)
-                {
-                    order.state = nameof(OrderState.Waiting);
-                    order.stateCode = OrderState.Waiting;
-                    order.updatedAt = DateTime.Now;
-                    _repository.Orders.Update(order);
-                    _repository.OrderHistorys.Add(order);
-                    _mqttQueue.MqttPublishMessage(TopicType.order, TopicSubType.status, _mapping.Orders.MqttPublish(order));
-                }
-            }
         }
 
         private Parameter missionParameter(MissionTemplate_Single missionTemplate, Job job, Parameter parameta, string drumKeyCode
@@ -250,7 +173,7 @@ namespace JOB.JobQueues
                         break;
 
                     case "SourceFloor":
-                        //출발지 Position 있는경우 
+                        //출발지 Position 있는경우
                         var Sourceposition = _repository.Positions.MiR_GetById(job.sourceId);
                         if (Sourceposition != null)
                         {
@@ -268,7 +191,7 @@ namespace JOB.JobQueues
                         {
                             //출발지 Position이 없는경우
                             var worker = _repository.Workers.GetById(job.specifiedWorkerId);
-                            if(worker !=null)
+                            if (worker != null)
                             {
                                 var map = _repository.Maps.GetBymapId(worker.mapId);
                                 if (map != null)
@@ -280,9 +203,8 @@ namespace JOB.JobQueues
                                     };
                                 }
                             }
-
                         }
-                            break;
+                        break;
 
                     case "DestinationFloor":
 
@@ -311,39 +233,6 @@ namespace JOB.JobQueues
                 };
             }
             return param;
-        }
-
-        public void RemoveJob_Mission()
-        {
-            while (QueueStorage.RemoveTryDequeueJobMission(out var cmd))
-            {
-                var target = cmd.job;
-                var finishedAt = cmd.finishedAt;
-                // TransactionScope 사용하면 DB를 Open상태로 계속 열어두어서 DataBaseConnectTimeOut진행됨
-                //using (var trxScope = new TransactionScope())
-                //{
-                var job = _repository.Jobs.GetByid(target.guid);
-                if (job != null)
-                {
-                    foreach (var mission in _repository.Missions.GetByJobId(job.guid))
-                    {
-                        if (mission.finishedAt == null)
-                        {
-                            mission.finishedAt = finishedAt;
-                        }
-                        _repository.MissionHistorys.Add(mission);
-                        _repository.MissionFinishedHistorys.Add(mission);
-                        _repository.Missions.Remove(mission);
-                    }
-                    job.finishedAt = finishedAt;
-                    _repository.JobHistorys.Add(job);
-                    _repository.JobFinishedHistorys.Add(job);
-                    _repository.Jobs.Remove(job);
-                }
-
-                //trxScope.Complete();
-                //}
-            }
         }
     }
 }

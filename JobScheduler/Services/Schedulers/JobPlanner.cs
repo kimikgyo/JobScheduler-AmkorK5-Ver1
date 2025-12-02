@@ -1,6 +1,4 @@
 ﻿using Common.Models.Jobs;
-using Common.Templates;
-using System.Data;
 
 namespace JOB.Services
 {
@@ -8,11 +6,69 @@ namespace JOB.Services
     {
         private void JobPlanner()
         {
-            //orderCreateJob();
+            createJob();
 
+            //orderCreateJob();
             //createWaitControl();
             //createChargeControl();
         }
+
+        //Job생성
+        private void createJob()
+        {
+            Position source = null;
+            Position destination = null;
+            var Orders = _repository.Orders.GetByOrderStatus(nameof(OrderState.Queued));
+            foreach (var Order in Orders)
+            {
+                var Job = _repository.Jobs.GetByOrderId(Order.id);
+                if (Job != null) continue;
+
+                if (IsInvalid(Order.sourceId))
+                {
+                    var worker = _repository.Workers.MiR_GetById(Order.specifiedWorkerId);
+                    if (worker == null) continue;
+                    var positions = _repository.Positions.MiR_GetByMapId(worker.mapId);
+                    if (positions == null || positions.Count() == 0) continue;
+                    //워커에서 가장 가까운 포지션을 출발지 포지션으로 설정한다.
+                    source = _repository.Positions.FindNearestWayPoint(worker, positions).FirstOrDefault();
+                    if (source == null) continue;
+                    //목적지 조회.
+                    destination = _repository.Positions.GetById(Order.destinationId);
+                    if (destination == null) continue;
+
+                    _Queue.Create_Job(worker.group, Order.id, Order.type, Order.subType, Order.carrierId, Order.priority, Order.drumKeyCode
+                                     , source.id, source.name, source.linkedFacility, destination.id, destination.name, destination.linkedFacility
+                                     , Order.specifiedWorkerId, Order.assignedWorkerId);
+                }
+                else
+                {
+                    //출발지 조회
+                    source = _repository.Positions.MiR_GetById(Order.sourceId);
+                    if (source == null) continue;
+                    //목적지 조회.
+                    destination = _repository.Positions.GetById(Order.destinationId);
+                    if (destination == null) continue;
+
+                    _Queue.Create_Job(source.group, Order.id, Order.type, Order.subType, Order.carrierId, Order.priority, Order.drumKeyCode
+                           , source.id, source.name, source.linkedFacility, destination.id, destination.name, destination.linkedFacility
+                           , Order.specifiedWorkerId, Order.assignedWorkerId);
+
+                }
+            }
+        }
+        private void Create_Mission()
+        {
+            var Jobs = _repository.Jobs.GetByInit();
+            foreach (var job in Jobs)
+            {
+                
+            }
+
+
+
+
+
         /*
         private void orderCreateJob()
         {
@@ -31,7 +87,7 @@ namespace JOB.Services
                 {
                     //템플릿에 없는경우
                     initStatusOrder.state = nameof(OrderState.JobTemplateNotFind);
-                    _Queue.RemoveOrder(initStatusOrder, DateTime.Now);
+                    _Queue.Remove_Order(initStatusOrder, DateTime.Now);
                     EventLogger.Info($"JobTemplate NotFind, OrderId = {initStatusOrder.id}");
                 }
             }

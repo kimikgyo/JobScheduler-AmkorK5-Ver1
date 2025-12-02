@@ -5,22 +5,11 @@ using Data.Interfaces;
 using JOB.Mappings.Interfaces;
 using JOB.MQTTs.Interfaces;
 
-namespace JOB.JobQueues
+namespace JOB.JobQueues.Process
 {
     public partial class QueueProcess
     {
-        private readonly IUnitOfWorkRepository _repository;
-        private readonly IUnitofWorkMqttQueue _mqttQueue;
-        private readonly IUnitOfWorkMapping _mapping;
-
-        public QueueProcess(IUnitOfWorkRepository repository, IUnitofWorkMqttQueue mqttQueue, IUnitOfWorkMapping mapping)
-        {
-            _repository = repository;
-            _mqttQueue = mqttQueue;
-            _mapping = mapping;
-        }
-
-        public void AddOrder()
+        public void Add_Order()
         {
             while (QueueStorage.AddTryDequeueOrder(out var cmd))
             {
@@ -57,7 +46,7 @@ namespace JOB.JobQueues
             }
         }
 
-        public void RemoveOrder()
+        public void Remove_Order_Job_Mission()
         {
             while (QueueStorage.RemoveTryDequeueOrder(out var cmd))
             {
@@ -67,7 +56,7 @@ namespace JOB.JobQueues
 
                 //using (var trxScope = new TransactionScope())
                 //{
-                var job = _repository.Jobs.GetByOrderId(target.id, target.type, target.subType);
+                var job = _repository.Jobs.GetByOrderId(target.id);
                 if (job != null)
                 {
                     foreach (var mission in _repository.Missions.GetByJobId(job.guid))

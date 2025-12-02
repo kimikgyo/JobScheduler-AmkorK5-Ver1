@@ -61,7 +61,7 @@ namespace JOB.Services
                     if (order != null)
                     {
                         updateStateOrder(order, OrderState.None);
-                        _Queue.RemoveOrder(order, DateTime.Now);
+                        _Queue.Remove_Order(order, DateTime.Now);
                     }
                     else
                     {
@@ -86,7 +86,7 @@ namespace JOB.Services
                     {
                         updateStateJob(job, nameof(JobState.COMPLETED));
                         updateStateOrder(order, OrderState.None);
-                        _Queue.RemoveOrder(order, DateTime.Now);
+                        _Queue.Remove_Order(order, DateTime.Now);
                     }
                     else
                     {

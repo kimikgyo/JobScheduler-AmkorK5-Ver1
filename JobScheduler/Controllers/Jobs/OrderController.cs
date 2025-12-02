@@ -206,7 +206,7 @@ namespace JobScheduler.Controllers.Jobs
             string message = ConditionAddOrder(add);
             if (message == null)
             {
-                _queue.CreateOrder(add);
+                _queue.Create_Order(add);
                 logger.Info($"{this.ControllerLogPath()} Response = " +
                                 $"Code = {Ok(message).StatusCode}" +
                                 $",massage = {Ok(message).Value}" +

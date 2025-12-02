@@ -30,12 +30,13 @@ namespace Common.Models.Jobs
 
     public enum JobState
     {
-        INIT,
-        WORKERASSIGNED,            //Worker할당
-        INPROGRESS,        // 실행 중
+        INIT,               //Job 생성시
+        WAIT,               //Mission 생성완료 후
+        WORKERASSIGNED,     //Worker할당
+        INPROGRESS,         // 실행 중
         CANCELCOMPLETED,
         ABORTCOMPLETED,
-        COMPLETED,         // 성공 완료
+        COMPLETED,          // 성공 완료
     }
 
     public enum TerminateType

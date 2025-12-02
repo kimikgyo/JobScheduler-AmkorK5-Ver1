@@ -1,5 +1,6 @@
 ﻿using Data.Interfaces;
 using JOB.JobQueues.Interfaces;
+using JOB.JobQueues.Process;
 using JOB.Mappings.Interfaces;
 using JOB.MQTTs.Interfaces;
 using JOB.Services;
@@ -24,6 +25,7 @@ namespace JobScheduler.Services
         private GetDataService getData = null;
         private MQTTService mQTT = null;
         private SchedulerService schedulerService = null;
+        private QueueProcess queueProcess = null;
 
         public MainService(IUnitOfWorkRepository repository, IUnitOfWorkJobMissionQueue workJobMissionQueue, IUnitOfWorkMapping mapping, IUnitofWorkMqttQueue mqttQueue, IMqttWorker mqtt)
         {
@@ -42,7 +44,10 @@ namespace JobScheduler.Services
             schedulerService = new SchedulerService(main, _repository, _jobMissionQueue, _mapping, _mqttQueue);
             mQTT = new MQTTService(_mqtt, _mqttQueue);
             getData = new GetDataService(EventLogger, _repository, _mapping);
+            queueProcess = new QueueProcess(main,_repository, _mqttQueue, _mapping);
         }
+
+
 
         private async Task stratAsync()
         {
@@ -52,6 +57,7 @@ namespace JobScheduler.Services
             {
                 mQTT.Start();
                 schedulerService.Start();
+                queueProcess.Start();
             }
         }
 
@@ -62,6 +68,7 @@ namespace JobScheduler.Services
         {
             // 1. 스케줄러 정지 (Task 종료될 때까지 대기)
             await schedulerService.StopAsync();
+            await queueProcess.StopAsync();
             // StopAsync 내부에서 while 루프 빠져나오고 Task.WhenAll() 대기하도록 구현
 
             // 2. 데이터 리로드
@@ -72,6 +79,7 @@ namespace JobScheduler.Services
                 //_mqtt.Start();
 
                 // 4. 스케줄러 다시 시작
+                queueProcess.Start();
                 schedulerService.Start();
             }
         }

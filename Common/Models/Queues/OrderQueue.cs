@@ -11,12 +11,12 @@ namespace Common.Models.Queues
         REMOVE
     }
 
-    public class AddOrder
+    public class Add_Order
     {
-        public Post_OrderDto AddRequestOrder;
+        public Post_OrderDto post_Order;
     }
 
-    public class RemoveOrder
+    public class Remove_Order
     {
         public Order orderTarget;
         public DateTime? finishedAt;

@@ -31,7 +31,7 @@ namespace Data.Interfaces
         public MapRepository Maps { get; private set; }
         public WorkerRepository Workers { get; private set; }
         public PositionRepository Positions { get; private set; }
-        public MiddlewareRepogistory Middlewares { get; private set; }
+        public MiddlewareRepository Middlewares { get; private set; }
         public ElevatorRepository Elevator { get; private set; }
 
         #endregion Base
@@ -49,7 +49,8 @@ namespace Data.Interfaces
         public OrderFinishedHistoryRepository OrderFinishedHistorys { get; private set; }
 
         public JobTemplateRepository JobTemplates { get; private set; }
-        public MissionTemplateRepository MissionTemplates { get; private set; }
+        public MissionTemplate_Group_Repository MissionTemplates_Group { get; private set; }
+        public MissionTemplate_Single_Repository MissionTemplates_Single { get; private set; }
 
         public ServiceApiRepository ServiceApis { get; private set; }
 
@@ -72,7 +73,7 @@ namespace Data.Interfaces
             Maps = new MapRepository(connectionString);
             Workers = new WorkerRepository(connectionString);
             Positions = new PositionRepository(connectionString);
-            Middlewares = new MiddlewareRepogistory(connectionString);
+            Middlewares = new MiddlewareRepository(connectionString);
             Elevator = new ElevatorRepository(connectionString);
 
             #endregion Base
@@ -89,7 +90,8 @@ namespace Data.Interfaces
             Missions = new MissionRepository(connectionString);
 
             JobTemplates = new JobTemplateRepository(connectionString);
-            MissionTemplates = new MissionTemplateRepository(connectionString);
+            MissionTemplates_Group = new MissionTemplate_Group_Repository(connectionString);
+            MissionTemplates_Single = new MissionTemplate_Single_Repository(connectionString);
 
             ServiceApis = new ServiceApiRepository(connectionString);
 

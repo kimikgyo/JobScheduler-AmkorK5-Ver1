@@ -9,7 +9,7 @@ namespace Common.Templates
         [JsonPropertyOrder(3)] public string type { get; set; }
         [JsonPropertyOrder(4)] public string subType { get; set; }
         [JsonPropertyOrder(5)] public bool isLocked { get; set; }
-        [JsonPropertyOrder(6)] public List<MissionTemplate> missionTemplates = new List<MissionTemplate>();
+        [JsonPropertyOrder(6)] public List<MissionTemplate_Single> missionTemplates = new List<MissionTemplate_Single>();
 
         // 사람용 요약 (디버거/로그에서 보기 좋게)
         public override string ToString()

@@ -177,7 +177,7 @@ namespace JOB.JobQueues
             }
         }
 
-        private Parameter missionParameter(MissionTemplate missionTemplate, Job job, Parameter parameta, string drumKeyCode
+        private Parameter missionParameter(MissionTemplate_Single missionTemplate, Job job, Parameter parameta, string drumKeyCode
                                          , string sourcelinkedFacility, string destinatiolinkedFacility)
         {
             Parameter param = null;

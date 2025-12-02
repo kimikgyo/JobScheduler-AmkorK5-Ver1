@@ -8,12 +8,12 @@ namespace JOB.Services
     {
         private void JobPlanner()
         {
-            orderCreateJob();
+            //orderCreateJob();
 
             //createWaitControl();
             //createChargeControl();
         }
-
+        /*
         private void orderCreateJob()
         {
             var initStatusOrders = _repository.Orders.GetByOrderStatus(nameof(OrderState.Queued));
@@ -394,5 +394,6 @@ namespace JOB.Services
                 }
             }
         }
+        */
     }
 }

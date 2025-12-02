@@ -4,7 +4,7 @@ using log4net;
 
 namespace Data.Repositorys.Middlewares
 {
-    public class MiddlewareRepogistory
+    public class MiddlewareRepository
     {
         private static readonly ILog logger = LogManager.GetLogger("Middleware"); //Function 실행관련 Log
 
@@ -12,7 +12,7 @@ namespace Data.Repositorys.Middlewares
         private readonly List<Middleware> _middlewares = new List<Middleware>(); // cached data
         private readonly object _lock = new object();
 
-        public MiddlewareRepogistory(string connectionString)
+        public MiddlewareRepository(string connectionString)
         {
             this.connectionString = connectionString;
             //createTable();

@@ -18,7 +18,7 @@ namespace JOB.Mappings.Bases
             };
             foreach (var missionTemplateDto in model.missionTemplates)
             {
-                var missionTemplete = new MissionTemplate
+                var missionTemplete = new MissionTemplate_Single
                 {
                     name = missionTemplateDto.name,
                     service = missionTemplateDto.service.Replace(" ", "").ToUpper(),

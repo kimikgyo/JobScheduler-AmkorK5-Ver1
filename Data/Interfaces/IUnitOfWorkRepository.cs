@@ -20,7 +20,7 @@ namespace Data.Interfaces
         MapRepository Maps { get; }
         PositionRepository Positions { get; }
         WorkerRepository Workers { get; }
-        MiddlewareRepogistory Middlewares { get; }
+        MiddlewareRepository Middlewares { get; }
         ElevatorRepository Elevator { get; }
 
         #endregion Base
@@ -38,7 +38,8 @@ namespace Data.Interfaces
         OrderFinishedHistoryRepository OrderFinishedHistorys { get; }
 
         JobTemplateRepository JobTemplates { get; }
-        MissionTemplateRepository MissionTemplates { get; }
+        MissionTemplate_Group_Repository MissionTemplates_Group { get; }
+        MissionTemplate_Single_Repository MissionTemplates_Single { get; }
 
         ServiceApiRepository ServiceApis { get; }
 

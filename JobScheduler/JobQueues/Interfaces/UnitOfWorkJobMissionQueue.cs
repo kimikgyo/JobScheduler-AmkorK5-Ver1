@@ -58,11 +58,12 @@ namespace JOB.JobQueues.Interfaces
             });
         }
 
-        public void Add_Mission(Job job, MissionTemplate missionTemplate, int seq)
+        public void Add_Mission(Job job, MissionTemplate missionTemplate,Position position, int seq)
         {
             QueueStorage.Add_Mission_Enqueue(new Add_Mission
             {
                 job = job,
+                position = position,
                 missionTemplate = missionTemplate,
                 seq = seq
             });

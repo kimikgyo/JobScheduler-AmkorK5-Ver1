@@ -36,27 +36,27 @@ namespace JOB.JobQueues.Process
                     sequenceUpdatedAt = null,
                 };
 
-                if (cmd.missionTemplate.name == null)
+                switch (mission.type)
                 {
-                    switch (mission.subType)
-                    {
-                        case nameof(MissionSubType.SOURCEMOVE):
-                            mission.name = cmd.job.sourceName;
-                            break;
+                    case nameof(MissionType.MOVE):
+                        if (cmd.position != null)
+                        {
+                            mission.name = cmd.position.name;
+                        }
+                        else
+                        {
+                            mission.name = cmd.missionTemplate.name;
+                        }
+                        break;
 
-                        case nameof(MissionSubType.DESTINATIONMOVE):
-                            mission.name = cmd.job.destinationName;
-                            break;
-                    }
-                }
-                else
-                {
-                    mission.name = cmd.missionTemplate.name;
+                    default:
+                        mission.name = cmd.missionTemplate.name;
+                        break;
                 }
 
                 foreach (var parameta in cmd.missionTemplate.parameters)
                 {
-                    Parameter param = missionParameter(cmd.missionTemplate, cmd.job, parameta, cmd.job.drumKeyCode, cmd.job.sourcelinkedFacility, cmd.job.destinationlinkedFacility);
+                    Parameter param = missionParameter(cmd.missionTemplate, cmd.job, cmd.position, parameta, cmd.job.drumKeyCode, cmd.job.sourcelinkedFacility, cmd.job.destinationlinkedFacility);
                     if (param != null)
                     {
                         mission.parameters.Add(param);
@@ -95,30 +95,33 @@ namespace JOB.JobQueues.Process
             return reValue;
         }
 
-        private Parameter missionParameter(MissionTemplate missionTemplate, Job job, Parameter parameta, string drumKeyCode
+        private Parameter missionParameter(MissionTemplate missionTemplate, Job job, Position position, Parameter parameta, string drumKeyCode
                                          , string sourcelinkedFacility, string destinatiolinkedFacility)
         {
             Parameter param = null;
-            if (parameta.value == null)
+            if (IsInvalid(parameta.value))
             {
                 switch (parameta.key)
                 {
                     case "target":
-                        if (missionTemplate.subType == nameof(MissionSubType.SOURCEMOVE))
+                        if (position != null)
                         {
-                            param = new Parameter
+                            if (missionTemplate.type == nameof(MissionType.MOVE))
                             {
-                                key = parameta.key,
-                                value = job.sourceId,
-                            };
-                        }
-                        else if (missionTemplate.subType == nameof(MissionSubType.DESTINATIONMOVE))
-                        {
-                            param = new Parameter
+                                param = new Parameter
+                                {
+                                    key = parameta.key,
+                                    value = position.id,
+                                };
+                            }
+                            else
                             {
-                                key = parameta.key,
-                                value = job.destinationId,
-                            };
+                                param = new Parameter
+                                {
+                                    key = parameta.key,
+                                    value = parameta.value,
+                                };
+                            }
                         }
                         else
                         {
@@ -228,6 +231,13 @@ namespace JOB.JobQueues.Process
                 };
             }
             return param;
+        }
+
+        private bool IsInvalid(string value)
+        {
+            return string.IsNullOrWhiteSpace(value)
+                || value.ToUpper() == "NULL"
+                || value.ToUpper() == "STRING";
         }
     }
 }

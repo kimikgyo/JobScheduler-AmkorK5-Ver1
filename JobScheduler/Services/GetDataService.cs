@@ -97,20 +97,19 @@ namespace JobScheduler.Services
 
                                 foreach (var getPosition in Positions)
                                 {
-                                    var position = _mapping.Positions.ApiGetResourceResponse(getPosition);
+                                    var position = _mapping.Positions.Response(getPosition);
                                     _repository.Positions.Add(position);
                                 }
 
                                 //foreach (var getCarrier in Carriers)
                                 //{
-                                //    var carrier = _mapping.Carriers.ApiGetResourceResponse(getCarrier);
+                                //    var carrier = _mapping.Carriers.Response(getCarrier);
                                 //    _repository.Carriers.Add(carrier);
                                 //}
                                 Resource = true;
                             }
                         }
                     }
-                    Resource = true;
                     if (Resource)
                     {
                         Complete = true;
@@ -453,7 +452,7 @@ namespace JobScheduler.Services
             //update Add
             foreach (var dtoResourcePosition in dtoResourcePositions)
             {
-                Reload.Add(_mapping.Positions.ApiGetResourceResponse(dtoResourcePosition));
+                Reload.Add(_mapping.Positions.Response(dtoResourcePosition));
             }
 
             var ReloadId = Reload.Select(x => x.id);

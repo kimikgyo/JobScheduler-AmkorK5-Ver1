@@ -246,11 +246,11 @@ namespace Data.Repositorys.Jobs
             }
         }
 
-        public List<Job> GetByInit()
+        public List<Job> GetByState(string state)
         {
             lock (_lock)
             {
-                return _jobs.Where(m => m.state == nameof(JobState.INIT)).ToList();
+                return _jobs.Where(m => m.state == state).ToList();
             }
         }
 

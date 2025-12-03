@@ -8,7 +8,25 @@ namespace JOB.Services
     {
         private void JobAssined()
         {
+            state_WorkerAssigned_Sync();
             workerAssignedControl();
+        }
+
+        private void state_WorkerAssigned_Sync()
+        {
+            var jobs = _repository.Jobs.GetAll().Where(r => r.state != nameof(JobState.INIT) && r.state != nameof(JobState.WAIT)).ToList();
+            var assingedjobs = jobs.Where(j => j.terminationType == null && string.IsNullOrWhiteSpace(j.assignedWorkerId) == false).ToList();
+
+            foreach (var job in assingedjobs)
+            {
+                var missions = _repository.Missions.GetByJobId(job.guid);
+                var NotassignedWorkers = missions.Where(m => m.state == nameof(MissionState.INIT)).ToList();
+                foreach (var mission in NotassignedWorkers)
+                {
+                    mission.assignedWorkerId = job.assignedWorkerId;
+                    updateStateMission(mission, nameof(MissionState.WORKERASSIGNED), true);
+                }
+            }
         }
 
         /// <summary>
@@ -17,7 +35,7 @@ namespace JOB.Services
         private void workerAssignedControl()
         {
             //신규 Job 이있는지 확인
-            var UnAssignedWorkerJobs = _repository.Jobs.GetByInit().Where(j => j.terminationType == null && string.IsNullOrWhiteSpace(j.assignedWorkerId)).ToList();
+            var UnAssignedWorkerJobs = _repository.Jobs.GetByState(nameof(JobState.WAIT)).Where(j => j.terminationType == null && string.IsNullOrWhiteSpace(j.assignedWorkerId)).ToList();
             UnAssignedWorkerJobs = UnAssignedWorkerJobs.OrderByDescending(r => r.priority).ToList();
             UnAssignedWorkerJobs = UnAssignedWorkerJobs.OrderBy(r => r.createdAt).ToList();
             if (UnAssignedWorkerJobs == null || UnAssignedWorkerJobs.Count == 0) return;
@@ -26,11 +44,10 @@ namespace JOB.Services
 
             //엘리베이터가 NOTAGV모드일경우 층간이송 워커에게할당하지 않는다.
             var elevator = _repository.Elevator.GetById("NO1");
-            if(elevator == null || elevator.mode == "NOTAGVMODE" || elevator.state == "PROTOCOLERROR")
+            if (elevator == null || elevator.mode == "NOTAGVMODE" || elevator.state == "PROTOCOLERROR")
             {
                 UnAssignedWorkerJobs = UnAssignedWorkerJobs.Where(r => r.subType.EndsWith("WITHEV") == false).ToList();
             }
-
 
             //순차적용
             firstJob(UnAssignedWorkerJobs, batterySetting);
@@ -71,10 +88,12 @@ namespace JOB.Services
                     if (TransPortCondition(job, worker) == false) continue;
                     //orderId 가 있는경우는 외부에서 Order 를 받은것이기때문에 minimum 배터리 이하면 전송하지않는다.
                     if (job.orderId != null && worker.batteryPercent < batterySetting.minimum) continue;
+                    var missions = _repository.Missions.GetByJobId(job.guid);
+                    if (missions == null || missions.Count == 0) continue;
 
                     job.assignedWorkerId = worker.id;
                     updateStateJob(job, nameof(JobState.WORKERASSIGNED), true);
-                    foreach (var mission in _repository.Missions.GetByJobId(job.guid))
+                    foreach (var mission in missions)
                     {
                         mission.assignedWorkerId = worker.id;
                         updateStateMission(mission, nameof(MissionState.WORKERASSIGNED), true);

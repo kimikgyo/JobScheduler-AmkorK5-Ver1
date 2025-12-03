@@ -318,7 +318,7 @@ namespace JOB.Services
             if (Position != null)
             {
                 var param = mission.parameters.FirstOrDefault(r => r.key == "target");
-                if (param.value == null)
+                if (IsInvalid(param.value))
                 {
                     param.value = Position.id;
                     mission.parametersJson = JsonSerializer.Serialize(mission.parameters);
@@ -351,7 +351,7 @@ namespace JOB.Services
                     if (mapSwitchPosition != null)
                     {
                         var mapSwitchParam = switchMapMission.parameters.FirstOrDefault(p => p.key == "target");
-                        if (mapSwitchParam.value == null)
+                        if (IsInvalid(mapSwitchParam.value))
                         {
                             mapSwitchParam.value = mapSwitchPosition.id;
                             switchMapMission.parametersJson = JsonSerializer.Serialize(switchMapMission.parameters);

@@ -37,7 +37,6 @@ namespace Data.Interfaces
         JobFinishedHistoryRepository JobFinishedHistorys { get; }
         OrderFinishedHistoryRepository OrderFinishedHistorys { get; }
 
-        JobTemplateRepository JobTemplates { get; }
         MissionTemplate_Group_Repository MissionTemplates_Group { get; }
         MissionTemplate_Single_Repository MissionTemplates_Single { get; }
 

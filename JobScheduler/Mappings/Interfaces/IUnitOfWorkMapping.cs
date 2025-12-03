@@ -12,7 +12,6 @@ namespace JOB.Mappings.Interfaces
         Worker_Mapping Workers { get; }
         Position_Mapping Positions { get; }
         Map_Mapping Maps { get; }
-        JobTemplate_Mapping JobTemplates { get; }
         Middleware_Mapping Middlewares { get; }
         Carrier_Mapping Carriers { get; }
         Elevator_Mapping Elevators { get; }

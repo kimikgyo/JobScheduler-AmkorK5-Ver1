@@ -17,6 +17,6 @@ namespace JOB.JobQueues.Interfaces
 
         void Remove_Job(Job job, DateTime? finishedAt);
 
-        void Add_Mission(Job job, MissionTemplate missionTemplate, int seq);
+        void Add_Mission(Job job, MissionTemplate missionTemplate, Position position, int seq);
     }
 }

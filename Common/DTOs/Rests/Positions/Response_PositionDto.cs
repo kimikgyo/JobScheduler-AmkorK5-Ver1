@@ -21,7 +21,7 @@ namespace Common.DTOs.Rests.Positions
         [JsonPropertyOrder(15)] public string linkedFacility { get; set; }
         [JsonPropertyOrder(16)] public string linkedRobotId { get; set; }
         [JsonPropertyOrder(17)] public bool hasCharger { get; set; }
-        [JsonPropertyOrder(18)] public bool nodeType { get; set; }
+        [JsonPropertyOrder(18)] public string nodeType { get; set; }
         [JsonPropertyOrder(19)] public DateTime createdAt { get; set; }
         [JsonPropertyOrder(20)] public DateTime updatedAt { get; set; }
         [JsonPropertyOrder(21)] public string createdBy { get; set; }

@@ -5,6 +5,8 @@ namespace JOB.Services
 {
     public partial class SchedulerService
     {
+        private readonly object _lock = new object();
+
         private void JobPlanner()
         {
             createJob();
@@ -58,9 +60,9 @@ namespace JOB.Services
             }
         }
 
-        private async Task Create_Mission()
+        private void Create_Mission()
         {
-            var Jobs = _repository.Jobs.GetByInit();
+            var Jobs = _repository.Jobs.GetByState(nameof(JobState.INIT));
             var Resource = _repository.ServiceApis.GetAll().FirstOrDefault(s => s.type == "Resource");
             if (Resource == null) return;
 
@@ -68,8 +70,14 @@ namespace JOB.Services
             {
                 bool ElevatorMissionFlag = false;
                 int seq = 1;
-                var Routes_Plan = await Resource.Api.Post_Routes_Plan_Async(_mapping.RoutesPlanas.Request(job.sourceId, job.destinationId));
-                if (Routes_Plan == null) continue;
+                var sourcePOS = _repository.Positions.GetById(job.sourceId);
+                var destinationPOS = _repository.Positions.GetById(job.destinationId);
+                if (sourcePOS == null) continue;
+                if (destinationPOS == null) continue;
+
+                var Routes_Plan = Resource.Api.Post_Routes_Plan_Async(_mapping.RoutesPlanas.Request(sourcePOS.positionId, destinationPOS.positionId)).Result;
+
+                if (Routes_Plan.nodes == null) continue;
 
                 switch (job.type)
                 {
@@ -82,59 +90,32 @@ namespace JOB.Services
                     case nameof(JobType.TRANSPORT_AICERO_RESOVERY):
                         foreach (var node in Routes_Plan.nodes)
                         {
-                            if (node.positionId == job.sourceId)
+                           var position = _repository.Positions.GetByPositionId(node.positionId);
+
+                            if (node.positionId == sourcePOS.positionId)
                             {
-                                var pickMissionTemplates = _repository.MissionTemplates_Group.GetByGroup(nameof(MissionsTemplateGroup.PICK));
-                                foreach (var template in pickMissionTemplates)
-                                {
-                                    var missionTemplate = _mapping.MissionTemplates.Create(template);
-                                    _Queue.Add_Mission(job, missionTemplate, seq);
-                                    seq++;
-                                }
+                                seq = create_GroupMission(job, position, seq, nameof(MissionsTemplateGroup.PICK));
                             }
-                            else if (node.positionId == job.destinationId)
+                            else if (node.positionId == destinationPOS.positionId)
                             {
-                                var dropMissionTemplates = _repository.MissionTemplates_Group.GetByGroup(nameof(MissionsTemplateGroup.DROP));
-                                foreach (var template in dropMissionTemplates)
-                                {
-                                    var missionTemplate = _mapping.MissionTemplates.Create(template);
-                                    _Queue.Add_Mission(job, missionTemplate, seq);
-                                    seq++;
-                                }
+                                seq = create_GroupMission(job, position, seq, nameof(MissionsTemplateGroup.DROP));
                             }
-                            else if (node.nodeType == nameof(NodeType.ELEVATOR))
+                            else if (node.nodeType.ToUpper() == nameof(NodeType.ELEVATOR))
                             {
                                 if (ElevatorMissionFlag == false)
                                 {
-                                    var elevatorMissionTemplates = _repository.MissionTemplates_Group.GetByGroup(nameof(MissionsTemplateGroup.ELEVATOR));
-                                    foreach (var template in elevatorMissionTemplates)
-                                    {
-                                        var missionTemplate = _mapping.MissionTemplates.Create(template);
-                                        _Queue.Add_Mission(job, missionTemplate, seq);
-                                        seq++;
-                                    }
+                                    seq = create_GroupMission(job,null, seq, nameof(MissionsTemplateGroup.ELEVATOR));
+                                    ElevatorMissionFlag = true;
                                 }
                                 else continue;
                             }
-                            else if (node.nodeType == nameof(NodeType.TRAFFICPOINT))
+                            else if (node.nodeType.ToUpper() == nameof(NodeType.TRAFFICPOINT))
                             {
-                                var trafficMissionTemplates = _repository.MissionTemplates_Group.GetByGroup(nameof(MissionsTemplateGroup.TRAFFIC));
-                                foreach (var template in trafficMissionTemplates)
-                                {
-                                    var missionTemplate = _mapping.MissionTemplates.Create(template);
-                                    _Queue.Add_Mission(job, missionTemplate, seq);
-                                    seq++;
-                                }
+                                seq = create_GroupMission(job, position, seq, nameof(MissionsTemplateGroup.TRAFFIC));
                             }
                             else
                             {
-                                var template = _repository.MissionTemplates_Single.GetByType_SubType(nameof(MissionTemplateType.MOVE), nameof(MissionSubType.STOPOVERMOVE));
-                                if (template != null)
-                                {
-                                    var missionTemplate = _mapping.MissionTemplates.Create(template);
-                                    _Queue.Add_Mission(job, missionTemplate, seq);
-                                    seq++;
-                                }
+                                seq = create_SingleMission(job, position, seq, nameof(MissionTemplateType.MOVE), nameof(MissionTemplateSubType.STOPOVERMOVE));
                             }
                         }
 
@@ -144,39 +125,32 @@ namespace JOB.Services
                     case nameof(JobType.WAIT):
                         foreach (var node in Routes_Plan.nodes)
                         {
-                            if (node.nodeType == nameof(NodeType.ELEVATOR))
+                            var position = _repository.Positions.GetByPositionId(node.positionId);
+
+                            if (node.positionId == sourcePOS.positionId)
+                            {
+                                seq = create_SingleMission(job, position, seq, nameof(MissionTemplateType.MOVE), nameof(MissionTemplateSubType.SOURCEMOVE));
+                            }
+                            else if (node.positionId == destinationPOS.positionId)
+                            {
+                                seq = create_SingleMission(job, position, seq, nameof(MissionTemplateType.MOVE), nameof(MissionTemplateSubType.DESTINATIONMOVE));
+                            }
+                            else if (node.nodeType.ToUpper() == nameof(NodeType.ELEVATOR))
                             {
                                 if (ElevatorMissionFlag == false)
                                 {
-                                    var elevatorMissionTemplates = _repository.MissionTemplates_Group.GetByGroup(nameof(MissionsTemplateGroup.ELEVATOR));
-                                    foreach (var template in elevatorMissionTemplates)
-                                    {
-                                        var missionTemplate = _mapping.MissionTemplates.Create(template);
-                                        _Queue.Add_Mission(job, missionTemplate, seq);
-                                        seq++;
-                                    }
+                                    seq = create_GroupMission(job,null, seq, nameof(MissionsTemplateGroup.ELEVATOR));
+                                    ElevatorMissionFlag = true;
                                 }
                                 else continue;
                             }
-                            else if (node.nodeType == nameof(NodeType.TRAFFICPOINT))
+                            else if (node.nodeType.ToUpper() == nameof(NodeType.TRAFFICPOINT))
                             {
-                                var trafficMissionTemplates = _repository.MissionTemplates_Group.GetByGroup(nameof(MissionsTemplateGroup.TRAFFIC));
-                                foreach (var template in trafficMissionTemplates)
-                                {
-                                    var missionTemplate = _mapping.MissionTemplates.Create(template);
-                                    _Queue.Add_Mission(job, missionTemplate, seq);
-                                    seq++;
-                                }
+                                seq = create_GroupMission(job, position, seq, nameof(MissionsTemplateGroup.TRAFFIC));
                             }
                             else
                             {
-                                var template = _repository.MissionTemplates_Single.GetByType_SubType(nameof(MissionTemplateType.MOVE), nameof(MissionSubType.STOPOVERMOVE));
-                                if (template != null)
-                                {
-                                    var missionTemplate = _mapping.MissionTemplates.Create(template);
-                                    _Queue.Add_Mission(job, missionTemplate, seq);
-                                    seq++;
-                                }
+                                seq = create_SingleMission(job, position, seq, nameof(MissionTemplateType.MOVE), nameof(MissionTemplateSubType.STOPOVERMOVE));
                             }
                         }
                         break;
@@ -184,9 +158,38 @@ namespace JOB.Services
                 updateStateJob(job, nameof(JobState.WAIT), true);
             }
         }
+
+        private int create_SingleMission(Job job, Position position, int seq, string type, string subtype)
+        {
+            lock (_lock)
+            {
+                var template = _repository.MissionTemplates_Single.GetByType_SubType(type, subtype);
+                if (template != null)
+                {
+                    var missionTemplate = _mapping.MissionTemplates.Create(template);
+                    _Queue.Add_Mission(job, missionTemplate, position, seq);
+                    seq++;
+                }
+            }
+            return seq;
+        }
+
+        private int create_GroupMission(Job job, Position position, int seq, string templateGroup)
+        {
+            lock (_lock)
+            {
+                var Templates = _repository.MissionTemplates_Group.GetByGroup(templateGroup);
+                foreach (var template in Templates)
+                {
+                    var missionTemplate = _mapping.MissionTemplates.Create(template);
+                    _Queue.Add_Mission(job, missionTemplate, position, seq);
+                    seq++;
+                }
+            }
+            return seq;
+        }
     }
 }
-
 
 /*
 private void orderCreateJob()

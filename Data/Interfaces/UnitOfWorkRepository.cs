@@ -48,7 +48,6 @@ namespace Data.Interfaces
         public JobFinishedHistoryRepository JobFinishedHistorys { get; private set; }
         public OrderFinishedHistoryRepository OrderFinishedHistorys { get; private set; }
 
-        public JobTemplateRepository JobTemplates { get; private set; }
         public MissionTemplate_Group_Repository MissionTemplates_Group { get; private set; }
         public MissionTemplate_Single_Repository MissionTemplates_Single { get; private set; }
 
@@ -89,7 +88,6 @@ namespace Data.Interfaces
             Jobs = new JobRepository(connectionString);
             Missions = new MissionRepository(connectionString);
 
-            JobTemplates = new JobTemplateRepository(connectionString);
             MissionTemplates_Group = new MissionTemplate_Group_Repository(connectionString);
             MissionTemplates_Single = new MissionTemplate_Single_Repository(connectionString);
 

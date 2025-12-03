@@ -97,6 +97,13 @@ namespace RestApi.Interfases
                 //기존
                 var response = await _httpClient.PostAsJsonAsync("api/routes/plan", value);
                 var jsonResponse = await response.Content.ReadAsStringAsync();
+
+                var missionQueueResponse = new ResponseDto
+                {
+                    statusCode = Convert.ToInt32(response.StatusCode),
+                    statusText = response.StatusCode.ToString(),
+                    message = jsonResponse
+                };
                 return JsonConvert.DeserializeObject<Response_Node_EdgeDto>(jsonResponse);
             }
             //catch (Exception ex) when (True(() => _logger.Error(ex)))

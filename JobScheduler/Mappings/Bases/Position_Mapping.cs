@@ -6,11 +6,12 @@ namespace JOB.Mappings.Bases
 {
     public class Position_Mapping
     {
-        public Position ApiGetResourceResponse(Response_PositionDto model)
+        public Position Response(Response_PositionDto model)
         {
             var response = new Position
             {
                 id = model._id,
+                positionId = model.positionId,
                 source = model.source,
                 group = model.groupId,
                 type = model.type.Replace(" ", "").ToUpper(),
@@ -30,7 +31,7 @@ namespace JOB.Mappings.Bases
             return response;
         }
 
-        public Publish_PositionDto MqttPublish(Position model)
+        public Publish_PositionDto Publish(Position model)
         {
             var publish = new Publish_PositionDto()
             {

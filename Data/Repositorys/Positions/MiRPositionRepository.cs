@@ -90,6 +90,7 @@ namespace Data.Repositorys.Positions
         {
             lock (_lock)
             {
+                var aaa = _positions;
                 return _positions.FirstOrDefault(m => m.source == "mir"
                                                 && ((m.id == value)
                                                 || (m.name == value)

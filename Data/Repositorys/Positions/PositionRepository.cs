@@ -94,6 +94,14 @@ namespace Data.Repositorys.Positions
             }
         }
 
+        public Position GetByPositionId(string positionId)
+        {
+            lock (_lock)
+            {
+                return _positions.FirstOrDefault(m => m.positionId == positionId);
+            }
+        }
+
         public Position GetById(string id)
         {
             lock (_lock)

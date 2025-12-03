@@ -14,7 +14,6 @@ namespace JOB.Mappings.Interfaces
         public Worker_Mapping Workers { get; private set; }
         public Position_Mapping Positions { get; private set; }
         public Map_Mapping Maps { get; private set; }
-        public JobTemplate_Mapping JobTemplates { get; private set; }
         public Middleware_Mapping Middlewares { get; private set; }
         public Carrier_Mapping Carriers { get; private set; }
         public Elevator_Mapping Elevators{ get; private set; }
@@ -34,7 +33,6 @@ namespace JOB.Mappings.Interfaces
             Workers = new Worker_Mapping();
             Positions = new Position_Mapping();
             Maps = new Map_Mapping();
-            JobTemplates = new JobTemplate_Mapping();
             Middlewares = new Middleware_Mapping();
             Carriers = new Carrier_Mapping();
             Elevators = new Elevator_Mapping();

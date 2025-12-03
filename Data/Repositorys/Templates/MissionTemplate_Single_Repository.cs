@@ -184,6 +184,14 @@ namespace Data.Repositorys.Templates
                 return _missionTemplates.FirstOrDefault(m => m.guid == Id);
             }
         }
+        public MissionTemplate_Single GetByType_SubType(string type,string subType)
+        {
+            lock (_lock)
+            {
+                return _missionTemplates.FirstOrDefault(m=>m.type == type && m.subType == subType);
+            }
+        }
+
 
         public List<MissionTemplate_Single> GetAll()
         {

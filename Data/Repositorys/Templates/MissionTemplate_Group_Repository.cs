@@ -200,6 +200,13 @@ namespace Data.Repositorys.Templates
                 return _missionTemplates.ToList();
             }
         }
+        public List<MissionTemplate_Group> GetByGroup(string group)
+        {
+            lock (_lock)
+            {
+                return _missionTemplates.Where(m=>m.group == group).ToList();
+            }
+        }
 
         public List<Parameter> GetParametas(List<MissionTemplate_Group> missionTemplates)
         {

@@ -1,6 +1,5 @@
 ﻿using Common.Models.Bases;
 using Common.Models.Jobs;
-using System.Reflection;
 using System.Text.Json;
 
 namespace JOB.Services
@@ -281,35 +280,19 @@ namespace JOB.Services
                     var waitPositionNotOccupieds = _repository.Positions.MiR_GetNotOccupied(null, nameof(PositionSubType.ELEVATORWAIT));
                     if (waitPositionNotOccupieds == null || waitPositionNotOccupieds.Count == 0) break;
 
-                    completed = elevatorWaitParameterMapping(waitPositionNotOccupieds, mission, assignedWorker);
+                    completed = elevatorParameterMapping(waitPositionNotOccupieds, mission, assignedWorker);
 
                     break;
 
                 case nameof(MissionSubType.ELEVATORENTERMOVE):
-                    var enter1IsOccupied = _repository.Positions.MiR_GetIsOccupied(null, nameof(PositionSubType.ELEVATORENTER1)).FirstOrDefault();
-                    var enter2IsOccupied = _repository.Positions.MiR_GetIsOccupied(null, nameof(PositionSubType.ELEVATORENTER2)).FirstOrDefault();
 
-                    if (enter1IsOccupied == null)
+                    var enterPositions = _repository.Positions.MiR_GetNotOccupied(null, nameof(PositionSubType.ELEVATORENTER));
+                    if (enterPositions == null || enterPositions.Count == 0) break;
+
+                    completed = elevatorParameterMapping(enterPositions, mission, assignedWorker);
+                    if (completed)
                     {
-                        var enter1Positions = _repository.Positions.MiR_GetNotOccupied(null, nameof(PositionSubType.ELEVATORENTER1));
-                        if (enter1Positions == null || enter1Positions.Count == 0) break;
-
-                        completed = elevatorEnterParameterMapping(enter1Positions, mission, assignedWorker);
-                        if (completed)
-                        {
-                            completed = switchingMapParameterMapping(enter1Positions, mission);
-                        }
-                    }
-                    else if (enter2IsOccupied == null)
-                    {
-                        var enter2Positions = _repository.Positions.MiR_GetNotOccupied(null, nameof(PositionSubType.ELEVATORENTER2));
-                        if (enter2Positions == null || enter2Positions.Count == 0) break;
-
-                        completed = elevatorEnterParameterMapping(enter2Positions, mission, assignedWorker);
-                        if (completed)
-                        {
-                            completed = switchingMapParameterMapping(enter2Positions, mission);
-                        }
+                        completed = switchingMapParameterMapping(enterPositions, mission);
                     }
                     break;
 
@@ -317,7 +300,7 @@ namespace JOB.Services
                     var elevatorExitpositions = _repository.Positions.MiR_GetNotOccupied(null, nameof(PositionSubType.ELEVATOREXIT));
                     if (elevatorExitpositions == null || elevatorExitpositions.Count == 0) break;
 
-                    completed = elevatorExitParameterMapping(elevatorExitpositions, mission, assignedWorker);
+                    completed = elevatorParameterMapping(elevatorExitpositions, mission, assignedWorker);
 
                     break;
 
@@ -328,7 +311,7 @@ namespace JOB.Services
             return completed;
         }
 
-        private bool elevatorExitParameterMapping(List<Position> positions, Mission mission, Worker worker)
+        private bool elevatorParameterMapping(List<Position> positions, Mission mission, Worker worker)
         {
             bool completed = false;
             var Position = positions.FirstOrDefault(r => r.mapId == worker.mapId);
@@ -342,66 +325,6 @@ namespace JOB.Services
                     _repository.Missions.Update(mission);
                     completed = true;
                 }
-                if (completed == true)
-                {
-                    //직접 파라메타를 변경하는것이기때문에 포지션점유를 업데이트한다
-                    updateOccupied(Position, true);
-                }
-            }
-
-            return completed;
-        }
-
-        private bool elevatorWaitParameterMapping(List<Position> positions, Mission mission, Worker worker)
-        {
-            bool completed = false;
-            var Position = positions.FirstOrDefault(r => r.mapId == worker.mapId);
-            if (Position != null)
-            {
-                var param = mission.parameters.FirstOrDefault(r => r.key == "target");
-
-                if (param.value == null)
-                {
-                    param.value = Position.id;
-                    mission.parametersJson = JsonSerializer.Serialize(mission.parameters);
-                    _repository.Missions.Update(mission);
-                    completed = true;
-                }
-                else if (param.value == Position.id)
-                {
-                    completed = true;
-                }
-
-                if (completed == true)
-                {
-                    //직접 파라메타를 변경하는것이기때문에 포지션점유를 업데이트한다
-                    updateOccupied(Position, true);
-                }
-            }
-
-            return completed;
-        }
-
-        private bool elevatorEnterParameterMapping(List<Position> positions, Mission mission, Worker worker)
-        {
-            bool completed = false;
-            var Position = positions.FirstOrDefault(r => r.mapId == worker.mapId);
-            if (Position != null)
-            {
-                //이동 포지션 적용
-                var param = mission.parameters.FirstOrDefault(r => r.key == "target");
-                if (param.value == null)
-                {
-                    param.value = Position.id;
-                    mission.parametersJson = JsonSerializer.Serialize(mission.parameters);
-                    _repository.Missions.Update(mission);
-                    completed = true;
-                }
-                else if (param.value == Position.id)
-                {
-                    completed = true;
-                }
-
                 if (completed == true)
                 {
                     //직접 파라메타를 변경하는것이기때문에 포지션점유를 업데이트한다
@@ -511,7 +434,7 @@ namespace JOB.Services
             {
                 //엘리베이터 모드체인지 미션
                 var Jobs = _repository.Jobs.GetAll();
-                //JOb 중에 WITHEV 미션을 가지고 있고 워커가 지정되어 이 되어있지않을 경우 !!! 
+                //JOb 중에 WITHEV 미션을 가지고 있고 워커가 지정되어 이 되어있지않을 경우 !!!
                 var withEv_Job = Jobs.FirstOrDefault(r => r.subType.Contains("WITHEV") && !IsInvalid(r.assignedWorkerId));
                 if (withEv_Job == null)
                 {

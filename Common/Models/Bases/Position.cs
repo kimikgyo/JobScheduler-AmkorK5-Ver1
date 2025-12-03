@@ -11,9 +11,18 @@ namespace Common.Models.Jobs
         WAIT,           //대기
         CHARGE,          //충전
         ELEVATORWAIT,
-        ELEVATORENTER1,
-        ELEVATORENTER2,
+        ELEVATORENTER,
         ELEVATOREXIT,
+    }
+
+    public enum NodeType
+    {
+        WAYPOINT,
+        TRAFFICPOINT,
+        ELEVATOR,
+        ELEVATORWAIT,
+        ELEVATORENTER,
+        ELEVATOREXIT
     }
 
     public class Position

@@ -3,7 +3,7 @@ using Common.Models.Bases;
 
 namespace JOB.Mappings.Bases
 {
-    public class MapMapping
+    public class Map_Mapping
     {
         public Map ApiGetResourceResponse(Response_MapDto model)
         {

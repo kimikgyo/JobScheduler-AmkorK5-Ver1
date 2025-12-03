@@ -36,7 +36,7 @@ namespace RestApi.Interfases
             return httpClient;
         }
 
-        public async Task<List<Response_WorkerDto>> GetResourceWorker()
+        public async Task<List<Response_WorkerDto>> Get_Worker_Async()
         {
             try
             {
@@ -49,7 +49,7 @@ namespace RestApi.Interfases
             }
         }
 
-        public async Task<List<Response_MapDto>> GetResourceMap()
+        public async Task<List<Response_MapDto>> Get_Map_Async()
         {
             try
             {
@@ -62,7 +62,7 @@ namespace RestApi.Interfases
             }
         }
 
-        public async Task<List<Response_PositionDto>> GetResourcePosition()
+        public async Task<List<Response_PositionDto>> Get_Position_Async()
         {
             try
             {
@@ -75,7 +75,7 @@ namespace RestApi.Interfases
             }
         }
 
-        public async Task<List<Response_CarrierDto>> GetResourceCarrier()
+        public async Task<List<Response_CarrierDto>> Get_Carrier_Async()
         {
             try
             {
@@ -90,7 +90,7 @@ namespace RestApi.Interfases
 
         public async Task<Response_Node_EdgeDto> Post_Routes_Plan_Async(object value)
         {
-            if (!AcceptFilterUtility.WriteAccepted) { ApiLogger.Error($"IPAddress = {_httpClient.BaseAddress}" + "\r\n" + $"-- API NOT ALLOWED. [{nameof(ElevatorPostMissionQueueAsync)}] --"); return null; }
+            if (!AcceptFilterUtility.WriteAccepted) { ApiLogger.Error($"IPAddress = {_httpClient.BaseAddress}" + "\r\n" + $"-- API NOT ALLOWED. [{nameof(Post_Elevator_Mission_Async)}] --"); return null; }
 
             try
             {
@@ -106,9 +106,9 @@ namespace RestApi.Interfases
             }
         }
 
-        public async Task<ApiResponseDto> ElevatorPostMissionQueueAsync(object value)
+        public async Task<ResponseDto> Post_Elevator_Mission_Async(object value)
         {
-            if (!AcceptFilterUtility.WriteAccepted) { ApiLogger.Error($"IPAddress = {_httpClient.BaseAddress}" + "\r\n" + $"-- API NOT ALLOWED. [{nameof(ElevatorPostMissionQueueAsync)}] --"); return null; }
+            if (!AcceptFilterUtility.WriteAccepted) { ApiLogger.Error($"IPAddress = {_httpClient.BaseAddress}" + "\r\n" + $"-- API NOT ALLOWED. [{nameof(Post_Elevator_Mission_Async)}] --"); return null; }
 
             try
             {
@@ -116,7 +116,7 @@ namespace RestApi.Interfases
                 var response = await _httpClient.PostAsJsonAsync("api/missions", value);
                 var jsonResponse = await response.Content.ReadAsStringAsync();
 
-                var missionQueueResponse = new ApiResponseDto
+                var missionQueueResponse = new ResponseDto
                 {
                     statusCode = Convert.ToInt32(response.StatusCode),
                     statusText = response.StatusCode.ToString(),
@@ -136,9 +136,9 @@ namespace RestApi.Interfases
             }
         }
 
-        public async Task<ApiResponseDto> ElevatorDeletetMissionQueueAsync(string id)
+        public async Task<ResponseDto> Deletet_Elevator_Mission_Async(string id)
         {
-            if (!AcceptFilterUtility.WriteAccepted) { ApiLogger.Error($"IPAddress = {_httpClient.BaseAddress}" + "\r\n" + $"-- API NOT ALLOWED. [{nameof(ElevatorPostMissionQueueAsync)}] --"); return null; }
+            if (!AcceptFilterUtility.WriteAccepted) { ApiLogger.Error($"IPAddress = {_httpClient.BaseAddress}" + "\r\n" + $"-- API NOT ALLOWED. [{nameof(Post_Elevator_Mission_Async)}] --"); return null; }
 
             try
             {
@@ -146,7 +146,7 @@ namespace RestApi.Interfases
                 var response = await _httpClient.DeleteAsync($"api/missions/{id}");
                 var jsonResponse = await response.Content.ReadAsStringAsync();
 
-                var missionQueueResponse = new ApiResponseDto
+                var missionQueueResponse = new ResponseDto
                 {
                     statusCode = Convert.ToInt32(response.StatusCode),
                     statusText = response.StatusCode.ToString(),
@@ -166,9 +166,9 @@ namespace RestApi.Interfases
             }
         }
 
-        public async Task<ApiResponseDto> WorkerPostMissionQueueAsync(object value)
+        public async Task<ResponseDto> Post_Worker_Mission_Async(object value)
         {
-            if (!AcceptFilterUtility.WriteAccepted) { ApiLogger.Error($"IPAddress = {_httpClient.BaseAddress}" + "\r\n" + $"-- API NOT ALLOWED. [{nameof(WorkerPostMissionQueueAsync)}] --"); return null; }
+            if (!AcceptFilterUtility.WriteAccepted) { ApiLogger.Error($"IPAddress = {_httpClient.BaseAddress}" + "\r\n" + $"-- API NOT ALLOWED. [{nameof(Post_Worker_Mission_Async)}] --"); return null; }
 
             try
             {
@@ -176,7 +176,7 @@ namespace RestApi.Interfases
                 var response = await _httpClient.PostAsJsonAsync("missions/worker", value);
                 var jsonResponse = await response.Content.ReadAsStringAsync();
 
-                var missionQueueResponse = new ApiResponseDto
+                var missionQueueResponse = new ResponseDto
                 {
                     statusCode = Convert.ToInt32(response.StatusCode),
                     statusText = response.StatusCode.ToString(),
@@ -196,9 +196,9 @@ namespace RestApi.Interfases
             }
         }
 
-        public async Task<ApiResponseDto> WorkerDeleteMissionQueueAsync(string id)
+        public async Task<ResponseDto> Delete_Worker_Mission_Async(string id)
         {
-            if (!AcceptFilterUtility.WriteAccepted) { ApiLogger.Error($"IPAddress = {_httpClient.BaseAddress}" + "\r\n" + $"-- API NOT ALLOWED. [{nameof(WorkerDeleteMissionQueueAsync)}] --"); return null; }
+            if (!AcceptFilterUtility.WriteAccepted) { ApiLogger.Error($"IPAddress = {_httpClient.BaseAddress}" + "\r\n" + $"-- API NOT ALLOWED. [{nameof(Delete_Worker_Mission_Async)}] --"); return null; }
 
             try
             {
@@ -206,7 +206,7 @@ namespace RestApi.Interfases
                 var response = await _httpClient.DeleteAsync($"missions/worker/{id}");
                 var jsonResponse = await response.Content.ReadAsStringAsync();
 
-                var missionQueueResponse = new ApiResponseDto
+                var missionQueueResponse = new ResponseDto
                 {
                     statusCode = Convert.ToInt32(response.StatusCode),
                     statusText = response.StatusCode.ToString(),
@@ -226,9 +226,9 @@ namespace RestApi.Interfases
             }
         }
 
-        public async Task<ApiResponseDto> MiddlewarePostMissionQueueAsync(object value)
+        public async Task<ResponseDto> Post_Middleware_Mission_Async(object value)
         {
-            if (!AcceptFilterUtility.WriteAccepted) { ApiLogger.Error($"IPAddress = {_httpClient.BaseAddress}" + "\r\n" + $"-- API NOT ALLOWED. [{nameof(MiddlewarePostMissionQueueAsync)}] --"); return null; }
+            if (!AcceptFilterUtility.WriteAccepted) { ApiLogger.Error($"IPAddress = {_httpClient.BaseAddress}" + "\r\n" + $"-- API NOT ALLOWED. [{nameof(Post_Middleware_Mission_Async)}] --"); return null; }
 
             try
             {
@@ -236,7 +236,7 @@ namespace RestApi.Interfases
                 var response = await _httpClient.PostAsJsonAsync("missions/middleware", value);
                 var jsonResponse = await response.Content.ReadAsStringAsync();
 
-                var missionQueueResponse = new ApiResponseDto
+                var missionQueueResponse = new ResponseDto
                 {
                     statusCode = Convert.ToInt32(response.StatusCode),
                     statusText = response.StatusCode.ToString(),
@@ -256,9 +256,9 @@ namespace RestApi.Interfases
             }
         }
 
-        public async Task<ApiResponseDto> MiddlewareDeleteMissionQueueAsync(string id)
+        public async Task<ResponseDto> Delete_Middleware_Mission_Async(string id)
         {
-            if (!AcceptFilterUtility.WriteAccepted) { ApiLogger.Error($"IPAddress = {_httpClient.BaseAddress}" + "\r\n" + $"-- API NOT ALLOWED. [{nameof(MiddlewareDeleteMissionQueueAsync)}] --"); return null; }
+            if (!AcceptFilterUtility.WriteAccepted) { ApiLogger.Error($"IPAddress = {_httpClient.BaseAddress}" + "\r\n" + $"-- API NOT ALLOWED. [{nameof(Delete_Middleware_Mission_Async)}] --"); return null; }
 
             try
             {
@@ -266,7 +266,7 @@ namespace RestApi.Interfases
                 var response = await _httpClient.DeleteAsync($"api/missions/middleware/{id}");
                 var jsonResponse = await response.Content.ReadAsStringAsync();
 
-                var missionQueueResponse = new ApiResponseDto
+                var missionQueueResponse = new ResponseDto
                 {
                     statusCode = Convert.ToInt32(response.StatusCode),
                     statusText = response.StatusCode.ToString(),
@@ -286,9 +286,9 @@ namespace RestApi.Interfases
             }
         }
 
-        public async Task<ApiResponseDto> PositionPatchAsync(string Id, object value)
+        public async Task<ResponseDto> Patch_Position_Async(string Id, object value)
         {
-            if (!AcceptFilterUtility.WriteAccepted) { ApiLogger.Error($"IPAddress = {_httpClient.BaseAddress}" + "\r\n" + $"-- API NOT ALLOWED. [{nameof(MiddlewarePostMissionQueueAsync)}] --"); return null; }
+            if (!AcceptFilterUtility.WriteAccepted) { ApiLogger.Error($"IPAddress = {_httpClient.BaseAddress}" + "\r\n" + $"-- API NOT ALLOWED. [{nameof(Post_Middleware_Mission_Async)}] --"); return null; }
 
             try
             {
@@ -296,7 +296,7 @@ namespace RestApi.Interfases
                 var response = await _httpClient.PatchAsJsonAsync($"api/positions/{Id}", value);
                 var jsonResponse = await response.Content.ReadAsStringAsync();
 
-                var missionQueueResponse = new ApiResponseDto
+                var missionQueueResponse = new ResponseDto
                 {
                     statusCode = Convert.ToInt32(response.StatusCode),
                     statusText = response.StatusCode.ToString(),

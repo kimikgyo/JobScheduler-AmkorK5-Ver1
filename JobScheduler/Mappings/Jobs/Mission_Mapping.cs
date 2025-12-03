@@ -4,9 +4,9 @@ using Common.Models.Jobs;
 
 namespace JOB.Mappings.Jobs
 {
-    public class MissionMapping
+    public class Mission_Mapping
     {
-        public Get_MissionDto Response(Mission model)
+        public Get_MissionDto Get(Mission model)
         {
             var response = new Get_MissionDto()
             {
@@ -38,7 +38,7 @@ namespace JOB.Mappings.Jobs
             return response;
         }
 
-        public Publish_MissionDto MqttPublish(Mission model)
+        public Publish_MissionDto Publish(Mission model)
         {
             var publish = new Publish_MissionDto()
             {
@@ -73,7 +73,7 @@ namespace JOB.Mappings.Jobs
             return model;
         }
 
-        public Request_MissionDto ApiRequestDtoPostMission(Mission model)
+        public Request_MissionDto Request(Mission model)
         {
             var apiRequest = new Request_MissionDto
             {

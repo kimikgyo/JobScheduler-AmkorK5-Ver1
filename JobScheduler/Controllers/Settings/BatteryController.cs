@@ -40,7 +40,7 @@ namespace JOB.Controllers.Settings
 
         //// POST api/<BatteryController>
         //[HttpPost]
-        //public void Post([FromBody] string value)
+        //public void Request([FromBody] string value)
         //{
         //}
 

@@ -11,71 +11,66 @@ namespace JOB.JobQueues.Process
     {
         public void Add_Mission()
         {
-            while (QueueStorage.AddTryDequeueJobMission(out var cmd))
+            while (QueueStorage.Add_Mission_TryDequeue(out var cmd))
             {
-                int missionsequence = 1;
-                foreach (var missionTemplate in jobTemplate.missionTemplates)
+                var mission = new Mission
                 {
-                    var mission = new Mission
-                    {
-                        orderId = orderId,
-                        jobId = job.guid,
-                        guid = Guid.NewGuid().ToString(),
-                        carrierId = carrierId,
-                        name = missionTemplate.name,
-                        service = missionTemplate.service,
-                        type = missionTemplate.type,
-                        subType = missionTemplate.subType,
-                        sequence = missionsequence,
-                        isLocked = missionTemplate.isLook,
-                        sequenceChangeCount = 0,
-                        retryCount = 0,
-                        state = nameof(MissionState.INIT),
-                        specifiedWorkerId = job.specifiedWorkerId,
-                        assignedWorkerId = job.assignedWorkerId,
-                        createdAt = DateTime.Now,
-                        updatedAt = null,
-                        finishedAt = null,
-                        sequenceUpdatedAt = null,
-                    };
+                    orderId = cmd.job.orderId,
+                    jobId = cmd.job.guid,
+                    guid = Guid.NewGuid().ToString(),
+                    carrierId = cmd.job.carrierId,
+                    name = cmd.missionTemplate.name,
+                    service = cmd.missionTemplate.service,
+                    type = cmd.missionTemplate.type,
+                    subType = cmd.missionTemplate.subType,
+                    sequence = cmd.seq,
+                    isLocked = cmd.missionTemplate.isLook,
+                    sequenceChangeCount = 0,
+                    retryCount = 0,
+                    state = nameof(MissionState.INIT),
+                    specifiedWorkerId = cmd.job.specifiedWorkerId,
+                    assignedWorkerId = cmd.job.assignedWorkerId,
+                    createdAt = DateTime.Now,
+                    updatedAt = null,
+                    finishedAt = null,
+                    sequenceUpdatedAt = null,
+                };
 
-                    if (missionTemplate.name == null)
+                if (cmd.missionTemplate.name == null)
+                {
+                    switch (mission.subType)
                     {
-                        switch (mission.subType)
-                        {
-                            case nameof(MissionSubType.SOURCEMOVE):
-                                mission.name = sourceName;
-                                break;
+                        case nameof(MissionSubType.SOURCEMOVE):
+                            mission.name = cmd.job.sourceName;
+                            break;
 
-                            case nameof(MissionSubType.DESTINATIONMOVE):
-                                mission.name = destinationName;
-                                break;
-                        }
+                        case nameof(MissionSubType.DESTINATIONMOVE):
+                            mission.name = cmd.job.destinationName;
+                            break;
                     }
-                    else
-                    {
-                        mission.name = missionTemplate.name;
-                    }
-
-                    foreach (var parameta in missionTemplate.parameters)
-                    {
-                        Parameter param = missionParameter(missionTemplate, job, parameta, drumKeyCode, sourcelinkedFacility, destinatiolinkedFacility);
-                        if (param != null)
-                        {
-                            mission.parameters.Add(param);
-                        }
-                    }
-                    mission.linkedFacility = linkedFacility(mission.subType, sourcelinkedFacility, destinatiolinkedFacility);
-                    mission.preReports = missionTemplate.preReports;
-                    mission.postReports = missionTemplate.postReports;
-                    mission.parametersJson = JsonSerializer.Serialize(mission.parameters);
-                    mission.preReportsJson = JsonSerializer.Serialize(mission.preReports);
-                    mission.postReportsJson = JsonSerializer.Serialize(mission.postReports);
-                    missionsequence++;
-                    _repository.Missions.Add(mission);
-                    _repository.MissionHistorys.Add(mission);
-                    _mqttQueue.MqttPublishMessage(TopicType.mission, TopicSubType.status, _mapping.Missions.MqttPublish(mission));
                 }
+                else
+                {
+                    mission.name = cmd.missionTemplate.name;
+                }
+
+                foreach (var parameta in cmd.missionTemplate.parameters)
+                {
+                    Parameter param = missionParameter(cmd.missionTemplate, cmd.job, parameta, cmd.job.drumKeyCode, cmd.job.sourcelinkedFacility, cmd.job.destinationlinkedFacility);
+                    if (param != null)
+                    {
+                        mission.parameters.Add(param);
+                    }
+                }
+                mission.linkedFacility = linkedFacility(mission.subType, cmd.job.sourcelinkedFacility, cmd.job.destinationlinkedFacility);
+                mission.preReports = cmd.missionTemplate.preReports;
+                mission.postReports = cmd.missionTemplate.postReports;
+                mission.parametersJson = JsonSerializer.Serialize(mission.parameters);
+                mission.preReportsJson = JsonSerializer.Serialize(mission.preReports);
+                mission.postReportsJson = JsonSerializer.Serialize(mission.postReports);
+                _repository.Missions.Add(mission);
+                _repository.MissionHistorys.Add(mission);
+                _mqttQueue.MqttPublishMessage(TopicType.mission, TopicSubType.status, _mapping.Missions.Publish(mission));
             }
         }
 
@@ -100,7 +95,7 @@ namespace JOB.JobQueues.Process
             return reValue;
         }
 
-        private Parameter missionParameter(MissionTemplate_Single missionTemplate, Job job, Parameter parameta, string drumKeyCode
+        private Parameter missionParameter(MissionTemplate missionTemplate, Job job, Parameter parameta, string drumKeyCode
                                          , string sourcelinkedFacility, string destinatiolinkedFacility)
         {
             Parameter param = null;

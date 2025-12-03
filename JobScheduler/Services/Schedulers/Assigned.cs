@@ -188,10 +188,10 @@ namespace JOB.Services
             switch (job.type)
             {
                 case nameof(JobType.TRANSPORT):
-                case nameof(JobType.TRANSPORTCHEMICALSUPPLY):
-                case nameof(JobType.TRANSPORTCHEMICALRECOVERY):
-                case nameof(JobType.TRANSPORTSLURRYSUPPLY):
-                case nameof(JobType.TRANSPORTSLURRYRECOVERY):
+                case nameof(JobType.TRANSPORT_SLURRY_SUPPLY):
+                case nameof(JobType.TRANSPORT_SLURRY_RECOVERY):
+                case nameof(JobType.TRANSPORT_CHEMICAL_RECOVERY):
+                case nameof(JobType.TRANSPORT_CHEMICAL_SUPPLY):
 
                     //미들웨어가 사용중
                     if (worker.isMiddleware == true)

@@ -4,7 +4,7 @@ using Common.Models.Bases;
 
 namespace JOB.Mappings.Bases
 {
-    public class CarrierMapping
+    public class Carrier_Mapping
     {
         public Carrier ApiGetResourceResponse(Response_CarrierDto model)
         {

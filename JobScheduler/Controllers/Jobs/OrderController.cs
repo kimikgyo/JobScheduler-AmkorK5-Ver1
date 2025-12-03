@@ -55,15 +55,15 @@ namespace JobScheduler.Controllers.Jobs
             foreach (var model in _repository.Orders.GetAll())
             {
                 Get_OrderDto responseDto = null;
-                responseDto = _mapping.Orders.Response(model);
-                var job = _repository.Jobs.GetByOrderId(model.id, model.type, model.subType);
+                responseDto = _mapping.Orders.Get(model);
+                var job = _repository.Jobs.GetByOrderId(model.id);
                 if (job != null)
                 {
-                    var jobresponse = _mapping.Jobs.Response(job);
+                    var jobresponse = _mapping.Jobs.Get(job);
 
                     foreach (var mission in _repository.Missions.GetByJobId(job.guid))
                     {
-                        var missionresponse = _mapping.Missions.Response(mission);
+                        var missionresponse = _mapping.Missions.Get(mission);
                         jobresponse.missions.Add(missionresponse);
                     }
 
@@ -71,7 +71,7 @@ namespace JobScheduler.Controllers.Jobs
                 }
 
                 _responseDtos.Add(responseDto);
-                logger.Info($"{this.ControllerLogPath()} Response = {responseDto}");
+                logger.Info($"{this.ControllerLogPath()} Get = {responseDto}");
             }
 
             return Ok(_responseDtos);
@@ -90,14 +90,14 @@ namespace JobScheduler.Controllers.Jobs
 
                 foreach (var history in histories)
                 {
-                    var responseDto = _mapping.Orders.Response(history);
+                    var responseDto = _mapping.Orders.Get(history);
                     foreach (var job in _repository.JobHistorys.FindHistoryOrderId(history.id))
                     {
-                        var jobresponse = _mapping.Jobs.Response(job);
+                        var jobresponse = _mapping.Jobs.Get(job);
 
                         foreach (var mission in _repository.MissionHistorys.FindHistoryOrderId(history.id))
                         {
-                            var missionresponse = _mapping.Missions.Response(mission);
+                            var missionresponse = _mapping.Missions.Get(mission);
                             jobresponse.missions.Add(missionresponse);
                         }
                         responseDto.Job = jobresponse;
@@ -124,14 +124,14 @@ namespace JobScheduler.Controllers.Jobs
 
             foreach (var history in histories)
             {
-                var responseDto = _mapping.Orders.Response(history);
+                var responseDto = _mapping.Orders.Get(history);
                 foreach (var job in _repository.JobHistorys.FindHistoryOrderId(history.id))
                 {
-                    var jobresponse = _mapping.Jobs.Response(job);
+                    var jobresponse = _mapping.Jobs.Get(job);
 
                     foreach (var mission in _repository.MissionHistorys.FindHistoryOrderId(history.id))
                     {
-                        var missionresponse = _mapping.Missions.Response(mission);
+                        var missionresponse = _mapping.Missions.Get(mission);
                         jobresponse.missions.Add(missionresponse);
                     }
                     responseDto.Job = jobresponse;
@@ -154,14 +154,14 @@ namespace JobScheduler.Controllers.Jobs
 
             foreach (var history in histories)
             {
-                var mappingOrderHistory = _mapping.Orders.Response(history);
+                var mappingOrderHistory = _mapping.Orders.Get(history);
                 foreach (var job in _repository.JobFinishedHistorys.FindHistoryOrderId(history.id))
                 {
-                    var mappingJobHistory = _mapping.Jobs.Response(job);
+                    var mappingJobHistory = _mapping.Jobs.Get(job);
 
                     foreach (var mission in _repository.MissionFinishedHistorys.FindHistoryOrderId(history.id))
                     {
-                        mappingJobHistory.missions.Add(_mapping.Missions.Response(mission));
+                        mappingJobHistory.missions.Add(_mapping.Missions.Get(mission));
                     }
                     mappingOrderHistory.Job = mappingJobHistory;
                 }
@@ -178,22 +178,22 @@ namespace JobScheduler.Controllers.Jobs
             var order = _repository.Orders.GetByid(id);
             if (order != null)
             {
-                responseDto = _mapping.Orders.Response(order);
-                var job = _repository.Jobs.GetByOrderId(order.id, order.type, order.subType);
+                responseDto = _mapping.Orders.Get(order);
+                var job = _repository.Jobs.GetByOrderId(order.id);
                 if (job != null)
                 {
-                    var jobresponse = _mapping.Jobs.Response(job);
+                    var jobresponse = _mapping.Jobs.Get(job);
 
                     foreach (var mission in _repository.Missions.GetByJobId(job.guid))
                     {
-                        var missionresponse = _mapping.Missions.Response(mission);
+                        var missionresponse = _mapping.Missions.Get(mission);
                         jobresponse.missions.Add(missionresponse);
                     }
 
                     responseDto.Job = jobresponse;
                 }
             }
-            logger.Info($"{this.ControllerLogPath(id)} Response = {responseDto}");
+            logger.Info($"{this.ControllerLogPath(id)} Get = {responseDto}");
             return Ok(responseDto);
         }
 
@@ -207,7 +207,7 @@ namespace JobScheduler.Controllers.Jobs
             if (message == null)
             {
                 _queue.Create_Order(add);
-                logger.Info($"{this.ControllerLogPath()} Response = " +
+                logger.Info($"{this.ControllerLogPath()} Get = " +
                                 $"Code = {Ok(message).StatusCode}" +
                                 $",massage = {Ok(message).Value}" +
                                 $",Date = {add}"
@@ -216,7 +216,7 @@ namespace JobScheduler.Controllers.Jobs
             }
             else
             {
-                logger.Info($"{this.ControllerLogPath()} Response = " +
+                logger.Info($"{this.ControllerLogPath()} Get = " +
                                  $"Code = {NotFound(message).StatusCode}" +
                                  $",massage = {NotFound(message).Value}" +
                                  $",Date = {add}"
@@ -354,10 +354,10 @@ namespace JobScheduler.Controllers.Jobs
             //        break;
 
             //    case nameof(OrderType.TRANSPORT):
-            //    case nameof(OrderType.TRANSPORTCHEMICALSUPPLY):
-            //    case nameof(OrderType.TRANSPORTCHEMICALRECOVERY):
-            //    case nameof(OrderType.TRANSPORTSLURRYSUPPLY):
-            //    case nameof(OrderType.TRANSPORTSLURRYRECOVERY):
+            //    case nameof(OrderType.TRANSPORT_SLURRY_SUPPLY):
+            //    case nameof(OrderType.TRANSPORT_SLURRY_RECOVERY):
+            //    case nameof(OrderType.TRANSPORT_CHEMICAL_RECOVERY):
+            //    case nameof(OrderType.TRANSPORT_CHEMICAL_SUPPLY):
 
             //        //같은 order Id 가 존재하는경우
             //        if (order != null) massage = $"Check Order Id";

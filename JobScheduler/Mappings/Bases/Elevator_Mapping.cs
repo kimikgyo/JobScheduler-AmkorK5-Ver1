@@ -4,7 +4,7 @@ using Common.Models.Jobs;
 
 namespace JOB.Mappings.Bases
 {
-    public class ElevatorMapping
+    public class Elevator_Mapping
     {
         public Elevator MqttCreateElevator(Subscribe_ElevatorStatusDto statusDto)
         {

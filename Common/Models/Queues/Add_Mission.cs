@@ -1,10 +1,12 @@
-﻿using Common.Templates;
+﻿using Common.Models.Jobs;
+using Common.Templates;
 
 namespace Common.Models.Queues
 {
     public class Add_Mission
     {
-        public JobTemplate jobTemplate { get; set; }
-        public string jobId { get; set; }
+        public Job job { get; set; }
+        public MissionTemplate missionTemplate { get; set; }
+        public int seq { get; set; }
     }
 }

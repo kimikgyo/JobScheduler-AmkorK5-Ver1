@@ -62,10 +62,6 @@ namespace JOB.Services
              {
                 Task.Run(() => Monitor()),
                 Task.Run(() => JobScheduler()),
-
-                //2025.10.31 타이밍 문제로 싱글테스크로 변경
-                //Task.Run(() => JobPlannerloop()),
-                //Task.Run(() => DispatcherLoop()),
             };
         }
 
@@ -160,7 +156,7 @@ namespace JOB.Services
 
                 _repository.Orders.Update(order);
                 if (historyAdd) _repository.OrderHistorys.Add(order);
-                _mqttQueue.MqttPublishMessage(TopicType.order, TopicSubType.status, _mapping.Orders.MqttPublish(order));
+                _mqttQueue.MqttPublishMessage(TopicType.order, TopicSubType.status, _mapping.Orders.Publish(order));
             }
         }
 
@@ -185,7 +181,7 @@ namespace JOB.Services
                 }
                 _repository.Jobs.Update(job);
                 if (historyAdd) _repository.JobHistorys.Add(job);
-                _mqttQueue.MqttPublishMessage(TopicType.job, TopicSubType.status, _mapping.Jobs.MqttPublish(job));
+                _mqttQueue.MqttPublishMessage(TopicType.job, TopicSubType.status, _mapping.Jobs.Publish(job));
             }
         }
 
@@ -223,7 +219,7 @@ namespace JOB.Services
 
                 _repository.Missions.Update(mission);
                 if (historyAdd) _repository.MissionHistorys.Add(mission);
-                _mqttQueue.MqttPublishMessage(TopicType.mission, TopicSubType.status, _mapping.Missions.MqttPublish(mission));
+                _mqttQueue.MqttPublishMessage(TopicType.mission, TopicSubType.status, _mapping.Missions.Publish(mission));
             }
         }
 

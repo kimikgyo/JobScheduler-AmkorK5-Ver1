@@ -40,8 +40,8 @@ namespace JOB.Controllers.Jobs
 
             foreach (var model in _repository.Missions.GetAll())
             {
-                _responseDtos.Add(_mapping.Missions.Response(model));
-                logger.Info($"{this.ControllerLogPath()} Response = {model}");
+                _responseDtos.Add(_mapping.Missions.Get(model));
+                logger.Info($"{this.ControllerLogPath()} Get = {model}");
             }
             return Ok(_responseDtos);
         }
@@ -58,8 +58,8 @@ namespace JOB.Controllers.Jobs
                 var histories = _repository.MissionHistorys.FindHistory(startDay, endDay);
                 foreach (var history in histories)
                 {
-                    _responseDtos.Add(_mapping.Missions.Response(history));
-                    logger.Info($"{this.ControllerLogPath()} Response = {history}");
+                    _responseDtos.Add(_mapping.Missions.Get(history));
+                    logger.Info($"{this.ControllerLogPath()} Get = {history}");
                 }
 
                 return Ok(_responseDtos);
@@ -80,8 +80,8 @@ namespace JOB.Controllers.Jobs
             var histories = _repository.MissionHistorys.FindHistory(today, tomorrow);
             foreach (var history in histories)
             {
-                _responseDtos.Add(_mapping.Missions.Response(history));
-                logger.Info($"{this.ControllerLogPath()} Response = {history}");
+                _responseDtos.Add(_mapping.Missions.Get(history));
+                logger.Info($"{this.ControllerLogPath()} Get = {history}");
             }
             return Ok(_responseDtos);
         }
@@ -97,8 +97,8 @@ namespace JOB.Controllers.Jobs
             var histories = _repository.MissionFinishedHistorys.FindHistory(today, tomorrow);
             foreach (var history in histories)
             {
-                _responseDtos.Add(_mapping.Missions.Response(history));
-                logger.Info($"{this.ControllerLogPath()} Response = {history}");
+                _responseDtos.Add(_mapping.Missions.Get(history));
+                logger.Info($"{this.ControllerLogPath()} Get = {history}");
             }
             return Ok(_responseDtos);
         }
@@ -113,15 +113,15 @@ namespace JOB.Controllers.Jobs
 
             if (mission != null)
             {
-                responseDto = _mapping.Missions.Response(mission);
+                responseDto = _mapping.Missions.Get(mission);
             }
-            logger.Info($"{this.ControllerLogPath(id)} Response = {responseDto}");
+            logger.Info($"{this.ControllerLogPath(id)} Get = {responseDto}");
             return responseDto;
         }
 
         // POST api/<MissionController>
         //[HttpPost]
-        //public void Post([FromBody] string value)
+        //public void Request([FromBody] string value)
         //{
         //}
 
@@ -159,10 +159,10 @@ namespace JOB.Controllers.Jobs
                                     parameter.value = updatePosition.id;
                                     mission.updatedAt = DateTime.Now;
                                     mission.parametersJson = JsonSerializer.Serialize(mission.parameters);
-                                    responseDto = _mapping.Missions.Response(mission);
+                                    responseDto = _mapping.Missions.Get(mission);
                                     _repository.Missions.Update(mission);
                                     _repository.MissionHistorys.Add(mission);
-                                    _mqttQueue.MqttPublishMessage(TopicType.mission, TopicSubType.status, _mapping.Missions.MqttPublish(mission));
+                                    _mqttQueue.MqttPublishMessage(TopicType.mission, TopicSubType.status, _mapping.Missions.Publish(mission));
                                 }
                                 else
                                 {
@@ -195,7 +195,7 @@ namespace JOB.Controllers.Jobs
             }
             if (responseDto != null)
             {
-                logger.Info($"{this.ControllerLogPath()} Response = " +
+                logger.Info($"{this.ControllerLogPath()} Get = " +
                                 $"Code = {Ok(message).StatusCode}" +
                                 $",massage = {Ok(message).Value}" +
                                 $",Date = {responseDto}");
@@ -203,7 +203,7 @@ namespace JOB.Controllers.Jobs
             }
             else
             {
-                logger.Info($"{this.ControllerLogPath()} Response = " +
+                logger.Info($"{this.ControllerLogPath()} Get = " +
                             $"Code = {NotFound(message).StatusCode}" +
                             $",massage = {NotFound(message).Value}" +
                             $",Date = {message}"

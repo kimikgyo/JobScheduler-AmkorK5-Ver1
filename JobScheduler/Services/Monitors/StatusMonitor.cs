@@ -65,7 +65,7 @@ namespace JOB.Services
                     }
                     else
                     {
-                        _Queue.RemoveJobMission(cancelAbortJob, DateTime.Now);
+                        _Queue.Remove_Job(cancelAbortJob, DateTime.Now);
                     }
                 }
             }
@@ -91,7 +91,7 @@ namespace JOB.Services
                     else
                     {
                         updateStateJob(job, nameof(JobState.COMPLETED));
-                        _Queue.RemoveJobMission(job, DateTime.Now);
+                        _Queue.Remove_Job(job, DateTime.Now);
                     }
                 }
             }

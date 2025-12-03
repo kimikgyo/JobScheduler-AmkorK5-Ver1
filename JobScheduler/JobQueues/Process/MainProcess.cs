@@ -127,6 +127,7 @@ namespace JOB.JobQueues.Process
 
         private void Mission()
         {
+            Add_Mission();
         }
     }
 }

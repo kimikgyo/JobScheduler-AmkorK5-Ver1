@@ -4,7 +4,7 @@ using Common.Models.Bases;
 
 namespace JOB.Mappings.Bases
 {
-    public class MiddlewareMapping
+    public class Middleware_Mapping
     {
         public Middleware ApiGetResourceResponse(string workerId, Response_MiddlewareDto model)
         {

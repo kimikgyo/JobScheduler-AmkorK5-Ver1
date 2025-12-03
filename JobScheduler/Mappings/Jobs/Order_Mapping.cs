@@ -4,9 +4,9 @@ using Common.Models.Jobs;
 
 namespace JOB.Mappings.Jobs
 {
-    public class OrderMapping
+    public class Order_Mapping
     {
-        public Get_OrderDto Response(Order model)
+        public Get_OrderDto Get(Order model)
         {
             var response = new Get_OrderDto()
             {
@@ -31,7 +31,7 @@ namespace JOB.Mappings.Jobs
             return response;
         }
 
-        public Publish_OrderDto MqttPublish(Order model)
+        public Publish_OrderDto Publish(Order model)
         {
             var publish = new Publish_OrderDto()
             {

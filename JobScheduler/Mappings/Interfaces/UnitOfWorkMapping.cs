@@ -1,21 +1,25 @@
-﻿using JOB.Mappings;
+﻿using Common.Templates;
+using JOB.Mappings;
 using JOB.Mappings.Bases;
 using JOB.Mappings.Jobs;
+using JOB.Mappings.Templates;
 
 namespace JOB.Mappings.Interfaces
 {
     public class UnitOfWorkMapping : IUnitOfWorkMapping
     {
-        public OrderMapping Orders { get; private set; }
-        public JobMapping Jobs { get; private set; }
-        public MissionMapping Missions { get; private set; }
-        public WorkerMapping Workers { get; private set; }
-        public PositionMapping Positions { get; private set; }
-        public MapMapping Maps { get; private set; }
-        public JobTemplateMapping JobTemplates { get; private set; }
-        public MiddlewareMapping Middlewares { get; private set; }
-        public CarrierMapping Carriers { get; private set; }
-        public ElevatorMapping Elevators{ get; private set; }
+        public Order_Mapping Orders { get; private set; }
+        public Job_Mapping Jobs { get; private set; }
+        public Mission_Mapping Missions { get; private set; }
+        public Worker_Mapping Workers { get; private set; }
+        public Position_Mapping Positions { get; private set; }
+        public Map_Mapping Maps { get; private set; }
+        public JobTemplate_Mapping JobTemplates { get; private set; }
+        public Middleware_Mapping Middlewares { get; private set; }
+        public Carrier_Mapping Carriers { get; private set; }
+        public Elevator_Mapping Elevators{ get; private set; }
+        public RoutesPlan_Mapping RoutesPlanas { get; private set; }
+        public MissionTemplate_Mapping MissionTemplates { get; private set; }
 
         public UnitOfWorkMapping()
         {
@@ -24,16 +28,18 @@ namespace JOB.Mappings.Interfaces
 
         private void mapping()
         {
-            Orders = new OrderMapping();
-            Jobs = new JobMapping();
-            Missions = new MissionMapping();
-            Workers = new WorkerMapping();
-            Positions = new PositionMapping();
-            Maps = new MapMapping();
-            JobTemplates = new JobTemplateMapping();
-            Middlewares = new MiddlewareMapping();
-            Carriers = new CarrierMapping();
-            Elevators = new ElevatorMapping();
+            Orders = new Order_Mapping();
+            Jobs = new Job_Mapping();
+            Missions = new Mission_Mapping();
+            Workers = new Worker_Mapping();
+            Positions = new Position_Mapping();
+            Maps = new Map_Mapping();
+            JobTemplates = new JobTemplate_Mapping();
+            Middlewares = new Middleware_Mapping();
+            Carriers = new Carrier_Mapping();
+            Elevators = new Elevator_Mapping();
+            RoutesPlanas = new RoutesPlan_Mapping();
+            MissionTemplates = new MissionTemplate_Mapping();
         }
 
         public void SaveChanges()

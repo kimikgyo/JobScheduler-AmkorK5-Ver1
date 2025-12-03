@@ -5,7 +5,10 @@ namespace Common.Templates
 {
     public enum MissionsTemplateGroup
     {
-        ELEVATOR
+        PICK,
+        DROP,
+        TRAFFIC,
+        ELEVATOR,
     }
 
     public class MissionTemplate_Group
@@ -29,7 +32,6 @@ namespace Common.Templates
         [JsonPropertyOrder(15)] public string postReportsJson { get; set; }        //Mission 이후에 보내지는 Report
         [JsonPropertyOrder(16)] public DateTime createdAt { get; set; }                  // 생성 시각
         [JsonPropertyOrder(17)] public DateTime? updatedAt { get; set; }
-
 
         // 사람용 요약 (디버거/로그에서 보기 좋게)
         public override string ToString()

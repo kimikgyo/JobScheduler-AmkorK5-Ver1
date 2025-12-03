@@ -39,13 +39,13 @@ namespace JOB.Controllers.Jobs
 
             foreach (var job in _repository.Jobs.GetAll())
             {
-                var responceJob = _mapping.Jobs.Response(job);
+                var responceJob = _mapping.Jobs.Get(job);
                 foreach (var mission in _repository.Missions.GetByJobId(responceJob.guid))
                 {
-                    responceJob.missions.Add(_mapping.Missions.Response(mission));
+                    responceJob.missions.Add(_mapping.Missions.Get(mission));
                 }
                 _responseDtos.Add(responceJob);
-                logger.Info($"{this.ControllerLogPath()} Response = {responceJob}");
+                logger.Info($"{this.ControllerLogPath()} Get = {responceJob}");
             }
 
             return Ok(_responseDtos);
@@ -64,13 +64,13 @@ namespace JOB.Controllers.Jobs
 
                 foreach (var history in histories)
                 {
-                    var responceJob = _mapping.Jobs.Response(history);
+                    var responceJob = _mapping.Jobs.Get(history);
                     foreach (var mission in _repository.MissionHistorys.FindHistoryJobId(history.guid))
                     {
-                        responceJob.missions.Add(_mapping.Missions.Response(mission));
+                        responceJob.missions.Add(_mapping.Missions.Get(mission));
                     }
                     _responseDtos.Add(responceJob);
-                    logger.Info($"{this.ControllerLogPath()} Response = {responceJob}");
+                    logger.Info($"{this.ControllerLogPath()} Get = {responceJob}");
                 }
 
                 return Ok(_responseDtos);
@@ -92,13 +92,13 @@ namespace JOB.Controllers.Jobs
 
             foreach (var history in histories)
             {
-                var responceJob = _mapping.Jobs.Response(history);
+                var responceJob = _mapping.Jobs.Get(history);
                 foreach (var mission in _repository.MissionHistorys.FindHistoryJobId(history.guid))
                 {
-                    responceJob.missions.Add(_mapping.Missions.Response(mission));
+                    responceJob.missions.Add(_mapping.Missions.Get(mission));
                 }
                 _responseDtos.Add(responceJob);
-                logger.Info($"{this.ControllerLogPath()} Response = {responceJob}");
+                logger.Info($"{this.ControllerLogPath()} Get = {responceJob}");
             }
 
             return Ok(_responseDtos);
@@ -116,13 +116,13 @@ namespace JOB.Controllers.Jobs
 
             foreach (var history in histories)
             {
-                var responceJob = _mapping.Jobs.Response(history);
+                var responceJob = _mapping.Jobs.Get(history);
                 foreach (var mission in _repository.MissionFinishedHistorys.FindHistoryJobId(history.guid))
                 {
-                    responceJob.missions.Add(_mapping.Missions.Response(mission));
+                    responceJob.missions.Add(_mapping.Missions.Get(mission));
                 }
                 _responseDtos.Add(responceJob);
-                logger.Info($"{this.ControllerLogPath()} Response = {responceJob}");
+                logger.Info($"{this.ControllerLogPath()} Get = {responceJob}");
             }
             return Ok(_responseDtos);
         }
@@ -136,14 +136,14 @@ namespace JOB.Controllers.Jobs
             var job = _repository.Jobs.GetByid(id);
             if (job != null)
             {
-                responseDto = _mapping.Jobs.Response(job);
+                responseDto = _mapping.Jobs.Get(job);
 
                 foreach (var mission in _repository.Missions.GetByJobId(job.guid))
                 {
-                    responseDto.missions.Add(_mapping.Missions.Response(mission));
+                    responseDto.missions.Add(_mapping.Missions.Get(mission));
                 }
             }
-            logger.Info($"{this.ControllerLogPath(id)} Response = {responseDto}");
+            logger.Info($"{this.ControllerLogPath(id)} Get = {responseDto}");
             return Ok(responseDto);
         }
 
@@ -170,7 +170,7 @@ namespace JOB.Controllers.Jobs
                     job.terminatingAt = update.terminatingAt;
                     _repository.Jobs.Update(job);
                     _repository.JobHistorys.Add(job);
-                    _mqttQueue.MqttPublishMessage(TopicType.job, TopicSubType.status, _mapping.Jobs.MqttPublish(job));
+                    _mqttQueue.MqttPublishMessage(TopicType.job, TopicSubType.status, _mapping.Jobs.Publish(job));
                     return Ok(job);
                 }
             }
@@ -204,7 +204,7 @@ namespace JOB.Controllers.Jobs
 
         //// POST api/<JobController>
         //[HttpPost]
-        //public void Post([FromBody] string value)
+        //public void Request([FromBody] string value)
         //{
         //}
 

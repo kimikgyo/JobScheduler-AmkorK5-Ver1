@@ -4,9 +4,9 @@ using Common.Models.Jobs;
 
 namespace JOB.Mappings.Jobs
 {
-    public class JobMapping
+    public class Job_Mapping
     {
-        public Get_JobDto Response(Job model)
+        public Get_JobDto Get(Job model)
         {
             var response = new Get_JobDto()
             {
@@ -43,7 +43,7 @@ namespace JOB.Mappings.Jobs
             return response;
         }
 
-        public Publish_JobDto MqttPublish(Job model)
+        public Publish_JobDto Publish(Job model)
         {
             var publish = new Publish_JobDto()
             {

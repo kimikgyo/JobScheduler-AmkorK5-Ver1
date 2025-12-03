@@ -75,11 +75,11 @@ namespace JOB.Services
                 if (elevatorparamMapping)
                 {
                     //[조건3] API 형식에 맞추어서 Mapping 을 한다.
-                    var mapping_mission = _mapping.Missions.ApiRequestDtoPostMission(mission);
+                    var mapping_mission = _mapping.Missions.Request(mission);
                     if (mapping_mission != null)
                     {
                         //[조건4] Service 로 Api Mission 전송을 한다.
-                        var postmission = workerApi.Api.WorkerPostMissionQueueAsync(mapping_mission).Result;
+                        var postmission = workerApi.Api.Post_Worker_Mission_Async(mapping_mission).Result;
                         if (postmission != null)
                         {
                             //[조건5] 상태코드 200~300 까지는 완료 처리
@@ -104,11 +104,11 @@ namespace JOB.Services
             if (elevatorApi != null)
             {
                 //[조건3] API 형식에 맞추어서 Mapping 을 한다.
-                var mapping_mission = _mapping.Missions.ApiRequestDtoPostMission(mission);
+                var mapping_mission = _mapping.Missions.Request(mission);
                 if (mapping_mission != null)
                 {
                     //[조건4] Service 로 Api Mission 전송을 한다.
-                    var postmission = elevatorApi.Api.ElevatorPostMissionQueueAsync(mapping_mission).Result;
+                    var postmission = elevatorApi.Api.Post_Elevator_Mission_Async(mapping_mission).Result;
                     if (postmission != null)
                     {
                         //[조건5] 상태코드 200~300 까지는 완료 처리
@@ -130,10 +130,10 @@ namespace JOB.Services
             var middlewareApi = _repository.ServiceApis.GetAll().FirstOrDefault(r => r.type == "worker");
             if (middlewareApi != null)
             {
-                var mapping_mission = _mapping.Missions.ApiRequestDtoPostMission(mission);
+                var mapping_mission = _mapping.Missions.Request(mission);
                 if (mapping_mission != null)
                 {
-                    var postmission = middlewareApi.Api.MiddlewarePostMissionQueueAsync(mapping_mission).Result;
+                    var postmission = middlewareApi.Api.Post_Middleware_Mission_Async(mapping_mission).Result;
                     if (postmission != null)
                     {
                         if (postmission.statusCode >= 200 && postmission.statusCode < 300)
@@ -155,7 +155,7 @@ namespace JOB.Services
             var workerApi = _repository.ServiceApis.GetAll().FirstOrDefault(r => r.type == "worker");
             if (workerApi != null)
             {
-                var postmission = workerApi.Api.WorkerDeleteMissionQueueAsync(mission.guid).Result;
+                var postmission = workerApi.Api.Delete_Worker_Mission_Async(mission.guid).Result;
                 if (postmission != null)
                 {
                     if (postmission.statusCode >= 200 && postmission.statusCode < 300)
@@ -176,11 +176,11 @@ namespace JOB.Services
             if (elevatorApi != null)
             {
                 //[조건3] API 형식에 맞추어서 Mapping 을 한다.
-                var mapping_mission = _mapping.Missions.ApiRequestDtoPostMission(mission);
+                var mapping_mission = _mapping.Missions.Request(mission);
                 if (mapping_mission != null)
                 {
                     //[조건4] Service 로 Api Mission 전송을 한다.
-                    var postmission = elevatorApi.Api.ElevatorDeletetMissionQueueAsync(mapping_mission.guid).Result;
+                    var postmission = elevatorApi.Api.Deletet_Elevator_Mission_Async(mapping_mission.guid).Result;
                     if (postmission != null)
                     {
                         //[조건5] 상태코드 200~300 까지는 완료 처리

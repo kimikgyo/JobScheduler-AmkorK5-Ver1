@@ -1,29 +1,18 @@
 ﻿using Common.DTOs.Rests.Orders;
 using Common.Models.Jobs;
 using Common.Models.Queues;
-using Data.Interfaces;
-using JOB.JobQueues.Process;
-using JOB.Mappings.Interfaces;
-using JOB.MQTTs.Interfaces;
+using Common.Templates;
 
 namespace JOB.JobQueues.Interfaces
 {
     public class UnitOfWorkJobMissionQueue : IUnitOfWorkJobMissionQueue
     {
-        private readonly QueueProcess _queueProcess;
-
-        public UnitOfWorkJobMissionQueue(IUnitOfWorkRepository repository, IUnitofWorkMqttQueue mqttQueue, IUnitOfWorkMapping mapping)
-        {
-            _queueProcess = new QueueProcess(repository, mqttQueue, mapping);
-        }
-
         public void Create_Order(Post_OrderDto post_OrderDto)
         {
             QueueStorage.Add_Order_Enqueue(new Add_Order
             {
                 post_Order = post_OrderDto
             });
-            _queueProcess.Add_Order();
         }
 
         public void Remove_Order(Order target, DateTime? finishedAt)
@@ -33,7 +22,6 @@ namespace JOB.JobQueues.Interfaces
                 orderTarget = target,
                 finishedAt = finishedAt,
             });
-            _queueProcess.Remove_Order_Job_Mission();
         }
 
         public void Create_Job(string group, string orderId, string type, string subtype, string carrierId, int priority, string drumKeyCode
@@ -59,8 +47,6 @@ namespace JOB.JobQueues.Interfaces
                 sourcelinkedFacility = sourcelinkedFacility,
                 destinationlinkedFacility = destinationlinkedFacility,
             });
-
-            _queueProcess.Add_Job();
         }
 
         public void Remove_Job(Job job, DateTime? finishedAt)
@@ -70,18 +56,16 @@ namespace JOB.JobQueues.Interfaces
                 job = job,
                 finishedAt = finishedAt
             });
-            _queueProcess.Remove_Job_Mission();
         }
 
-        public void ProcessAllOrder()
+        public void Add_Mission(Job job, MissionTemplate missionTemplate, int seq)
         {
-            _queueProcess.Add_Order();
-            _queueProcess.RemoveOrder();
-        }
-
-        public void ProcessAllJob()
-        {
-            _queueProcess.AddJob_Mission();
+            QueueStorage.Add_Mission_Enqueue(new Add_Mission
+            {
+                job = job,
+                missionTemplate = missionTemplate,
+                seq = seq
+            });
         }
 
         public void SaveChanges()

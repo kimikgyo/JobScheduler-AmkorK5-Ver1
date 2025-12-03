@@ -7,10 +7,12 @@ namespace Common.Models.Jobs
         None,                       //
         MOVE,                       // 이동
         TRANSPORT,                  // 일반 자재 운반
-        TRANSPORTCHEMICALSUPPLY,    // 케미컬 공급
-        TRANSPORTCHEMICALRECOVERY,  // 케미컬 회수
-        TRANSPORTSLURRYSUPPLY,      // 슬러리 공급
-        TRANSPORTSLURRYRECOVERY,    // 슬러리 회수
+        TRANSPORT_SLURRY_SUPPLY,    // 케미컬 공급
+        TRANSPORT_SLURRY_RECOVERY,  // 케미컬 회수
+        TRANSPORT_CHEMICAL_RECOVERY,      // 슬러리 공급
+        TRANSPORT_CHEMICAL_SUPPLY,    // 슬러리 회수
+        TRANSPORT_AICERO_SUPPLY,    // 슬러리 회수
+        TRANSPORT_AICERO_RESOVERY,    // 슬러리 회수
         CHARGE,                     // 충전
         WAIT,                       // 대기위치
         RESET,                      // Reset

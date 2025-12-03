@@ -6,31 +6,31 @@ namespace Common.Models.Queues
     {
         #region Order
 
-        private static readonly ConcurrentQueue<Add_Order> AddQueueOrder = new ConcurrentQueue<Add_Order>();
-        private static readonly ConcurrentQueue<Remove_Order> RemoveQueueOrder = new ConcurrentQueue<Remove_Order>();
+        private static readonly ConcurrentQueue<Add_Order> Add_Order = new ConcurrentQueue<Add_Order>();
+        private static readonly ConcurrentQueue<Remove_Order> Remove_Order = new ConcurrentQueue<Remove_Order>();
 
         public static void Add_Order_Enqueue(Add_Order item)
         {
             //미션 및 Queue 를 실행한부분을 순차적으로 추가시킨다
-            AddQueueOrder.Enqueue(item);
+            Add_Order.Enqueue(item);
         }
 
         public static bool AddTryDequeueOrder(out Add_Order item)
         {
             //실행하면 순차적으로 하나씩 Return한다
-            return AddQueueOrder.TryDequeue(out item);
+            return Add_Order.TryDequeue(out item);
         }
 
         public static void Remove_Order_Enqueue(Remove_Order item)
         {
             //미션 및 Queue 를 실행한부분을 순차적으로 추가시킨다
-            RemoveQueueOrder.Enqueue(item);
+            Remove_Order.Enqueue(item);
         }
 
         public static bool RemoveTryDequeueOrder(out Remove_Order item)
         {
             //실행하면 순차적으로 하나씩 Return한다
-            return RemoveQueueOrder.TryDequeue(out item);
+            return Remove_Order.TryDequeue(out item);
         }
 
         #endregion Order

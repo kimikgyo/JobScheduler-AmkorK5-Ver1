@@ -1,19 +1,22 @@
 ﻿using JOB.Mappings.Bases;
 using JOB.Mappings.Jobs;
+using JOB.Mappings.Templates;
 
 namespace JOB.Mappings.Interfaces
 {
     public interface IUnitOfWorkMapping : IDisposable
     {
-        OrderMapping Orders { get; }
-        JobMapping Jobs { get; }
-        MissionMapping Missions { get; }
-        WorkerMapping Workers { get; }
-        PositionMapping Positions { get; }
-        MapMapping Maps { get; }
-        JobTemplateMapping JobTemplates { get; }
-        MiddlewareMapping Middlewares { get; }
-        CarrierMapping Carriers { get; }
-        ElevatorMapping Elevators{ get; }
+        Order_Mapping Orders { get; }
+        Job_Mapping Jobs { get; }
+        Mission_Mapping Missions { get; }
+        Worker_Mapping Workers { get; }
+        Position_Mapping Positions { get; }
+        Map_Mapping Maps { get; }
+        JobTemplate_Mapping JobTemplates { get; }
+        Middleware_Mapping Middlewares { get; }
+        Carrier_Mapping Carriers { get; }
+        Elevator_Mapping Elevators { get; }
+        RoutesPlan_Mapping RoutesPlanas { get; }
+        MissionTemplate_Mapping MissionTemplates { get; }
     }
 }

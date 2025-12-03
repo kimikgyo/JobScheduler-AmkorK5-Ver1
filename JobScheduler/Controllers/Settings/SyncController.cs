@@ -35,7 +35,7 @@ namespace JOB.Controllers.Settings
 
         //// POST api/<SyncController>
         //[HttpPost]
-        //public void Post([FromBody] string value)
+        //public void Request([FromBody] string value)
         //{
         //}
 

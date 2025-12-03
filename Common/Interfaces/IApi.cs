@@ -1,5 +1,4 @@
 ﻿using Common.DTOs.Rests.Carriers;
-using Common.DTOs.Rests.JobTemplates;
 using Common.DTOs.Rests.Maps;
 using Common.DTOs.Rests.Nodes_Edges;
 using Common.DTOs.Rests.Positions;
@@ -12,27 +11,27 @@ namespace Common.Interfaces
     {
         Uri BaseAddress { get; }
 
-        Task<List<Response_WorkerDto>> GetResourceWorker();
+        Task<List<Response_WorkerDto>> Get_Worker_Async();
 
-        Task<List<Response_MapDto>> GetResourceMap();
+        Task<List<Response_MapDto>> Get_Map_Async();
 
-        Task<List<Response_PositionDto>> GetResourcePosition();
+        Task<List<Response_PositionDto>> Get_Position_Async();
 
-        Task<List<Response_CarrierDto>> GetResourceCarrier();
+        Task<List<Response_CarrierDto>> Get_Carrier_Async();
 
-        Task<ApiResponseDto> WorkerPostMissionQueueAsync(object value);
+        Task<ResponseDto> Post_Worker_Mission_Async(object value);
 
-        Task<ApiResponseDto> ElevatorPostMissionQueueAsync(object value);
+        Task<ResponseDto> Post_Elevator_Mission_Async(object value);
 
-        Task<ApiResponseDto> MiddlewarePostMissionQueueAsync(object value);
+        Task<ResponseDto> Post_Middleware_Mission_Async(object value);
 
-        Task<ApiResponseDto> WorkerDeleteMissionQueueAsync(string id);
+        Task<ResponseDto> Delete_Worker_Mission_Async(string id);
 
-        Task<ApiResponseDto> MiddlewareDeleteMissionQueueAsync(string id);
+        Task<ResponseDto> Delete_Middleware_Mission_Async(string id);
 
-        Task<ApiResponseDto> ElevatorDeletetMissionQueueAsync(string id);
-        
-        Task<ApiResponseDto> PositionPatchAsync(string id, object value);
+        Task<ResponseDto> Deletet_Elevator_Mission_Async(string id);
+
+        Task<ResponseDto> Patch_Position_Async(string id, object value);
 
         Task<Response_Node_EdgeDto> Post_Routes_Plan_Async(object value);
     }

@@ -1,5 +1,6 @@
 ﻿using Common.DTOs.Rests.Orders;
 using Common.Models.Jobs;
+using Common.Templates;
 
 namespace JOB.JobQueues.Interfaces
 {
@@ -15,5 +16,7 @@ namespace JOB.JobQueues.Interfaces
                                    , string specifiedWorkerId, string assignedWorkerId);
 
         void Remove_Job(Job job, DateTime? finishedAt);
+
+        void Add_Mission(Job job, MissionTemplate missionTemplate, int seq);
     }
 }

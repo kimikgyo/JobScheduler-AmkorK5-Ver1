@@ -13,7 +13,7 @@ namespace JOB.JobQueues.Process
         {
             while (QueueStorage.AddTryDequeueOrder(out var cmd))
             {
-                var addOrder = cmd.AddRequestOrder;
+                var addOrder = cmd.post_Order;
 
                 var order = new Order
                 {
@@ -40,7 +40,7 @@ namespace JOB.JobQueues.Process
                 //{
                 _repository.Orders.Add(order);
                 _repository.OrderHistorys.Add(order);
-                _mqttQueue.MqttPublishMessage(TopicType.order, TopicSubType.status, _mapping.Orders.MqttPublish(order));
+                _mqttQueue.MqttPublishMessage(TopicType.order, TopicSubType.status, _mapping.Orders.Publish(order));
                 //trxScope.Complete();
                 //}
             }

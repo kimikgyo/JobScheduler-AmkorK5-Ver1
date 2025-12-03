@@ -50,10 +50,10 @@ namespace JobScheduler.Services
                             _repository.Workers.Delete();
                             _repository.Maps.Delete();
                             _repository.Positions.Delete();
-                            var Workers = await serviceApi.Api.GetResourceWorker();
-                            var Maps = await serviceApi.Api.GetResourceMap();
-                            var Positions = await serviceApi.Api.GetResourcePosition();
-                            //var Carriers = await serviceApi.Api.GetResourceCarrier();
+                            var Workers = await serviceApi.Api.Get_Worker_Async();
+                            var Maps = await serviceApi.Api.Get_Map_Async();
+                            var Positions = await serviceApi.Api.Get_Position_Async();
+                            //var Carriers = await serviceApi.Api.Get_Carrier_Async();
 
                             if (Workers == null)
                             {
@@ -198,10 +198,10 @@ namespace JobScheduler.Services
                     {
                         if (serviceApi.type == "Resource")
                         {
-                            var getReloadWorkers = await serviceApi.Api.GetResourceWorker();
-                            var getReloadMaps = await serviceApi.Api.GetResourceMap();
-                            var getReloadPositions = await serviceApi.Api.GetResourcePosition();
-                            //var getReloadCarrier = await serviceApi.Api.GetResourceCarrier();
+                            var getReloadWorkers = await serviceApi.Api.Get_Worker_Async();
+                            var getReloadMaps = await serviceApi.Api.Get_Map_Async();
+                            var getReloadPositions = await serviceApi.Api.Get_Position_Async();
+                            //var getReloadCarrier = await serviceApi.Api.Get_Carrier_Async();
                             if (getReloadWorkers == null)
                             {
                                 _eventlog.Info($"{nameof(getReloadWorkers)}GetDataFail");

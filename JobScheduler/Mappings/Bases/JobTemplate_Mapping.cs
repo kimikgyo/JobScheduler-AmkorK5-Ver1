@@ -4,7 +4,7 @@ using Common.Templates;
 
 namespace JOB.Mappings.Bases
 {
-    public class JobTemplateMapping
+    public class JobTemplate_Mapping
     {
         public JobTemplate ApiGetResourceResponse(Response_JobTemplateDto model)
         {

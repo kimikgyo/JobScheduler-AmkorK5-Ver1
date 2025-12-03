@@ -4,7 +4,7 @@ using Common.Models.Jobs;
 
 namespace JOB.Mappings.Bases
 {
-    public class PositionMapping
+    public class Position_Mapping
     {
         public Position ApiGetResourceResponse(Response_PositionDto model)
         {

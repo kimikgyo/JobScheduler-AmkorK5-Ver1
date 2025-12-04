@@ -1,32 +1,15 @@
 ﻿using Common.Models.Bases;
 using Common.Models.Jobs;
 using Common.Models.Settings;
+using Common.Templates;
 
 namespace JOB.Services
 {
     public partial class SchedulerService
     {
-        private void JobAssined()
+        private void WorkerAssined()
         {
-            state_WorkerAssigned_Sync();
             workerAssignedControl();
-        }
-
-        private void state_WorkerAssigned_Sync()
-        {
-            var jobs = _repository.Jobs.GetAll().Where(r => r.state != nameof(JobState.INIT) && r.state != nameof(JobState.WAIT)).ToList();
-            var assingedjobs = jobs.Where(j => j.terminationType == null && string.IsNullOrWhiteSpace(j.assignedWorkerId) == false).ToList();
-
-            foreach (var job in assingedjobs)
-            {
-                var missions = _repository.Missions.GetByJobId(job.guid);
-                var NotassignedWorkers = missions.Where(m => m.state == nameof(MissionState.INIT)).ToList();
-                foreach (var mission in NotassignedWorkers)
-                {
-                    mission.assignedWorkerId = job.assignedWorkerId;
-                    updateStateMission(mission, nameof(MissionState.WORKERASSIGNED), true);
-                }
-            }
         }
 
         /// <summary>
@@ -35,7 +18,7 @@ namespace JOB.Services
         private void workerAssignedControl()
         {
             //신규 Job 이있는지 확인
-            var UnAssignedWorkerJobs = _repository.Jobs.GetByState(nameof(JobState.WAIT)).Where(j => j.terminationType == null && string.IsNullOrWhiteSpace(j.assignedWorkerId)).ToList();
+            var UnAssignedWorkerJobs = _repository.Jobs.GetByState(nameof(JobState.INIT)).Where(j => j.terminationType == null && string.IsNullOrWhiteSpace(j.assignedWorkerId)).ToList();
             UnAssignedWorkerJobs = UnAssignedWorkerJobs.OrderByDescending(r => r.priority).ToList();
             UnAssignedWorkerJobs = UnAssignedWorkerJobs.OrderBy(r => r.createdAt).ToList();
             if (UnAssignedWorkerJobs == null || UnAssignedWorkerJobs.Count == 0) return;
@@ -50,9 +33,9 @@ namespace JOB.Services
             }
 
             //순차적용
-            firstJob(UnAssignedWorkerJobs, batterySetting);
+            //firstJob(UnAssignedWorkerJobs, batterySetting);
             //거리순 적용
-            //distance(UnAssignedWorkerJobs, batterySetting);
+            distance(UnAssignedWorkerJobs, batterySetting);
         }
 
         /// <summary>
@@ -66,44 +49,34 @@ namespace JOB.Services
             // [일단!order1개씩처리]
             // 1.Job 받을수있는 워커를 확인한다.
             // 1-1 통신연결 되어있고 Error 상태가 아니고 엑티브 활성화 되어있는지
+            Job returnJob = null;
+            Worker returnWorker = null;
 
             foreach (var worker in _repository.Workers.MiR_GetByActive())
             {
                 Job job = null;
+                if (worker.state != nameof(WorkerState.IDLE)) return;
+
+                //[조회]Job 이할당되어있는지
                 var runjob = _repository.Jobs.GetByAssignWorkerId(worker.id).FirstOrDefault();
                 if (runjob != null) continue;
-                //그룹과 일치하는 Job이있는지
+
+                //[조회]그룹과 일치하는 Job이있는지
                 UnAssignedWorkerJobs = UnAssignedWorkerJobs.Where(u => u.group == worker.group).ToList();
 
-                //지정한 워커가 있는지
+                //[조회]지정한 워커가 있는지 Job
                 job = UnAssignedWorkerJobs.FirstOrDefault(j => j.specifiedWorkerId == worker.id);
 
                 if (job == null)
                 {
+                    //[조회]지정한 워커가 없는 Job
                     job = UnAssignedWorkerJobs.FirstOrDefault(j => IsInvalid(j.specifiedWorkerId));
                 }
 
                 if (job != null)
                 {
-                    if (TransPortCondition(job, worker) == false) continue;
-                    //orderId 가 있는경우는 외부에서 Order 를 받은것이기때문에 minimum 배터리 이하면 전송하지않는다.
-                    if (job.orderId != null && worker.batteryPercent < batterySetting.minimum) continue;
-                    var missions = _repository.Missions.GetByJobId(job.guid);
-                    if (missions == null || missions.Count == 0) continue;
-
-                    job.assignedWorkerId = worker.id;
-                    updateStateJob(job, nameof(JobState.WORKERASSIGNED), true);
-                    foreach (var mission in missions)
-                    {
-                        mission.assignedWorkerId = worker.id;
-                        updateStateMission(mission, nameof(MissionState.WORKERASSIGNED), true);
-                    }
-                    var order = _repository.Orders.GetByid(job.orderId);
-                    if (order != null)
-                    {
-                        order.assignedWorkerId = worker.id;
-                        updateStateOrder(order, OrderState.Transferring, true);
-                    }
+                    if (WorkerCondition(job, worker, batterySetting) == false) continue;
+                    Create_Mission(job, worker);
                 }
             }
         }
@@ -118,7 +91,7 @@ namespace JOB.Services
         {
             var workers = _repository.Workers.MiR_GetByActive();
             if (workers.Count == 0 || workers == null) return;
-            var idleWorkers = workers.Where(r => r.state == nameof(WorkerState.IDLE) && r.batteryPercent > batterySetting.minimum).ToList();
+            var idleWorkers = workers.Where(r => r.state == nameof(WorkerState.IDLE)).ToList();
             if (idleWorkers == null || idleWorkers.Count == 0) return;
             var findSpecifiedWorkerjobs = UnAssignedWorkerJobs.Where(j => IsInvalid(j.specifiedWorkerId) == false).ToList();
             var findNotspecifiedWorkerjobs = UnAssignedWorkerJobs.Where(j => IsInvalid(j.specifiedWorkerId) == true).ToList();
@@ -144,21 +117,8 @@ namespace JOB.Services
                     job = specifiedJobSelect(worker, specifiedWorkerjobs);
                     if (job != null)
                     {
-                        if (TransPortCondition(job, worker) == false) continue;
-
-                        job.assignedWorkerId = worker.id;
-                        updateStateJob(job, nameof(JobState.WORKERASSIGNED), true);
-                        foreach (var mission in _repository.Missions.GetByJobId(job.guid))
-                        {
-                            mission.assignedWorkerId = worker.id;
-                            updateStateMission(mission, nameof(MissionState.WORKERASSIGNED), true);
-                        }
-                        var order = _repository.Orders.GetByid(job.orderId);
-                        if (order != null)
-                        {
-                            order.assignedWorkerId = worker.id;
-                            updateStateOrder(order, OrderState.Transferring, true);
-                        }
+                        if (WorkerCondition(job, worker, batterySetting) == false) continue;
+                        Create_Mission(job, worker);
                         _assignedWorkers.Add(worker);
                     }
                 }
@@ -179,61 +139,12 @@ namespace JOB.Services
                     var worker = NotspecifiedJobSelect(workers, job);
                     if (worker != null)
                     {
-                        if (TransPortCondition(job, worker) == false) continue;
-
-                        job.assignedWorkerId = worker.id;
-                        updateStateJob(job, nameof(JobState.WORKERASSIGNED), true);
-
-                        foreach (var mission in _repository.Missions.GetByJobId(job.guid))
-                        {
-                            mission.assignedWorkerId = worker.id;
-                            updateStateMission(mission, nameof(MissionState.WORKERASSIGNED), true);
-                        }
-                        var order = _repository.Orders.GetByid(job.orderId);
-                        if (order != null)
-                        {
-                            order.assignedWorkerId = worker.id;
-                            updateStateOrder(order, OrderState.Transferring, true);
-                        }
+                        if (WorkerCondition(job, worker, batterySetting) == false) continue;
+                        Create_Mission(job, worker);
                         workers.Remove(worker);
                     }
                 }
             }
-        }
-
-        private bool TransPortCondition(Job job, Worker worker)
-        {
-            bool Condition = true;
-            switch (job.type)
-            {
-                case nameof(JobType.TRANSPORT):
-                case nameof(JobType.TRANSPORT_SLURRY_SUPPLY):
-                case nameof(JobType.TRANSPORT_SLURRY_RECOVERY):
-                case nameof(JobType.TRANSPORT_CHEMICAL_RECOVERY):
-                case nameof(JobType.TRANSPORT_CHEMICAL_SUPPLY):
-
-                    //미들웨어가 사용중
-                    if (worker.isMiddleware == true)
-                    {
-                        var middleware = _repository.Middlewares.GetByWorkerId(worker.id);
-                        if (middleware != null)
-                        {
-                            //대기 상태일때만 Job이가능
-                            if (middleware.state != nameof(MiddlewareState.IDLE)) Condition = false;
-
-                            var carrier = _repository.Carriers.GetByWorkerId(worker.id).FirstOrDefault();
-
-                            //자재가 있을경우에만 Job 이가능
-                            if (job.subType == nameof(JobSubType.DROPONLY) && carrier != null) Condition = false;
-
-                            //자재가 없을경우에만 Job 이가능
-                            else if (carrier != null) Condition = false;
-                        }
-                        else Condition = false;
-                    }
-                    break;
-            }
-            return Condition;
         }
 
         /// <summary>
@@ -306,6 +217,191 @@ namespace JOB.Services
                 }
             }
             return jobSelect;
+        }
+
+        private bool WorkerCondition(Job job, Worker worker, Battery battery)
+        {
+            bool Condition = true;
+            switch (job.type)
+            {
+                case nameof(JobType.TRANSPORT):
+                case nameof(JobType.TRANSPORT_SLURRY_SUPPLY):
+                case nameof(JobType.TRANSPORT_SLURRY_RECOVERY):
+                case nameof(JobType.TRANSPORT_CHEMICAL_RECOVERY):
+                case nameof(JobType.TRANSPORT_CHEMICAL_SUPPLY):
+                    if (worker.batteryPercent > battery.minimum) Condition = false;
+                    //미들웨어가 사용중
+                    if (worker.isMiddleware == true)
+                    {
+                        var middleware = _repository.Middlewares.GetByWorkerId(worker.id);
+                        if (middleware != null)
+                        {
+                            //대기 상태일때만 Job이가능
+                            if (middleware.state != nameof(MiddlewareState.IDLE)) Condition = false;
+
+                            var carrier = _repository.Carriers.GetByWorkerId(worker.id).FirstOrDefault();
+
+                            //자재가 있을경우에만 Job 이가능
+                            if (job.subType == nameof(JobSubType.DROPONLY) && carrier != null) Condition = false;
+
+                            //자재가 없을경우에만 Job 이가능
+                            else if (carrier != null) Condition = false;
+                        }
+                        else Condition = false;
+                    }
+                    break;
+            }
+            return Condition;
+        }
+
+        private void Create_Mission(Job job, Worker worker)
+        {
+            int seq = 1;
+            bool ElevatorMissionFlag = false;
+            Position source = null;
+            Position destination = null;
+
+            var Resource = _repository.ServiceApis.GetAll().FirstOrDefault(s => s.type == "Resource");
+            if (Resource == null) return;
+
+            destination = _repository.Positions.GetById(job.destinationId);
+            if (IsInvalid(job.sourceId))
+            {
+                var positions = _repository.Positions.MiR_GetByMapId(worker.mapId);
+                if (positions == null || positions.Count() == 0) return;
+                //워커에서 가장 가까운 포지션을 출발지 포지션으로 설정한다.
+                source = _repository.Positions.FindNearestWayPoint(worker, positions).FirstOrDefault();
+            }
+            else
+            {
+                source = _repository.Positions.GetById(job.sourceId);
+            }
+
+            if (source == null) return;
+            if (destination == null) return;
+
+            var Routes_Plan = Resource.Api.Post_Routes_Plan_Async(_mapping.RoutesPlanas.Request(source.positionId, destination.positionId)).Result;
+
+            if (Routes_Plan.nodes == null) return;
+
+            switch (job.type)
+            {
+                case nameof(JobType.TRANSPORT):
+                case nameof(JobType.TRANSPORT_SLURRY_SUPPLY):
+                case nameof(JobType.TRANSPORT_SLURRY_RECOVERY):
+                case nameof(JobType.TRANSPORT_CHEMICAL_SUPPLY):
+                case nameof(JobType.TRANSPORT_CHEMICAL_RECOVERY):
+                case nameof(JobType.TRANSPORT_AICERO_SUPPLY):
+                case nameof(JobType.TRANSPORT_AICERO_RESOVERY):
+                    foreach (var node in Routes_Plan.nodes)
+                    {
+                        var position = _repository.Positions.GetByPositionId(node.positionId);
+
+                        if (node.positionId == source.positionId)
+                        {
+                            seq = create_GroupMission(job, position, worker, seq, nameof(MissionsTemplateGroup.PICK));
+                        }
+                        else if (node.positionId == destination.positionId)
+                        {
+                            seq = create_GroupMission(job, position, worker, seq, nameof(MissionsTemplateGroup.DROP));
+                        }
+                        else if (node.nodeType.ToUpper() == nameof(NodeType.ELEVATOR))
+                        {
+                            if (ElevatorMissionFlag == false)
+                            {
+                                seq = create_GroupMission(job, null, worker, seq, nameof(MissionsTemplateGroup.ELEVATOR));
+                                ElevatorMissionFlag = true;
+                            }
+                            else continue;
+                        }
+                        else if (node.nodeType.ToUpper() == nameof(NodeType.TRAFFICPOINT))
+                        {
+                            seq = create_GroupMission(job, position, worker, seq, nameof(MissionsTemplateGroup.TRAFFIC));
+                        }
+                        else
+                        {
+                            seq = create_SingleMission(job, position, worker, seq, nameof(MissionTemplateType.MOVE), nameof(MissionTemplateSubType.STOPOVERMOVE));
+                        }
+                    }
+
+                    break;
+
+                case nameof(JobType.CHARGE):
+                case nameof(JobType.WAIT):
+                    foreach (var node in Routes_Plan.nodes)
+                    {
+                        var position = _repository.Positions.GetByPositionId(node.positionId);
+
+                        if (node.positionId == source.positionId)
+                        {
+                            seq = create_SingleMission(job, position, worker, seq, nameof(MissionTemplateType.MOVE), nameof(MissionTemplateSubType.SOURCEMOVE));
+                        }
+                        else if (node.positionId == destination.positionId)
+                        {
+                            seq = create_SingleMission(job, position, worker, seq, nameof(MissionTemplateType.MOVE), nameof(MissionTemplateSubType.DESTINATIONMOVE));
+                        }
+                        else if (node.nodeType.ToUpper() == nameof(NodeType.ELEVATOR))
+                        {
+                            if (ElevatorMissionFlag == false)
+                            {
+                                seq = create_GroupMission(job, null, worker, seq, nameof(MissionsTemplateGroup.ELEVATOR));
+                                ElevatorMissionFlag = true;
+                            }
+                            else continue;
+                        }
+                        else if (node.nodeType.ToUpper() == nameof(NodeType.TRAFFICPOINT))
+                        {
+                            seq = create_GroupMission(job, position, worker, seq, nameof(MissionsTemplateGroup.TRAFFIC));
+                        }
+                        else
+                        {
+                            seq = create_SingleMission(job, position, worker, seq, nameof(MissionTemplateType.MOVE), nameof(MissionTemplateSubType.STOPOVERMOVE));
+                        }
+                    }
+                    break;
+            }
+            job.assignedWorkerId = worker.id;
+            updateStateJob(job, nameof(JobState.WORKERASSIGNED), true);
+
+            if (job.orderId != null)
+            {
+                var order = _repository.Orders.GetByid(job.orderId);
+                if (order != null)
+                {
+                    order.assignedWorkerId = worker.id;
+                    updateStateOrder(order, OrderState.Transferring, true);
+                }
+            }
+        }
+
+        private int create_SingleMission(Job job, Position position, Worker worker, int seq, string type, string subtype)
+        {
+            lock (_lock)
+            {
+                var template = _repository.MissionTemplates_Single.GetByType_SubType(type, subtype);
+                if (template != null)
+                {
+                    var missionTemplate = _mapping.MissionTemplates.Create(template);
+                    _Queue.Create_Mission(job, missionTemplate, position, worker, seq);
+                    seq++;
+                }
+            }
+            return seq;
+        }
+
+        private int create_GroupMission(Job job, Position position, Worker worker, int seq, string templateGroup)
+        {
+            lock (_lock)
+            {
+                var Templates = _repository.MissionTemplates_Group.GetByGroup(templateGroup);
+                foreach (var template in Templates)
+                {
+                    var missionTemplate = _mapping.MissionTemplates.Create(template);
+                    _Queue.Create_Mission(job, missionTemplate, position, worker, seq);
+                    seq++;
+                }
+            }
+            return seq;
         }
     }
 }

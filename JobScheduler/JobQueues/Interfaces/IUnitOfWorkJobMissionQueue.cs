@@ -13,10 +13,10 @@ namespace JOB.JobQueues.Interfaces
         void Create_Job(string group, string orderId, string type, string subtype, string carrierId, int priority, string drumKeyCode
                                    , string sourceId, string sourceName, string sourcelinkedFacility
                                    , string destinationId, string destinationName, string destinationlinkedFacility
-                                   , string specifiedWorkerId, string assignedWorkerId);
+                                   , string specifiedWorkerId);
 
         void Remove_Job(Job job, DateTime? finishedAt);
 
-        void Add_Mission(Job job, MissionTemplate missionTemplate, Position position, int seq);
+        void Create_Mission(Job job, MissionTemplate missionTemplate, Position position, Worker worker, int seq);
     }
 }

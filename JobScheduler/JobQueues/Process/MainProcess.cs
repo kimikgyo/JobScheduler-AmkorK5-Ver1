@@ -55,7 +55,7 @@ namespace JOB.JobQueues.Process
             // - 이전 실행 기록이 남아있지 않도록 매번 새 리스트로 준비.
             _tasks = new List<Task>
              {
-                Task.Run(() => JobMissionProcess()),
+                Task.Run(() => Queue_JobProcess()),
             };
         }
 
@@ -74,23 +74,23 @@ namespace JOB.JobQueues.Process
                 try
                 {
                     await Task.WhenAll(_tasks);  // 모든 Task 종료 대기
-                    EventLogger.Info($"[StopAsync] JobMissionProcess Task Stop");
+                    EventLogger.Info($"[StopAsync] Queue_JobProcess Task Stop");
                 }
                 catch (Exception ex)
                 {
                     // Task 내부 예외 로깅
-                    EventLogger.Info($"[StopAsync] JobMissionProcess Task Stop Error : {ex.Message}");
+                    EventLogger.Info($"[StopAsync] Queue_JobProcess Task Stop Error : {ex.Message}");
                 }
             }
 
             _tasks.Clear();
         }
 
-        private async Task JobMissionProcess()
+        private async Task Queue_JobProcess()
         {
             try
             {
-                EventLogger.Info("[JobMissionProcess Task] Start");  // 루프 시작 로그
+                EventLogger.Info("[Queue_JobProcess Task] Start");  // 루프 시작 로그
 
                 while (_running)
                 {
@@ -109,25 +109,25 @@ namespace JOB.JobQueues.Process
             }
             finally
             {
-                EventLogger.Info("[JobMissionProcess Task] Stop");  // 루프 종료 로그
+                EventLogger.Info("[Queue_JobProcess Task] Stop");  // 루프 종료 로그
             }
         }
 
         private void Order()
         {
-            Add_Order();
+            Crate_Order();
             Remove_Order_Job_Mission();
         }
 
         private void Job()
         {
-            Add_Job();
+            Crate_Job();
             Remove_Job_Mission();
         }
 
         private void Mission()
         {
-            Add_Mission();
+            Create_Mission();
         }
     }
 }

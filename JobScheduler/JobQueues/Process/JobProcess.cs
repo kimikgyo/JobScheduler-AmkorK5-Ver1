@@ -7,7 +7,7 @@ namespace JOB.JobQueues.Process
 {
     public partial class QueueProcess
     {
-        public void Add_Job()
+        public void Crate_Job()
         {
             while (QueueStorage.Add_Job_TryDequeue(out var cmd))
             {
@@ -32,7 +32,6 @@ namespace JOB.JobQueues.Process
                     isLocked = false,
                     state = nameof(JobState.INIT),
                     specifiedWorkerId = cmd.specifiedWorkerId,
-                    assignedWorkerId = cmd.assignedWorkerId,
                     createdAt = DateTime.Now,
                     updatedAt = null,
                     finishedAt = null,

@@ -9,7 +9,7 @@ namespace JOB.JobQueues.Interfaces
     {
         public void Create_Order(Post_OrderDto post_OrderDto)
         {
-            QueueStorage.Add_Order_Enqueue(new Add_Order
+            QueueStorage.Create_Order_Enqueue(new Create_Order
             {
                 post_Order = post_OrderDto
             });
@@ -27,25 +27,24 @@ namespace JOB.JobQueues.Interfaces
         public void Create_Job(string group, string orderId, string type, string subtype, string carrierId, int priority, string drumKeyCode
                                     , string sourceId, string sourceName, string sourcelinkedFacility
                                     , string destinationId, string destinationName, string destinationlinkedFacility
-                                    , string specifiedWorkerId, string assignedWorkerId)
+                                    , string specifiedWorkerId)
         {
-            QueueStorage.Add_Job_Enqueue(new Add_Job
+            QueueStorage.Create_Job_Enqueue(new Create_Job
             {
                 orderId = orderId,
+                groupId = group,
                 type = type,
                 subtype = subtype,
                 carrierId = carrierId,
                 drumKeyCode = drumKeyCode,
-                groupId = group,
                 sourceId = sourceId,
+                sourceName = sourceName,
+                sourcelinkedFacility = sourcelinkedFacility,
                 destinationId = destinationId,
+                destinationName = destinationName,
+                destinationlinkedFacility = destinationlinkedFacility,
                 priority = priority,
                 specifiedWorkerId = specifiedWorkerId,
-                assignedWorkerId = assignedWorkerId,
-                sourceName = sourceName,
-                destinationName = destinationName,
-                sourcelinkedFacility = sourcelinkedFacility,
-                destinationlinkedFacility = destinationlinkedFacility,
             });
         }
 
@@ -58,13 +57,14 @@ namespace JOB.JobQueues.Interfaces
             });
         }
 
-        public void Add_Mission(Job job, MissionTemplate missionTemplate,Position position, int seq)
+        public void Create_Mission(Job job, MissionTemplate missionTemplate,Position position,Worker worker, int seq)
         {
-            QueueStorage.Add_Mission_Enqueue(new Add_Mission
+            QueueStorage.Create_Mission_Enqueue(new Create_Mission
             {
                 job = job,
                 position = position,
                 missionTemplate = missionTemplate,
+                worker = worker,
                 seq = seq
             });
         }

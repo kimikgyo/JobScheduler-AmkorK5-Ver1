@@ -9,7 +9,7 @@ namespace JOB.JobQueues.Process
 {
     public partial class QueueProcess
     {
-        public void Add_Mission()
+        public void Create_Mission()
         {
             while (QueueStorage.Add_Mission_TryDequeue(out var cmd))
             {
@@ -27,42 +27,27 @@ namespace JOB.JobQueues.Process
                     isLocked = cmd.missionTemplate.isLook,
                     sequenceChangeCount = 0,
                     retryCount = 0,
-                    state = nameof(MissionState.INIT),
+                    state = nameof(MissionState.WORKERASSIGNED),
                     specifiedWorkerId = cmd.job.specifiedWorkerId,
-                    assignedWorkerId = cmd.job.assignedWorkerId,
+                    assignedWorkerId = cmd.worker.id,
                     createdAt = DateTime.Now,
                     updatedAt = null,
                     finishedAt = null,
                     sequenceUpdatedAt = null,
                 };
 
-                switch (mission.type)
-                {
-                    case nameof(MissionType.MOVE):
-                        if (cmd.position != null)
-                        {
-                            mission.name = cmd.position.name;
-                        }
-                        else
-                        {
-                            mission.name = cmd.missionTemplate.name;
-                        }
-                        break;
-
-                    default:
-                        mission.name = cmd.missionTemplate.name;
-                        break;
-                }
+                mission.name = missionName_linkedFacility(cmd.missionTemplate, cmd.position).name;
+                mission.linkedFacility = missionName_linkedFacility(cmd.missionTemplate, cmd.position).linkedFacility;
 
                 foreach (var parameta in cmd.missionTemplate.parameters)
                 {
-                    Parameter param = missionParameter(cmd.missionTemplate, cmd.job, cmd.position, parameta, cmd.job.drumKeyCode, cmd.job.sourcelinkedFacility, cmd.job.destinationlinkedFacility);
+                    Parameter param = missionParameter(cmd.missionTemplate, cmd.position, parameta, cmd.job.drumKeyCode);
                     if (param != null)
                     {
                         mission.parameters.Add(param);
                     }
                 }
-                mission.linkedFacility = linkedFacility(mission.subType, cmd.job.sourcelinkedFacility, cmd.job.destinationlinkedFacility);
+
                 mission.preReports = cmd.missionTemplate.preReports;
                 mission.postReports = cmd.missionTemplate.postReports;
                 mission.parametersJson = JsonSerializer.Serialize(mission.parameters);
@@ -74,29 +59,24 @@ namespace JOB.JobQueues.Process
             }
         }
 
-        private string linkedFacility(string missionSubType, string sourcelinkedFacility, string destinatiolinkedFacility)
+        private (string name, string linkedFacility) missionName_linkedFacility(MissionTemplate missionTemplate, Position position)
         {
-            string reValue = null;
-            switch (missionSubType)
+            string name = null;
+            string linkedFacility = null;
+            if (position != null)
             {
-                case nameof(MissionSubType.SOURCEMOVE):
-                case nameof(MissionSubType.SOURCEACTION):
-                case nameof(MissionSubType.SOURCESTOPOVERMOVE):
-                    reValue = sourcelinkedFacility;
-                    break;
-
-                case nameof(MissionSubType.DESTINATIONMOVE):
-                case nameof(MissionSubType.DESTINATIONACTION):
-                case nameof(MissionSubType.DESTINATIONSTOPOVERMOVE):
-                    reValue = destinatiolinkedFacility;
-                    break;
+                name = position.name;
+                linkedFacility = position.linkedFacility;
             }
-
-            return reValue;
+            else
+            {
+                name = missionTemplate.name;
+                linkedFacility = null;
+            }
+            return (name, linkedFacility);
         }
 
-        private Parameter missionParameter(MissionTemplate missionTemplate, Job job, Position position, Parameter parameta, string drumKeyCode
-                                         , string sourcelinkedFacility, string destinatiolinkedFacility)
+        private Parameter missionParameter(MissionTemplate missionTemplate, Position position, Parameter parameta, string drumKeyCode)
         {
             Parameter param = null;
             if (IsInvalid(parameta.value))
@@ -104,24 +84,18 @@ namespace JOB.JobQueues.Process
                 switch (parameta.key)
                 {
                     case "target":
-                        if (position != null)
+                        if (position != null 
+                             && missionTemplate.subType != nameof(MissionTemplateSubType.ELEVATORWAITMOVE)
+                             && missionTemplate.subType != nameof(MissionTemplateSubType.ELEVATORENTERMOVE)
+                             && missionTemplate.subType != nameof(MissionTemplateSubType.ELEVATOREXITMOVE)
+                             && missionTemplate.subType != nameof(MissionTemplateSubType.SWITCHINGMAP)
+                             && missionTemplate.subType != nameof(MissionTemplateSubType.RIGHTTURN))
                         {
-                            if (missionTemplate.type == nameof(MissionType.MOVE))
+                            param = new Parameter
                             {
-                                param = new Parameter
-                                {
-                                    key = parameta.key,
-                                    value = position.id,
-                                };
-                            }
-                            else
-                            {
-                                param = new Parameter
-                                {
-                                    key = parameta.key,
-                                    value = parameta.value,
-                                };
-                            }
+                                key = parameta.key,
+                                value = position.id,
+                            };
                         }
                         else
                         {
@@ -143,21 +117,20 @@ namespace JOB.JobQueues.Process
                         break;
 
                     case "linkedFacility":
-
-                        if (missionTemplate.subType == nameof(MissionSubType.SOURCEACTION))
+                        if (position != null)
                         {
                             param = new Parameter
                             {
                                 key = parameta.key,
-                                value = sourcelinkedFacility
+                                value = position.linkedFacility
                             };
                         }
-                        else if (missionTemplate.subType == nameof(MissionSubType.DESTINATIONACTION))
+                        else
                         {
                             param = new Parameter
                             {
                                 key = parameta.key,
-                                value = destinatiolinkedFacility
+                                value = parameta.value,
                             };
                         }
                         break;
@@ -171,53 +144,15 @@ namespace JOB.JobQueues.Process
                         break;
 
                     case "SourceFloor":
-                        //출발지 Position 있는경우
-                        var Sourceposition = _repository.Positions.MiR_GetById(job.sourceId);
-                        if (Sourceposition != null)
-                        {
-                            var map = _repository.Maps.GetBymapId(Sourceposition.mapId);
-                            if (map != null)
-                            {
-                                param = new Parameter
-                                {
-                                    key = parameta.key,
-                                    value = $"{map.name}"
-                                };
-                            }
-                        }
-                        else
-                        {
-                            //출발지 Position이 없는경우
-                            var worker = _repository.Workers.GetById(job.specifiedWorkerId);
-                            if (worker != null)
-                            {
-                                var map = _repository.Maps.GetBymapId(worker.mapId);
-                                if (map != null)
-                                {
-                                    param = new Parameter
-                                    {
-                                        key = parameta.key,
-                                        value = $"{map.name}"
-                                    };
-                                }
-                            }
-                        }
-                        break;
-
                     case "DestinationFloor":
-
-                        var Destposition = _repository.Positions.MiR_GetById(job.destinationId);
-                        if (Destposition != null)
+                        var map = _repository.Maps.GetBymapId(position.mapId);
+                        if (map != null)
                         {
-                            var map = _repository.Maps.GetBymapId(Destposition.mapId);
-                            if (map != null)
+                            param = new Parameter
                             {
-                                param = new Parameter
-                                {
-                                    key = parameta.key,
-                                    value = $"{map.name}"
-                                };
-                            }
+                                key = parameta.key,
+                                value = $"{map.name}"
+                            };
                         }
                         break;
                 }

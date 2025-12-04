@@ -9,7 +9,7 @@ namespace JOB.JobQueues.Process
 {
     public partial class QueueProcess
     {
-        public void Add_Order()
+        public void Crate_Order()
         {
             while (QueueStorage.AddTryDequeueOrder(out var cmd))
             {

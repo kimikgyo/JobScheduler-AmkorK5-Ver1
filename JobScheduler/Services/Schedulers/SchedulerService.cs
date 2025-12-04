@@ -103,7 +103,7 @@ namespace JOB.Services
                     try
                     {
                         JobPlanner();
-                        JobAssined();
+                        WorkerAssined();
                         Dispatcher();
                         await Task.Delay(300);
                     }

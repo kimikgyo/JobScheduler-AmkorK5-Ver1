@@ -11,7 +11,7 @@ namespace Common.Models.Queues
         REMOVE
     }
 
-    public class Add_Order
+    public class Create_Order
     {
         public Post_OrderDto post_Order;
     }

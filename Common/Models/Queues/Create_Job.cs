@@ -1,6 +1,6 @@
 ﻿namespace Common.Models.Queues
 {
-    public class Add_Job
+    public class Create_Job
     {
         public string orderId { get; set; }
         public string type { get; set; }
@@ -16,6 +16,5 @@
         public string destinationName { get; set; }
         public string destinationlinkedFacility { get; set; }
         public string specifiedWorkerId { get; set; }
-        public string assignedWorkerId { get; set; }
     }
 }

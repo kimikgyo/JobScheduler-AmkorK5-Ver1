@@ -6,16 +6,16 @@ namespace Common.Models.Queues
     {
         #region Order
 
-        private static readonly ConcurrentQueue<Add_Order> Add_Order = new ConcurrentQueue<Add_Order>();
+        private static readonly ConcurrentQueue<Create_Order> Add_Order = new ConcurrentQueue<Create_Order>();
         private static readonly ConcurrentQueue<Remove_Order> Remove_Order = new ConcurrentQueue<Remove_Order>();
 
-        public static void Add_Order_Enqueue(Add_Order item)
+        public static void Create_Order_Enqueue(Create_Order item)
         {
             //미션 및 Queue 를 실행한부분을 순차적으로 추가시킨다
             Add_Order.Enqueue(item);
         }
 
-        public static bool AddTryDequeueOrder(out Add_Order item)
+        public static bool AddTryDequeueOrder(out Create_Order item)
         {
             //실행하면 순차적으로 하나씩 Return한다
             return Add_Order.TryDequeue(out item);
@@ -37,17 +37,17 @@ namespace Common.Models.Queues
 
         #region Job
 
-        private static readonly ConcurrentQueue<Add_Job> Add_Job = new ConcurrentQueue<Add_Job>();
+        private static readonly ConcurrentQueue<Create_Job> Add_Job = new ConcurrentQueue<Create_Job>();
         private static readonly ConcurrentQueue<Remove_Job> Remove_Job = new ConcurrentQueue<Remove_Job>();
-        private static readonly ConcurrentQueue<Add_Mission> Add_Mission = new ConcurrentQueue<Add_Mission>();
+        private static readonly ConcurrentQueue<Create_Mission> Add_Mission = new ConcurrentQueue<Create_Mission>();
 
-        public static void Add_Job_Enqueue(Add_Job item)
+        public static void Create_Job_Enqueue(Create_Job item)
         {
             //미션 및 Queue 를 실행한부분을 순차적으로 추가시킨다
             Add_Job.Enqueue(item);
         }
 
-        public static bool Add_Job_TryDequeue(out Add_Job item)
+        public static bool Add_Job_TryDequeue(out Create_Job item)
         {
             //실행하면 순차적으로 하나씩 Return한다
             return Add_Job.TryDequeue(out item);
@@ -65,13 +65,13 @@ namespace Common.Models.Queues
             return Remove_Job.TryDequeue(out item);
         }
 
-        public static void Add_Mission_Enqueue(Add_Mission item)
+        public static void Create_Mission_Enqueue(Create_Mission item)
         {
             //미션 및 Queue 를 실행한부분을 순차적으로 추가시킨다
             Add_Mission.Enqueue(item);
         }
 
-        public static bool Add_Mission_TryDequeue(out Add_Mission item)
+        public static bool Add_Mission_TryDequeue(out Create_Mission item)
         {
             //실행하면 순차적으로 하나씩 Return한다
             return Add_Mission.TryDequeue(out item);

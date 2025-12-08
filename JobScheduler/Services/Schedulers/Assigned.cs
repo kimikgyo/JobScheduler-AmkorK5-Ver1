@@ -19,8 +19,12 @@ namespace JOB.Services
         {
             //신규 Job 이있는지 확인
             var UnAssignedWorkerJobs = _repository.Jobs.GetByState(nameof(JobState.INIT)).Where(j => j.terminationType == null && string.IsNullOrWhiteSpace(j.assignedWorkerId)).ToList();
-            UnAssignedWorkerJobs = UnAssignedWorkerJobs.OrderByDescending(r => r.priority).ToList();
-            UnAssignedWorkerJobs = UnAssignedWorkerJobs.OrderBy(r => r.createdAt).ToList();
+            // OrderByDescending: priority 높은 순  // ThenBy: 같은 priority 내에서 생성시간 빠른 순
+            //ThenBy는 앞에 있는 OrderBy(또는 OrderByDescending) 기준이 “동일한 값”일 때만 적용된다.
+            //ThenBy는 첫 번째 정렬 기준 값이 다르면 → ThenBy는 무시됨
+            //ThenBy는 첫 번째 정렬 기준 값이 같으면 → ThenBy가 작동하여 두 번째 정렬 기준으로 정렬됨
+            //ThenBy는 1차 정렬 결과에서 동등한 값들 에만 적용되는 2차 정렬 기준이다.
+            UnAssignedWorkerJobs = UnAssignedWorkerJobs.OrderByDescending(r => r.priority).ThenBy(r => r.createdAt).ToList();
             if (UnAssignedWorkerJobs == null || UnAssignedWorkerJobs.Count == 0) return;
             var batterySetting = _repository.Battery.GetAll();
             if (batterySetting == null) return;
@@ -76,7 +80,10 @@ namespace JOB.Services
                 if (job != null)
                 {
                     if (WorkerCondition(job, worker, batterySetting) == false) continue;
-                    Create_Mission(job, worker);
+                    if (ChangeWaitDeleteMission(worker))
+                    {
+                        Create_Mission(job, worker);
+                    }
                 }
             }
         }
@@ -101,7 +108,12 @@ namespace JOB.Services
                 // [조회] 워커가 실행중인 Job
                 var runjobWorker = workers.FirstOrDefault(r => r.id == runjob.assignedWorkerId);
                 // [조건] Job실행중인것이 있고 충전이 아닌것!
-                if (runjobWorker != null && runjob.type != nameof(JobType.CHARGE)) workers.Remove(runjobWorker);
+                if (runjobWorker != null
+                    && runjob.type != nameof(JobType.WAIT)
+                    && runjob.type != nameof(JobType.CHARGE))
+                {
+                    workers.Remove(runjobWorker);
+                }
             }
             if (findSpecifiedWorkerjobs.Count > 0)
             {
@@ -118,10 +130,14 @@ namespace JOB.Services
                     if (job != null)
                     {
                         if (WorkerCondition(job, worker, batterySetting) == false) continue;
-                        Create_Mission(job, worker);
-                        _assignedWorkers.Add(worker);
+                        if (ChangeWaitDeleteMission(worker))
+                        {
+                            Create_Mission(job, worker);
+                            _assignedWorkers.Add(worker);
+                        }
                     }
                 }
+                //위에 할당된 워커를 삭제한다.
                 foreach (var _assignedWorker in _assignedWorkers)
                 {
                     workers.Remove(_assignedWorker);
@@ -140,11 +156,30 @@ namespace JOB.Services
                     if (worker != null)
                     {
                         if (WorkerCondition(job, worker, batterySetting) == false) continue;
-                        Create_Mission(job, worker);
-                        workers.Remove(worker);
+                        if (ChangeWaitDeleteMission(worker))
+                        {
+                            Create_Mission(job, worker);
+                        }
                     }
                 }
             }
+        }
+        //충전이나 대기위치 미션을 삭제한다.
+        private bool ChangeWaitDeleteMission(Worker worker)
+        {
+            bool reValue = true;
+            var runjob = _repository.Jobs.GetByAssignWorkerId(worker.id).FirstOrDefault();
+            if (runjob != null)
+            {
+                if ((runjob.type == nameof(JobType.WAIT)) || (runjob.type == nameof(JobType.CHARGE)))
+                {
+                    runjob.terminator = "JobScheduler";
+                    runjob.terminationType = "CANCEL";
+                    runjob.terminatedAt = DateTime.Now;
+                    reValue = false;
+                }
+            }
+            return reValue;
         }
 
         /// <summary>

@@ -46,6 +46,10 @@ namespace JOB.Services
             }
         }
 
+        /// <summary>
+        /// UI상이나 어떠한상황에서 Mission 만 Cancel을 했을경우
+        /// </summary>
+        /// <param name="jobs"></param>
         private void terminateState_Null(List<Job> jobs)
         {
             var terminateState_Null_jobs = jobs.Where(j => j.terminateState == null).ToList();
@@ -65,7 +69,10 @@ namespace JOB.Services
             }
         }
 
-        //누군가에 Cancel 을 전달 받은경우.
+        /// <summary>
+        /// Job Cancel 명령을 받았을경우
+        /// </summary>
+        /// <param name="jobs"></param>
         private void terminateState_Inited(List<Job> jobs)
         {
             var terminateState_INITED_Jobs = jobs.Where(j => j.terminateState == nameof(TerminateState.INITED)).ToList();

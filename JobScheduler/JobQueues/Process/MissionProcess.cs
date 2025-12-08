@@ -84,7 +84,7 @@ namespace JOB.JobQueues.Process
                 switch (parameta.key)
                 {
                     case "target":
-                        if (position != null 
+                        if (position != null
                              && missionTemplate.subType != nameof(MissionTemplateSubType.ELEVATORWAITMOVE)
                              && missionTemplate.subType != nameof(MissionTemplateSubType.ELEVATORENTERMOVE)
                              && missionTemplate.subType != nameof(MissionTemplateSubType.ELEVATOREXITMOVE)
@@ -123,6 +123,25 @@ namespace JOB.JobQueues.Process
                             {
                                 key = parameta.key,
                                 value = position.linkedFacility
+                            };
+                        }
+                        else
+                        {
+                            param = new Parameter
+                            {
+                                key = parameta.key,
+                                value = parameta.value,
+                            };
+                        }
+                        break;
+
+                    case "linkedArea":
+                        if (position != null)
+                        {
+                            param = new Parameter
+                            {
+                                key = parameta.key,
+                                value = position.linkedArea
                             };
                         }
                         else

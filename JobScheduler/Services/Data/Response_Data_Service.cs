@@ -207,7 +207,6 @@ namespace JobScheduler.Services
             {
                 try
                 {
-                    ApiClient();
                     foreach (var serviceApi in _repository.ServiceApis.GetAll())
                     {
                         if (serviceApi.type == "Resource")

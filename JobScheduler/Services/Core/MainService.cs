@@ -22,7 +22,7 @@ namespace JobScheduler.Services
         public readonly IMqttWorker _mqtt;
 
         private MainService main = null;
-        private GetDataService getData = null;
+        private Response_Data_Service Response_Data = null;
         private MQTTService mQTT = null;
         private SchedulerService schedulerService = null;
         private QueueProcess queueProcess = null;
@@ -43,7 +43,7 @@ namespace JobScheduler.Services
         {
             schedulerService = new SchedulerService(main, _repository, _jobMissionQueue, _mapping, _mqttQueue);
             mQTT = new MQTTService(_mqtt, _mqttQueue);
-            getData = new GetDataService(EventLogger, _repository, _mapping);
+            Response_Data = new Response_Data_Service(EventLogger, _repository, _mapping);
             queueProcess = new QueueProcess(main,_repository, _mqttQueue, _mapping);
         }
 
@@ -52,8 +52,8 @@ namespace JobScheduler.Services
         private async Task stratAsync()
         {
             Start();
-            bool getdataComplete = await getData.StartAsyc();
-            if (getdataComplete)
+            bool Response_DataComplete = await Response_Data.StartAsyc();
+            if (Response_DataComplete)
             {
                 mQTT.Start();
                 schedulerService.Start();
@@ -72,7 +72,7 @@ namespace JobScheduler.Services
             // StopAsync 내부에서 while 루프 빠져나오고 Task.WhenAll() 대기하도록 구현
 
             // 2. 데이터 리로드
-            bool getDataComplete = await getData.ReloadAsyc();
+            bool getDataComplete = await Response_Data.ReloadAsyc();
             if (getDataComplete)
             {
                 //// 3. MQTT 다시 시작 (필요시)

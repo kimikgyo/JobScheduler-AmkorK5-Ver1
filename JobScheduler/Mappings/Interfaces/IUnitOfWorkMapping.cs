@@ -1,4 +1,5 @@
-﻿using JOB.Mappings.Bases;
+﻿using JOB.Mappings.Areas;
+using JOB.Mappings.Bases;
 using JOB.Mappings.Jobs;
 using JOB.Mappings.Templates;
 
@@ -17,5 +18,6 @@ namespace JOB.Mappings.Interfaces
         Elevator_Mapping Elevators { get; }
         RoutesPlan_Mapping RoutesPlanas { get; }
         MissionTemplate_Mapping MissionTemplates { get; }
+        ACSAreaMapping ACSAreas { get; }
     }
 }

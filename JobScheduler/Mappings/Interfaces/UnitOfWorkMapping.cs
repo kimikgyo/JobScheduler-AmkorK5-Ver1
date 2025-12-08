@@ -1,5 +1,6 @@
 ﻿using Common.Templates;
 using JOB.Mappings;
+using JOB.Mappings.Areas;
 using JOB.Mappings.Bases;
 using JOB.Mappings.Jobs;
 using JOB.Mappings.Templates;
@@ -19,6 +20,7 @@ namespace JOB.Mappings.Interfaces
         public Elevator_Mapping Elevators{ get; private set; }
         public RoutesPlan_Mapping RoutesPlanas { get; private set; }
         public MissionTemplate_Mapping MissionTemplates { get; private set; }
+        public ACSAreaMapping ACSAreas { get; private set; }
 
         public UnitOfWorkMapping()
         {
@@ -38,6 +40,7 @@ namespace JOB.Mappings.Interfaces
             Elevators = new Elevator_Mapping();
             RoutesPlanas = new RoutesPlan_Mapping();
             MissionTemplates = new MissionTemplate_Mapping();
+            ACSAreas = new ACSAreaMapping();
         }
 
         public void SaveChanges()

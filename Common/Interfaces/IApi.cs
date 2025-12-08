@@ -1,4 +1,5 @@
-﻿using Common.DTOs.Rests.Carriers;
+﻿using Common.DTOs.Rests.Areas;
+using Common.DTOs.Rests.Carriers;
 using Common.DTOs.Rests.Maps;
 using Common.DTOs.Rests.Nodes_Edges;
 using Common.DTOs.Rests.Positions;
@@ -18,6 +19,8 @@ namespace Common.Interfaces
         Task<List<Response_PositionDto>> Get_Position_Async();
 
         Task<List<Response_CarrierDto>> Get_Carrier_Async();
+
+        Task<List<Response_ACS_AareDto>> Get_ACS_Area_Async();
 
         Task<ResponseDto> Post_Worker_Mission_Async(object value);
 

@@ -1,8 +1,10 @@
-﻿using Common.DTOs.Rests.Carriers;
+﻿using Common.DTOs.Rests.Areas;
+using Common.DTOs.Rests.Carriers;
 using Common.DTOs.Rests.Maps;
 using Common.DTOs.Rests.Positions;
 using Common.DTOs.Rests.Workers;
 using Common.Models;
+using Common.Models.Areas;
 using Common.Models.Bases;
 using Common.Models.Jobs;
 using Data.Interfaces;
@@ -15,7 +17,7 @@ using System.Diagnostics;
 
 namespace JobScheduler.Services
 {
-    public class GetDataService
+    public class Response_Data_Service
     {
         private static readonly ILog ApiLogger = LogManager.GetLogger("ApiEvent");
 
@@ -24,7 +26,7 @@ namespace JobScheduler.Services
         public readonly ILog _eventlog;
         public List<MqttTopicSubscribe> mqttTopicSubscribes = new List<MqttTopicSubscribe>();
 
-        public GetDataService(ILog eventLog, IUnitOfWorkRepository repository, IUnitOfWorkMapping mapping)
+        public Response_Data_Service(ILog eventLog, IUnitOfWorkRepository repository, IUnitOfWorkMapping mapping)
         {
             _repository = repository;
             _mapping = mapping;
@@ -50,9 +52,11 @@ namespace JobScheduler.Services
                             _repository.Workers.Delete();
                             _repository.Maps.Delete();
                             _repository.Positions.Delete();
+                            _repository.ACSAreas.Delete();
                             var Workers = await serviceApi.Api.Get_Worker_Async();
                             var Maps = await serviceApi.Api.Get_Map_Async();
                             var Positions = await serviceApi.Api.Get_Position_Async();
+                            var AcsAreas = await serviceApi.Api.Get_ACS_Area_Async();
                             //var Carriers = await serviceApi.Api.Get_Carrier_Async();
 
                             if (Workers == null)
@@ -68,6 +72,11 @@ namespace JobScheduler.Services
                             else if (Positions == null)
                             {
                                 _eventlog.Info($"{nameof(Positions)}GetDataFail");
+                                break;
+                            }
+                            else if (AcsAreas == null)
+                            {
+                                _eventlog.Info($"{nameof(AcsAreas)}GetDataFail");
                                 break;
                             }
                             //else if (Carriers == null)
@@ -99,6 +108,12 @@ namespace JobScheduler.Services
                                 {
                                     var position = _mapping.Positions.Response(getPosition);
                                     _repository.Positions.Add(position);
+                                }
+
+                                foreach (var getAcsArea in AcsAreas)
+                                {
+                                    var acsArea = _mapping.ACSAreas.Response(getAcsArea);
+                                    _repository.ACSAreas.Add(acsArea);
                                 }
 
                                 //foreach (var getCarrier in Carriers)
@@ -200,6 +215,7 @@ namespace JobScheduler.Services
                             var getReloadWorkers = await serviceApi.Api.Get_Worker_Async();
                             var getReloadMaps = await serviceApi.Api.Get_Map_Async();
                             var getReloadPositions = await serviceApi.Api.Get_Position_Async();
+                            var getAcsAreas = await serviceApi.Api.Get_ACS_Area_Async();
                             //var getReloadCarrier = await serviceApi.Api.Get_Carrier_Async();
                             if (getReloadWorkers == null)
                             {
@@ -216,6 +232,11 @@ namespace JobScheduler.Services
                                 _eventlog.Info($"{nameof(getReloadPositions)}GetDataFail");
                                 break;
                             }
+                            else if (getAcsAreas == null)
+                            {
+                                _eventlog.Info($"{nameof(getAcsAreas)}GetDataFail");
+                                break;
+                            }
                             //else if (getReloadCarrier == null)
                             //{
                             //    _eventlog.Info($"{nameof(getReloadCarrier)}GetDataFail");
@@ -226,6 +247,7 @@ namespace JobScheduler.Services
                                 ReloadMap(getReloadMaps);
                                 ReloadWorker(getReloadWorkers);
                                 ReloadPosition(getReloadPositions);
+                                ReloadACSArea(getAcsAreas);
                                 //ReloadCarrier(getReloadCarrier);
                                 Resource = true;
                             }
@@ -443,6 +465,59 @@ namespace JobScheduler.Services
                 };
                 mqttTopicSubscribes.Remove(middlewarestatetopic);
                 mqttTopicSubscribes.Remove(middlewaremissiontopic);
+            }
+        }
+
+        private void ReloadACSArea(List<Response_ACS_AareDto> response_ACS_AareDtos)
+        {
+            List<ACSArea> Reload = new List<ACSArea>();
+
+            //update Add
+            foreach (var response_ACS_AareDto in response_ACS_AareDtos)
+            {
+                Reload.Add(_mapping.ACSAreas.Response(response_ACS_AareDto));
+            }
+
+            var ReloadId = Reload.Select(x => x.areaId);
+            var aCSAreas = _repository.ACSAreas.GetAll();
+            var aCSAreaIds = aCSAreas.Select(x => x.areaId);
+
+            //새로운 데이터 기준 으로 기존데이터가 없는것
+            var AddACSAreas = Reload.Where(x => !aCSAreaIds.Contains(x.areaId)).ToList();
+            foreach (var AddACSArea in AddACSAreas)
+            {
+                _repository.ACSAreas.Add(AddACSArea);
+            }
+
+            //기존데이터 기준 새로운 데이터와 같은것 업데이트
+            foreach (var aCSArea in aCSAreas)
+            {
+                var Update = Reload.FirstOrDefault(x => x.areaId == aCSArea.areaId);
+                if (Update != null)
+                {
+                    aCSArea.areaId = Update.areaId;
+                    aCSArea.mapId = Update.mapId;
+                    aCSArea.name = Update.name;
+                    aCSArea.type = Update.type;
+                    aCSArea.subType = Update.subType;
+                    aCSArea.groupId = Update.groupId;
+                    aCSArea.linkedNode = Update.linkedNode;
+                    aCSArea.linkedFacility = Update.linkedFacility;
+                    aCSArea.x = Update.x;
+                    aCSArea.y = Update.y;
+                    aCSArea.theta = Update.theta;
+                    aCSArea.width = Update.width;
+                    aCSArea.height = Update.height;
+                    aCSArea.isDisplayed = Update.isDisplayed;
+                    aCSArea.isEnabled = Update.isEnabled;
+                }
+            }
+
+            //기존데이터 기준 에서 새로운데이터가 없는것
+            var removes = aCSAreas.Where(x => !ReloadId.Contains(x.areaId)).ToList();
+            foreach (var remove in removes)
+            {
+                _repository.ACSAreas.Remove(remove);
             }
         }
 

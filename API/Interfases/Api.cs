@@ -1,4 +1,5 @@
-﻿using Common.DTOs.Rests.Carriers;
+﻿using Common.DTOs.Rests.Areas;
+using Common.DTOs.Rests.Carriers;
 using Common.DTOs.Rests.JobTemplates;
 using Common.DTOs.Rests.Maps;
 using Common.DTOs.Rests.Nodes_Edges;
@@ -75,6 +76,19 @@ namespace RestApi.Interfases
             }
         }
 
+        public async Task<List<Response_ACS_AareDto>> Get_ACS_Area_Async()
+        {
+            try
+            {
+                return await _httpClient.GetFromJsonAsync<List<Response_ACS_AareDto>>("api/acs-areas");
+            }
+            //catch (Exception ex) when (True(() => _logger.Error(ex)))
+            catch (Exception ex) when (True(() => ApiLogger.Error($"IPAddress = {_httpClient.BaseAddress}" + "\r\n" + ex)))
+            {
+                return null;
+            }
+        }
+
         public async Task<List<Response_CarrierDto>> Get_Carrier_Async()
         {
             try
@@ -87,6 +101,7 @@ namespace RestApi.Interfases
                 return null;
             }
         }
+
 
         public async Task<Response_Node_EdgeDto> Post_Routes_Plan_Async(object value)
         {

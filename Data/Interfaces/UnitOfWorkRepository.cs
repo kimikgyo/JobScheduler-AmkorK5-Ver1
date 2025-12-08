@@ -1,4 +1,6 @@
-﻿using Data.Repositorys.Carriers;
+﻿using Common.Models.Areas;
+using Data.Repositorys.Areas;
+using Data.Repositorys.Carriers;
 using Data.Repositorys.Elevators;
 using Data.Repositorys.Historys;
 using Data.Repositorys.Jobs;
@@ -50,7 +52,7 @@ namespace Data.Interfaces
 
         public MissionTemplate_Group_Repository MissionTemplates_Group { get; private set; }
         public MissionTemplate_Single_Repository MissionTemplates_Single { get; private set; }
-
+        public ACS_AreaRepository ACSAreas { get; private set; }
         public ServiceApiRepository ServiceApis { get; private set; }
 
         #region Settings
@@ -92,6 +94,7 @@ namespace Data.Interfaces
             MissionTemplates_Single = new MissionTemplate_Single_Repository(connectionString);
 
             ServiceApis = new ServiceApiRepository(connectionString);
+            ACSAreas = new ACS_AreaRepository (connectionString);
 
             #region Settings
 

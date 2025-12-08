@@ -1,4 +1,5 @@
-﻿using Data.Repositorys.Carriers;
+﻿using Data.Repositorys.Areas;
+using Data.Repositorys.Carriers;
 using Data.Repositorys.Elevators;
 using Data.Repositorys.Historys;
 using Data.Repositorys.Jobs;
@@ -39,7 +40,7 @@ namespace Data.Interfaces
 
         MissionTemplate_Group_Repository MissionTemplates_Group { get; }
         MissionTemplate_Single_Repository MissionTemplates_Single { get; }
-
+        ACS_AreaRepository ACSAreas { get; }
         ServiceApiRepository ServiceApis { get; }
 
         #region Settings

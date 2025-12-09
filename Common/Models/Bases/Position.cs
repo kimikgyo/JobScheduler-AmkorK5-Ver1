@@ -18,7 +18,7 @@ namespace Common.Models.Jobs
     public enum NodeType
     {
         WAYPOINT,
-        TRAFFICPOINT,
+        TRAFFIC,
         ELEVATOR,
         ELEVATORWAIT,
         ELEVATORENTER,

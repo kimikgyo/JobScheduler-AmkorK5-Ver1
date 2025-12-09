@@ -285,5 +285,10 @@ namespace Data.Repositorys.Jobs
                 return _jobs.Where(m => m.specifiedWorkerId == workerId).ToList();
             }
         }
+
+        public List<Job> UnAssignedJobs()
+        {
+            return _jobs.Where(m => m.state == nameof(JobState.INIT) && m.terminationType == null && string.IsNullOrWhiteSpace(m.assignedWorkerId)).ToList();
+        }
     }
 }

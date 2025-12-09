@@ -45,13 +45,14 @@ namespace JOB.Services
         /// 미션 삭제 요청 ACS -> Service
         /// </summary>
         /// <param name="mission"></param>
-        private void deleteMission(Mission mission)
+        private bool deleteMission(Mission mission)
         {
+            bool completed = false;
             switch (mission.service)
             {
                 case nameof(Service.WORKER):
 
-                    WorkerDeleteMission(mission);
+                    completed = WorkerDeleteMission(mission);
                     break;
 
                 case nameof(Service.MIDDLEWARE):
@@ -60,9 +61,10 @@ namespace JOB.Services
 
                 case nameof(Service.ELEVATOR):
 
-                    ElevatorDeleteMission(mission);
+                    completed = ElevatorDeleteMission(mission);
                     break;
             }
+            return completed;
         }
 
         private bool WorkerPostMission(Mission mission)
@@ -85,10 +87,10 @@ namespace JOB.Services
                             //[조건5] 상태코드 200~300 까지는 완료 처리
                             if (postmission.statusCode >= 200 && postmission.statusCode < 300)
                             {
-                                EventLogger.Info($"PostMission Success = Service = {nameof(Service.WORKER)}, Message = {postmission.statusText}, MissionName = {mission.name}, MissionId = {mission.guid}, AssignedWorkerId = {mission.assignedWorkerId}");
+                                EventLogger.Info($"[PostMission][{nameof(Service.WORKER)}][Success], Message = {postmission.statusText}, MissionName = {mission.name}, MissionId = {mission.guid}, AssignedWorkerId = {mission.assignedWorkerId}");
                                 CommandRequst = true;
                             }
-                            else EventLogger.Info($"PostMission Failed = Service = {nameof(Service.WORKER)}, Message = {postmission.message}, MissionName = {mission.name}, MissionId = {mission.guid}, AssignedWorkerId = {mission.assignedWorkerId}");
+                            else EventLogger.Warn($"[PostMission][{nameof(Service.WORKER)}][Failed], Message = {postmission.message}, MissionName = {mission.name}, MissionId = {mission.guid}, AssignedWorkerId = {mission.assignedWorkerId}");
                         }
                     }
                 }
@@ -114,10 +116,10 @@ namespace JOB.Services
                         //[조건5] 상태코드 200~300 까지는 완료 처리
                         if (postmission.statusCode >= 200 && postmission.statusCode < 300)
                         {
-                            EventLogger.Info($"PostMission Success = Service = {nameof(Service.ELEVATOR)}, Message = {postmission.statusText}, MissionName = {mission.name}, MissionId = {mission.guid}, AssignedWorkerId = {mission.assignedWorkerId}");
+                            EventLogger.Info($"[PostMission][{nameof(Service.ELEVATOR)}][Success], Message = {postmission.statusText}, MissionName = {mission.name}, MissionId = {mission.guid}, AssignedWorkerId = {mission.assignedWorkerId}");
                             CommandRequst = true;
                         }
-                        else EventLogger.Info($"PostMission Failed = Service = {nameof(Service.ELEVATOR)}, Message = {postmission.message}, MissionName = {mission.name}, MissionId = {mission.guid}, AssignedWorkerId = {mission.assignedWorkerId}");
+                        else EventLogger.Warn($"[PostMission][{nameof(Service.ELEVATOR)}][Failed], Message = {postmission.message}, MissionName = {mission.name}, MissionId = {mission.guid}, AssignedWorkerId = {mission.assignedWorkerId}");
                     }
                 }
             }
@@ -138,10 +140,10 @@ namespace JOB.Services
                     {
                         if (postmission.statusCode >= 200 && postmission.statusCode < 300)
                         {
-                            EventLogger.Info($"PostMission Success = Service = {nameof(Service.MIDDLEWARE)}, Message = {postmission.statusText}, MissionId = {mission.guid}, AssignedWorkerId = {mission.assignedWorkerId}");
+                            EventLogger.Info($"[PostMission][{nameof(Service.MIDDLEWARE)}][Success], Message = {postmission.statusText}, MissionId = {mission.guid}, AssignedWorkerId = {mission.assignedWorkerId}");
                             CommandRequst = true;
                         }
-                        else EventLogger.Info($"PostMission Failed = Service = {nameof(Service.MIDDLEWARE)}, Message = {postmission.message}, MissionId = {mission.guid}, AssignedWorkerId = {mission.assignedWorkerId}");
+                        else EventLogger.Warn($"[PostMission][{nameof(Service.MIDDLEWARE)}][Failed], Message = {postmission.message}, MissionId = {mission.guid}, AssignedWorkerId = {mission.assignedWorkerId}");
                     }
                 }
             }
@@ -160,10 +162,10 @@ namespace JOB.Services
                 {
                     if (postmission.statusCode >= 200 && postmission.statusCode < 300)
                     {
-                        EventLogger.Info($"DeleteMission Success = Service = {nameof(Service.WORKER)}, Message = {postmission.statusText}, MissionId = {mission.guid}, AssignedWorkerId = {mission.assignedWorkerId}");
+                        EventLogger.Info($"[DeleteMission][{nameof(Service.WORKER)}][Success], Message = {postmission.statusText}, MissionId = {mission.guid}, AssignedWorkerId = {mission.assignedWorkerId}");
                         CommandRequst = true;
                     }
-                    else EventLogger.Info($"DeleteMission Failed = Service = {nameof(Service.WORKER)}, Message = {postmission.message}, MissionId = {mission.guid}, AssignedWorkerId = {mission.assignedWorkerId}");
+                    else EventLogger.Warn($"[DeleteMission][{nameof(Service.WORKER)}][Failed], Message = {postmission.message}, MissionId = {mission.guid}, AssignedWorkerId = {mission.assignedWorkerId}");
                 }
             }
             return CommandRequst;
@@ -186,10 +188,10 @@ namespace JOB.Services
                         //[조건5] 상태코드 200~300 까지는 완료 처리
                         if (postmission.statusCode >= 200 && postmission.statusCode < 300)
                         {
-                            EventLogger.Info($"DeleteMission Success = Service = {nameof(Service.ELEVATOR)}, Message = {postmission.statusText}, MissionName = {mission.name}, MissionId = {mission.guid}, AssignedWorkerId = {mission.assignedWorkerId}");
+                            EventLogger.Info($"[DeleteMission][{nameof(Service.ELEVATOR)}][Success], Message = {postmission.statusText}, MissionName = {mission.name}, MissionId = {mission.guid}, AssignedWorkerId = {mission.assignedWorkerId}");
                             CommandRequst = true;
                         }
-                        else EventLogger.Info($"DeleteMission Failed = Service = {nameof(Service.ELEVATOR)}, Message = {postmission.message}, MissionName = {mission.name}, MissionId = {mission.guid}, AssignedWorkerId = {mission.assignedWorkerId}");
+                        else EventLogger.Warn($"[DeleteMission][{nameof(Service.ELEVATOR)}][Failed], Message = {postmission.message}, MissionName = {mission.name}, MissionId = {mission.guid}, AssignedWorkerId = {mission.assignedWorkerId}");
                     }
                 }
             }

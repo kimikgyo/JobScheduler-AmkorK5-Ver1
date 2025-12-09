@@ -236,7 +236,7 @@ namespace JOB.Services
                             if (worker.PositionId == param.value)
                             {
                                 updateStateMission(mission, nameof(MissionState.SKIPPED), true);
-                                EventLogger.Info($"PostMission SKIPPED = Service = {nameof(Service.WORKER)}, PositionId = {worker.PositionId}, PositionName = {worker.PositionName}, MissionId = {mission.guid}, AssignedWorkerId = {mission.assignedWorkerId}");
+                                EventLogger.Info($"[PostMission][{nameof(Service.WORKER)}][SKIPPED], PositionId = {worker.PositionId}, PositionName = {worker.PositionName}, MissionId = {mission.guid}, AssignedWorkerId = {mission.assignedWorkerId}");
                                 completed = true;
                             }
                         }
@@ -257,7 +257,7 @@ namespace JOB.Services
                         if (runmission != null)
                         {
                             updateStateMission(mission, nameof(MissionState.SKIPPED), true);
-                            EventLogger.Info($"PostMission SKIPPED = Service = {nameof(Service.ELEVATOR)}, MissionId = {mission.guid}, missionName = {mission.name} ,AssignedWorkerId = {mission.assignedWorkerId}");
+                            EventLogger.Info($"[PostMission][{nameof(Service.ELEVATOR)}][SKIPPED], MissionId = {mission.guid}, missionName = {mission.name} ,AssignedWorkerId = {mission.assignedWorkerId}");
                             completed = true;
                         }
                     }

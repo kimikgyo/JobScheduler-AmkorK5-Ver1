@@ -7,7 +7,7 @@ using JOB.MQTTs.Interfaces;
 using JobScheduler.Services;
 using log4net;
 using log4net.Config;
-using Microsoft.OpenApi.Models;
+using Microsoft.OpenApi;
 using System.Net;
 using System.Net.Sockets;
 using System.Reflection;
@@ -16,7 +16,6 @@ using System.Reflection;
 var logRepository = LogManager.GetRepository(Assembly.GetEntryAssembly());
 var logPath = Path.Combine(AppContext.BaseDirectory, "Config", "log4net.config");
 XmlConfigurator.Configure(logRepository, new FileInfo(logPath));
-
 
 var EventLogger = LogManager.GetLogger("Event");
 
@@ -74,6 +73,7 @@ try
     builder.Services.AddSingleton<IUnitofWorkMqttQueue, UnitofWorkMqttQueue>();
     builder.Services.AddSingleton<IMqttWorker, MqttWorker>();
     builder.Services.AddSingleton<MainService>();
+
     #endregion 의존성 주입 [DI설명 및 설정]
 
     // builder.Services.AddControllers():
@@ -127,7 +127,6 @@ try
         EventLogger.Info($"[SERVICE] Stopped  | PID={Environment.ProcessId}");
     });
 
-
     // AddSingleton<MainService>()만 등록하면 요청될 때까지 생성안됨 1번은 생성해줘야 진행됨.
     using (var scope = app.Services.CreateScope())
     {
@@ -151,6 +150,7 @@ try
     //if (app.Environment.IsDevelopment())
     //{
     app.UseSwagger();
+    //app.UseSwagger(options => options.OpenApiVersion = Microsoft.OpenApi.OpenApiSpecVersion.OpenApi2_0);
     //app.UseSwaggerUI();
     app.UseSwaggerUI(c =>
     {
@@ -197,12 +197,10 @@ try
     // 컨트롤러 엔드포인트 매핑
     app.MapControllers();
 
-
     EventLogger.Info($"=== Program state ===");
     app.Run();
 }
 catch (Exception ex)
 {
     EventLogger.Info($"=== Program Error Msg = {ex.Message} ===");
-
 }

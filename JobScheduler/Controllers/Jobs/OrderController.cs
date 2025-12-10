@@ -199,7 +199,6 @@ namespace JobScheduler.Controllers.Jobs
 
         // POST api/<OrderController>
         [HttpPost]
-        [SwaggerOperation(Summary = "새로운 주문 생성")]
         public ActionResult Post([FromBody] Post_OrderDto add)
         {
             logger.Info($"AddRequest = {add}");

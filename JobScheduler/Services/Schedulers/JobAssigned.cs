@@ -334,74 +334,268 @@ namespace JOB.Services
 
         /// <summary>
         /// [Sub] AssignedControl
-        /// 지정이 아닌 특정조건으로 인하여 Job 전택
+        /// 지정 워커가 없는 Job 에 대해
+        /// Job 의 출발/도착 Position 을 기준으로
+        /// 가장 가까운 Worker 1명을 선택한다.
         /// </summary>
-        /// <param name="workers"></param>
-        /// <param name="job"></param>
-        /// <returns></returns>
+        /// <param name="workers">후보 Worker 리스트 (같은 group 등 사전 필터 완료된 상태)</param>
+        /// <param name="job">Worker 를 배정할 대상 Job</param>
+        /// <returns>선택된 Worker (없으면 null)</returns>
         private Worker SelectNearestWorkerForJob(List<Worker> workers, Job job)
         {
+            // ------------------------------------------------------------
+            // [0] 기본 유효성 검사
+            // ------------------------------------------------------------
+            if (job == null)
+            {
+                EventLogger.Warn("[ASSIGN][NEAREST-WORKER][SKIP] job is null.");
+                return null;
+            }
+
+            if (workers == null)
+            {
+                EventLogger.Warn($"[ASSIGN][NEAREST-WORKER][SKIP] workers list is null. jobId={job.guid}");
+                return null;
+            }
+
+            if (workers.Count == 0)
+            {
+                EventLogger.Info($"[ASSIGN][NEAREST-WORKER][SKIP] workers list is empty. jobId={job.guid}");
+                return null;
+            }
+
+            EventLogger.Info($"[ASSIGN][NEAREST-WORKER][START] jobId={job.guid}, workerCount={workers.Count}, sourceId={job.sourceId}, destinationId={job.destinationId}");
+
+            // ------------------------------------------------------------
+            // [1] Job 기준 위치(Position) 선택
+            //      - sourceId 가 유효하면: source Position 기준
+            //      - sourceId 가 없으면:  destination Position 기준
+            // ------------------------------------------------------------
             Position position = null;
-            Worker woekrSelect = null;
+
             if (IsInvalid(job.sourceId))
             {
+                // 출발지가 없을 경우 → 목적지 기준
                 position = _repository.Positions.MiR_GetById(job.destinationId);
+                if (position != null)
+                {
+                    EventLogger.Info($"[ASSIGN][NEAREST-WORKER][POSITION] use DESTINATION as base. jobId = {job.guid}, destId = {job.destinationId}, positionName = {position.name}, positionId = {position.id}");
+                }
             }
             else
             {
+                // 출발지가 유효할 경우 → 출발지 기준
                 position = _repository.Positions.MiR_GetById(job.sourceId);
-            }
-
-            if (position != null)
-            {
-                //가까운 거리순으로 판단하여 1개의 포지션을 가지고온다
-                var nearestWorker = _repository.Workers.FindNearestWorker(workers, position).FirstOrDefault();
-                if (nearestWorker != null)
+                if (position != null)
                 {
-                    woekrSelect = nearestWorker;
+                    EventLogger.Info($"[ASSIGN][NEAREST-WORKER][POSITION] use SOURCE as base. jobId= {job.guid}, sourceId= {job.sourceId}, positionName= {position.name}, positionId = {position.id}");
                 }
             }
-            return woekrSelect;
+
+            // Position 조회 실패 시 이 Job 에 대해 Worker 선택 불가
+            if (position == null)
+            {
+                EventLogger.Warn($"[ASSIGN][NEAREST-WORKER][SKIP][POSITION-NOTFOUND] jobId={job.guid}, sourceId={job.sourceId}, destinationId={job.destinationId}");
+                return null;
+            }
+
+            // ------------------------------------------------------------
+            // [2] Position 기준 가장 가까운 Worker 선택
+            // ------------------------------------------------------------
+            Worker selectedWorker = null;
+
+            // FindNearestWorker 는 "거리 순으로 정렬된 Worker 리스트" 를 반환한다고 가정
+            var nearestWorker = _repository.Workers.FindNearestWorker(workers, position).FirstOrDefault();
+
+            if (nearestWorker != null)
+            {
+                selectedWorker = nearestWorker;
+                EventLogger.Info($"[ASSIGN][NEAREST-WORKER][SELECT] jobId={job.guid}, workerId={selectedWorker.id}, workerName={selectedWorker.name}, ,basePositionName={position.name}, basePositionId={position.id}");
+            }
+            else
+            {
+                EventLogger.Info($"[ASSIGN][NEAREST-WORKER][SKIP][NO-NEAREST] jobId={job.guid}, basePositionName={position.name}, basePositionId={position.id}");
+            }
+
+            return selectedWorker;
         }
 
         /// <summary>
-        /// [Sub] AssignedControl
-        /// 지정 워커 Job 선택
+        /// 주어진 Worker 입장에서, 전달된 Job 목록 중
+        /// "가장 가까운 위치의 Job 하나" 를 선택해서 리턴한다.
+        ///
+        /// - Job 기준 포지션 선택 규칙
+        ///   1) sourceId 가 유효하면 → source Position 기준
+        ///   2) sourceId 가 없으면 → destination Position 기준
+        ///
+        /// - 거리 계산은 기존에 사용 중인
+        ///   _repository.Positions.FindNearestWayPoint(worker, positions)
+        ///   를 그대로 사용한다.
         /// </summary>
-        /// <param name="worker"></param>
-        /// <param name="jobs"></param>
-        /// <returns></returns>
         private Job SelectNearestJobForWorker(Worker worker, List<Job> jobs)
         {
-            Job jobSelect = null;
-            List<Position> Positions = new List<Position>();
+            // ------------------------------------------------------------
+            // [0] 기본 유효성 검사
+            // ------------------------------------------------------------
+            if (worker == null)
+            {
+                EventLogger.Warn($"[ASSIGN][NEAREST-JOB][SKIP] worker is null.");
+                return null;
+            }
 
+            if (jobs == null)
+            {
+                EventLogger.Warn($"[ASSIGN][NEAREST-JOB][SKIP] jobs list is null. workerName={worker.name}, workerId={worker.id}");
+                return null;
+            }
+
+            if (jobs.Count == 0)
+            {
+                EventLogger.Info($"[ASSIGN][NEAREST-JOB][SKIP] jobs list is empty. workerName={worker.name}, workerId={worker.id}");
+                return null;
+            }
+
+            EventLogger.Info($"[ASSIGN][NEAREST-JOB][START] workerName={worker.name}, workerId={worker.id}, jobCount={jobs.Count}");
+
+            // Job 마다 "대표 포지션" 을 기억해 두기 위한 매핑
+            //  - key: job.guid
+            //  - value: 거리 계산에 사용할 Position (source or destination)
+            var jobMainPositionMap = new Dictionary<string, Position>();
+
+            // 거리 계산 대상이 되는 Position 목록
+            var candidatePositions = new List<Position>();
+
+            // ------------------------------------------------------------
+            // [1] 각 Job 에 대한 "대표 Position" 선택
+            //      - sourceId 가 있으면 source 기준
+            //      - 없으면 destination 기준
+            // ------------------------------------------------------------
             foreach (var job in jobs)
             {
-                if (IsInvalid(job.sourceId))
+                Position mainPosition = null;
+
+                // 1-1) Job 의 sourceId 가 유효하면 source 기준
+                if (!IsInvalid(job.sourceId))
                 {
-                    var position = _repository.Positions.MiR_GetById(job.destinationId);
-                    if (position != null) Positions.Add(position);
+                    mainPosition = _repository.Positions.MiR_GetById(job.sourceId);
                 }
+                // 1-2) sourceId 가 없으면 destination 기준
                 else
                 {
-                    var position = _repository.Positions.MiR_GetById(job.sourceId);
-                    if (position != null) Positions.Add(position);
+                    mainPosition = _repository.Positions.MiR_GetById(job.destinationId);
                 }
-            }
-            //포지션값이 있다면
-            if (Positions.Count > 0)
-            {
-                //가까운 거리순으로 판단하여 1개의 포지션을 가지고온다
-                var nearestPosition = _repository.Positions.FindNearestWayPoint(worker, Positions).FirstOrDefault();
-                if (nearestPosition != null)
+
+                // Position 조회 실패 시 이 Job 은 거리 후보에서 제외
+                if (mainPosition == null)
                 {
-                    //1개의 포지션으로 Job을 조회한다.
-                    jobSelect = jobs.FirstOrDefault(j => j.sourceId == nearestPosition.id);
-                    if (jobSelect == null) jobSelect = jobs.FirstOrDefault(j => j.destinationId == nearestPosition.id);
+                    EventLogger.Warn(
+                        $"[ASSIGN][NEAREST-JOB][SKIP-JOB-POSITION-NOTFOUND] workerName={worker.name}, workerId={worker.id}, jobId={job.guid}, sourceId={job.sourceId}, destId={job.destinationId}"
+                    );
+                    continue;
+                }
+
+                // Job 과 대표 Position 매핑 저장
+                jobMainPositionMap[job.guid] = mainPosition;
+
+                // Worker 와의 거리 계산 후보로 추가
+                candidatePositions.Add(mainPosition);
+            }
+
+            // 후보 포지션이 하나도 없으면 선택 불가
+            if (candidatePositions.Count == 0)
+            {
+                EventLogger.Info($"[ASSIGN][NEAREST-JOB][SKIP] no candidate positions. workerName={worker.name}, workerId={worker.id}");
+                return null;
+            }
+
+            EventLogger.Info(
+                $"[ASSIGN][NEAREST-JOB][CANDIDATE] workerName={worker.name}, workerId={worker.id}, candidatePositionCount={candidatePositions.Count}"
+            );
+
+            // ------------------------------------------------------------
+            // [2] Worker 기준 가장 가까운 Position 선택
+            // ------------------------------------------------------------
+            var nearestPosition = _repository.Positions
+                .FindNearestWayPoint(worker, candidatePositions)
+                .FirstOrDefault();
+
+            if (nearestPosition == null)
+            {
+                EventLogger.Warn($"[ASSIGN][NEAREST-JOB][SKIP] nearestPosition is null. workerName={worker.name}, workerId={worker.id}");
+                return null;
+            }
+
+            EventLogger.Info($"[ASSIGN][NEAREST-JOB][NEAREST-POSITION] workerName={worker.name}, workerId={worker.id}, positionId={nearestPosition.id}");
+
+            // ------------------------------------------------------------
+            // [3] "가장 가까운 Position" 과 연결된 Job 찾기
+            //      - 우선 jobMainPositionMap 으로 직접 매핑
+            //      - 혹시 매핑이 안 되어 있으면, 기존 방식 (sourceId/destinationId 비교)로 보조 매칭
+            // ------------------------------------------------------------
+            Job selectedJob = null;
+
+            // 3-1) 매핑 기반으로 Job 찾기
+            foreach (var pair in jobMainPositionMap)
+            {
+                var jobId = pair.Key;
+                var position = pair.Value;
+
+                if (position.id == nearestPosition.id)
+                {
+                    foreach (var job in jobs)
+                    {
+                        if (job.guid == jobId)
+                        {
+                            selectedJob = job;
+                            break;
+                        }
+                    }
+
+                    if (selectedJob != null)
+                    {
+                        break;
+                    }
                 }
             }
-            return jobSelect;
+
+            // 3-2) 보조 매칭: sourceId / destinationId 기준으로 한 번 더 시도
+            if (selectedJob == null)
+            {
+                foreach (var job in jobs)
+                {
+                    if (job.sourceId == nearestPosition.id)
+                    {
+                        selectedJob = job;
+                        break;
+                    }
+                }
+            }
+
+            if (selectedJob == null)
+            {
+                foreach (var job in jobs)
+                {
+                    if (job.destinationId == nearestPosition.id)
+                    {
+                        selectedJob = job;
+                        break;
+                    }
+                }
+            }
+
+            if (selectedJob == null)
+            {
+                EventLogger.Info(
+                    $"[ASSIGN][NEAREST-JOB][SKIP][NO-MATCH-JOB] workerName={worker.name}, workerId={worker.id}, nearestPositionId={nearestPosition.id}"
+                );
+                return null;
+            }
+
+            EventLogger.Info(
+                $"[ASSIGN][NEAREST-JOB][SELECT] workerName={worker.name}, workerId={worker.id}, jobId={selectedJob.guid}, sourceId={selectedJob.sourceId}, destId={selectedJob.destinationId}"
+            );
+
+            return selectedJob;
         }
 
         private bool WorkerCondition(Job job, Worker worker, Battery battery)

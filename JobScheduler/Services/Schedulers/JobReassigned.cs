@@ -6,115 +6,136 @@ namespace JOB.Services
 {
     public partial class SchedulerService
     {
-        /// <summary>
-        ///  Job 재할당 메인 루틴 (인자 없음)
-        ///  - 1회 호출 시, 현재 미션 상태를 보고 재할당이 가능한지 판단하고 실행
-        /// </summary>
         public void JobReassigned()
         {
+            // ============================================================
             // [LOG] 재할당 스캔 시작
-            //EventLogger.Info("[ASSIGN][REASSIGN][SCAN][START] JobReassigned scan started.");
+            // ============================================================
+            //EventLogger.Info($"[ASSIGN][REASSIGN][SCAN][START] scanning PICK COMPLETED missions for reassign.");
 
-            // 1) 재할당 판단 대상이 될 Mission 목록 조회
-            //    - 상태:  PENDING / EXECUTING / COMPLETED 만 대상으로 함
-            var runningMissions = _repository.Missions.GetAll().Where(m =>
-                       m.state == nameof(MissionState.PENDING)
-                    || m.state == nameof(MissionState.EXECUTING)
-                    || m.state == nameof(MissionState.COMPLETED))
-                .ToList();
+            // ============================================================
+            // 1) 우선 "Pick 이 COMPLETED 된 Mission" 만 조회
+            // ============================================================
+            var pickCompletedMissions = _repository.Missions.GetAll().Where(m => m.type == nameof(MissionSubType.PICK) && m.state == nameof(MissionState.COMPLETED)).ToList();
 
-            // 1-1) 조회된 Mission 이 하나도 없으면 재할당 처리할 것이 없음 → 종료
-            if (runningMissions == null || runningMissions.Count == 0)
+            if (pickCompletedMissions == null || pickCompletedMissions.Count == 0)
             {
-                //EventLogger.Info("[ASSIGN][REASSIGN][SCAN][NO-MISSION] No mission to check for reassign.");
+                //EventLogger.Info($"[ASSIGN][REASSIGN][SCAN][NO-PICK-COMPLETED] no PICK COMPLETED missions found. reassign skipped.");
                 return;
             }
 
-            // 2) 각 Mission 을 순회하면서, Worker + Mission 상태를 보고 재할당 여부 판단
-            foreach (var mission in runningMissions)
+            EventLogger.Info($"[ASSIGN][REASSIGN][SCAN][FOUND], pickCompletedCount={pickCompletedMissions.Count}");
+
+            int triggerCount = 0;
+
+            foreach (var mission in pickCompletedMissions)
             {
-                // 2-0) 기본 방어: assignedWorkerId 가 비어 있으면 스킵
+                if (mission == null)
+                    continue;
+
+                // 2-1) Worker 조회
                 if (mission.assignedWorkerId == null)
                 {
-                    EventLogger.Info($"[ASSIGN][REASSIGN][SKIP][NO-WORKER] missionId={mission.guid}, jobId={mission.jobId}, state={mission.state}");
+                    EventLogger.Warn($"[ASSIGN][REASSIGN][SKIP][NO-WORKER], missionId={mission.guid}, jobId={mission.jobId}");
                     continue;
                 }
 
-                // 2-1) Mission 에 할당된 Worker 조회
                 var worker = _repository.Workers.GetById(mission.assignedWorkerId);
                 if (worker == null)
                 {
-                    EventLogger.Warn(
-                        $"[ASSIGN][REASSIGN][SKIP][WORKER-NOT-FOUND] missionId={mission.guid}, jobId={mission.jobId}, assignedWorkerId={mission.assignedWorkerId}"
-                    );
+                    EventLogger.Warn($"[ASSIGN][REASSIGN][SKIP][WORKER-NOT-FOUND], workerId={mission.assignedWorkerId}, missionId={mission.guid}, jobId={mission.jobId}");
                     continue;
                 }
 
-                // 2-2) Lock / 적재량 Full 등으로 재할당 금지 조건 확인
-                // ------------------------------------------------------------------
-                // 2-2-1) Mission 자체가 Lock 이면 재할당 금지
+                // --------------------------------------------------------
+                // 2-2) 이 Worker가 가지고 있는 Mission 목록 조회
+                // --------------------------------------------------------
+                var workerMissions = _repository.Missions.GetByAssignedWorkerId(worker.id).ToList();
+
+                if (workerMissions == null || workerMissions.Count == 0)
+                {
+                    EventLogger.Info($"[ASSIGN][REASSIGN][SKIP][NO-WORKER-MISSIONS], workerName={worker.name}, workerId={worker.id}, missionId={mission.guid}, jobId={mission.jobId}");
+                    continue;
+                }
+
+                // =======================================================
+                // (A) 미완료 PICK 존재 여부
+                // =======================================================
+                bool hasUnfinishedPick = false;
+
+                foreach (var m2 in workerMissions)
+                {
+                    if (m2.type == nameof(MissionSubType.PICK) &&
+                        m2.state != nameof(MissionState.COMPLETED))
+                    {
+                        hasUnfinishedPick = true;
+                        break;
+                    }
+                }
+
+                if (hasUnfinishedPick)
+                {
+                    EventLogger.Info($"[ASSIGN][REASSIGN][SKIP][UNFINISHED-PICK], workerName={worker.name}, workerId={worker.id}, missionId={mission.guid}, jobId={mission.jobId}");
+                    continue;
+                }
+
+                // =======================================================
+                // (B) 엘리베이터 이동 중인지 여부
+                // =======================================================
+                bool hasExecutingElevator = false;
+
+                foreach (var m2 in workerMissions)
+                {
+                    if (m2.state == nameof(MissionState.EXECUTING) &&
+                        (m2.type == nameof(MissionSubType.ELEVATORENTERMOVE) ||
+                         m2.type == nameof(MissionSubType.ELEVATOREXITMOVE) ||
+                         m2.type == nameof(MissionSubType.ELEVATORSOURCEFLOOR) ||
+                         m2.type == nameof(MissionSubType.ELEVATORDESTINATIONFLOOR)))
+                    {
+                        hasExecutingElevator = true;
+                        break;
+                    }
+                }
+
+                if (hasExecutingElevator)
+                {
+                    EventLogger.Info($"[ASSIGN][REASSIGN][SKIP][ELEVATOR-EXECUTING], workerName={worker.name}, workerId={worker.id}, missionId={mission.guid}, jobId={mission.jobId}");
+                    continue;
+                }
+
+                // =======================================================
+                // (C) Worker Full 여부
+                // =======================================================
+                //if (worker.isFull)
+                //{
+                //    EventLogger.Info($"[ASSIGN][REASSIGN][SKIP][FULL], workerName={worker.name}, workerId={worker.id}, missionId={mission.guid}, jobId={mission.jobId}");
+                //    continue;
+                //}
+
+                // =======================================================
+                // (D) Mission Lock 여부
+                // =======================================================
                 if (mission.isLocked)
                 {
-                    EventLogger.Info(
-                        $"[ASSIGN][REASSIGN][SKIP][LOCK] workerId={worker.id}, workerName={worker.name}, missionId={mission.guid}, jobId={mission.jobId}"
-                    );
+                    EventLogger.Info($"[ASSIGN][REASSIGN][SKIP][LOCKED], workerName={worker.name}, workerId={worker.id}, missionId={mission.guid}, jobId={mission.jobId}");
                     continue;
                 }
 
-                // 2-2-2) Worker 적재량 Full 사용하는 경우 아래 활성화
-                // if (worker.currentLoad >= worker.maxLoad)
-                // {
-                //     EventLogger.Info(
-                //         $"[ASSIGN][REASSIGN][SKIP][FULL-LOAD] workerId={worker.id}, missionId={mission.id}, jobId={mission.jobId}"
-                //     );
-                //     continue;
-                // }
-                // ------------------------------------------------------------------
+                // =======================================================
+                // 재할당 트리거 조건 충족 → 수행
+                // =======================================================
+                EventLogger.Info($"[ASSIGN][REASSIGN][TRIGGER] reassign start, workerName={worker.name}, workerId={worker.id}, missionId={mission.guid}, jobId={mission.jobId}");
 
-                // 3) "재할당을 하면 안 되는 조건" 정의
-                //    - Mission 이 EXECUTING(실행 중)이고
-                //    - 타입이 PICK 또는 Elevator 이동 관련 4종이면
-                //      → 재할당 자체를 시도하지 않음
-                bool cannotReassign =
-                    mission.state == nameof(MissionState.EXECUTING) &&
-                    (
-                           mission.type == nameof(MissionSubType.PICK)
-                        || mission.type == nameof(MissionSubType.ELEVATORENTERMOVE)
-                        || mission.type == nameof(MissionSubType.ELEVATOREXITMOVE)
-                        || mission.type == nameof(MissionSubType.ELEVATORSOURCEFLOOR)
-                        || mission.type == nameof(MissionSubType.ELEVATORDESTINATIONFLOOR)
-                    );
-
-                if (cannotReassign)
-                {
-                    EventLogger.Info(
-                        $"[ASSIGN][REASSIGN][SKIP][FORBIDDEN-STATE] workerId={worker.id}, workerName={worker.name}, missionId={mission.guid}, jobId={mission.jobId}, state={mission.state}, type={mission.type}"
-                    );
-                    continue;
-                }
-
-                // 4) "재할당이 되는 조건(트리거)" 정의
-                //    - Mission 타입이 PICK 이고
-                //    - 상태가 COMPLETED 인 경우
-                bool canReassign = mission.type == nameof(MissionSubType.PICK) && mission.state == nameof(MissionState.COMPLETED);
-
-                if (!canReassign)
-                {
-                    // 재할당 트리거는 아니지만, 스캔 대상인 Mission 이므로 조용히 패스
-                    continue;
-                }
-
-                // [LOG] 재할당 트리거 발생 로그
-                EventLogger.Info(
-                    $"[ASSIGN][REASSIGN][TRIGGER] workerId={worker.id}, workerName={worker.name}, missionId={mission.guid}, jobId={mission.jobId}, type={mission.type}, state={mission.state}"
-                );
-
-                // 5) 실제 Job 재할당 로직 실행
                 JobReassignAfter(worker, mission);
+                triggerCount++;
+
+                EventLogger.Info($"[ASSIGN][REASSIGN][TRIGGER][DONE], workerName={worker.name}, workerId={worker.id}, missionId={mission.guid}, jobId={mission.jobId}");
             }
 
-            // [LOG] 재할당 스캔 완료
-            //EventLogger.Info("[ASSIGN][REASSIGN][SCAN][DONE] JobReassigned scan completed.");
+            // ============================================================
+            // [LOG] 재할당 스캔 종료
+            // ============================================================
+            EventLogger.Info($"[ASSIGN][REASSIGN][SCAN][END] pickCompletedCount={pickCompletedMissions.Count}, triggeredReassignCount={triggerCount}");
         }
 
         /// <summary>
@@ -124,146 +145,310 @@ namespace JOB.Services
         ///  - Worker 의 Mission 큐를 재구성한다.
         ///  ※ 재할당 불가 조건(1번 조건)은 이미 JobReassigned 에서 필터링된 상태라고 가정.
         /// </summary>
+        /// <summary>
+        /// JobReassigned() 에서 재할당 트리거가 발생했을 때,
+        /// 실제로 Unassigned Job 중 하나를 선택해서
+        /// - MissionQueue 에 끼워 넣고
+        /// - Job 을 Worker 에 할당하는 함수
+        /// </summary>
         private void JobReassignAfter(Worker worker, Mission completedMission)
         {
-            if (worker == null || completedMission == null)
-                return;
-
-            // [LOG] 재할당 시도 시작
-            //EventLogger.Info($"[ASSIGN][REASSIGN][START] workerId={worker.id}, completedMissionId={completedMission.guid}, jobId={completedMission.jobId}");
-
-            //신규 Job 이있는지 확인
-            var UnAssignedWorkerJobs = _repository.Jobs.UnAssignedJobs().OrderByDescending(r => r.priority).ThenBy(r => r.createdAt).ToList();
-
-            if (UnAssignedWorkerJobs == null || UnAssignedWorkerJobs.Count == 0)
+            // ------------------------------------------------------------
+            // [0] 기본 유효성 / 안전 체크
+            // ------------------------------------------------------------
+            if (worker == null)
             {
-                EventLogger.Info($"[ASSIGN][REASSIGN][NO-UNASSIGNED-JOB] workerId={worker.id}, workerName={worker.name}");
+                EventLogger.Warn($"[ASSIGN][REASSIGN][AFTER][SKIP] worker is null.");
                 return;
             }
 
+            if (completedMission == null)
+            {
+                EventLogger.Warn($"[ASSIGN][REASSIGN][AFTER][SKIP] completedMission is null. workerName={worker.name}, workerId={worker.id}");
+                return;
+            }
+
+            // (이중 방어) Worker 자재 Full 이면 재할당 시도 안 함
+            //if (worker.isFull)
+            //{
+            //    EventLogger.Info($"[ASSIGN][REASSIGN][AFTER][SKIP][FULL] workerName={worker.name}, workerId={worker.id}, missionId={completedMission.guid}, jobId={completedMission.jobId}");
+            //    return;
+            //}
+
+            EventLogger.Info($"[ASSIGN][REASSIGN][AFTER][START] workerName={worker.name}, workerId={worker.id}, missionId={completedMission.guid}, jobId={completedMission.jobId}");
+
+            // ------------------------------------------------------------
+            // [1] Unassigned Job 목록 조회
+            //      - priority 내림차순
+            //      - createdAt 오름차순
+            // ------------------------------------------------------------
+            var unAssignedJobs = _repository.Jobs.UnAssignedJobs().OrderByDescending(j => j.priority).ThenBy(j => j.createdAt).ToList();
+
+            if (unAssignedJobs == null || unAssignedJobs.Count == 0)
+            {
+                EventLogger.Info($"[ASSIGN][REASSIGN][AFTER][NO-JOB] workerName={worker.name}, workerId={worker.id} → Unassigned Job 없음.");
+                return;
+            }
+
+            // ------------------------------------------------------------
+            // [2] 배터리 설정 조회 (WorkerCondition 에서 사용)
+            // ------------------------------------------------------------
             var batterySetting = _repository.Battery.GetAll();
             if (batterySetting == null)
             {
-                EventLogger.Warn($"[ASSIGN][REASSIGN][ABORT][NO-BATTERY-SETTING] workerId={worker.id}, workerName={worker.name}");
+                EventLogger.Warn($"[ASSIGN][REASSIGN][AFTER][SKIP][NO-BATTERY] workerName={worker.name}, workerId={worker.id}");
                 return;
             }
 
-            // 1) 재할당 대상으로 사용할 Unassigned Job 목록 조회
-            //    - 같은 group 의 Job
-            //    - 타입이 CHARGE / WAIT 아닌 Job
-            var candidateJobs = UnAssignedWorkerJobs
-                .Where(j => j.group == worker.group && j.type != nameof(JobType.CHARGE) && j.type != nameof(JobType.WAIT)).ToList();
+            // ------------------------------------------------------------
+            // [3] 재할당 후보 Job 필터링
+            //      - 같은 group
+            //      - 타입이 CHARGE/WAIT 이 아닌 Job
+            //      - 지정 워커 규칙 반영:
+            //          * specifiedWorkerId 없음  → 어떤 워커든 가능
+            //          * specifiedWorkerId == worker.id → 이 워커 전용
+            //          * else → 이 워커는 해당 Job 후보에서 제외
+            // ------------------------------------------------------------
+            var candidateJobs = new List<Job>();
 
-            // 1-1) 재할당 가능한 Job 이 없으면 종료
-            if (candidateJobs == null || candidateJobs.Count == 0)
+            foreach (var job in unAssignedJobs)
             {
-                EventLogger.Info($"[ASSIGN][REASSIGN][NO-CANDIDATE] workerId={worker.id}, workerName={worker.name}, workerGroup={worker.group}");
-                return;
-            }
-
-            // 2) 이 Worker 에게 가장 적합한 Job 하나 선택
-            var jobToReassign = SelectNearestJobForWorker(worker, candidateJobs);
-
-            // 2-1) 선택된 Job 이 없으면 종료
-            if (jobToReassign == null)
-            {
-                EventLogger.Info($"[ASSIGN][REASSIGN][NO-JOB-SELECTED] workerId={worker.id}, workerName={worker.name}");
-                return;
-            }
-
-            // 3) WorkerCondition 검사 (배터리, 상태 등)
-            if (!WorkerCondition(jobToReassign, worker, batterySetting))
-            {
-                EventLogger.Info($"[ASSIGN][REASSIGN][BLOCKED-WORKER] workerId={worker.id}, workerName={worker.name}, jobId={jobToReassign.guid}, jobType={jobToReassign.type}");
-                return;
-            }
-
-            // 6) 재할당된 Job 을 반영해서 Worker 의 Mission 큐 재구성
-            EventLogger.Info($"[ASSIGN][REASSIGN][MQUEUE][REBUILD-TRY] workerId={worker.id}, workerName={worker.name}, jobSecondId={jobToReassign.guid}");
-            bool ok = InsertReassignJobMission(worker, completedMission, jobToReassign);
-            if (ok)
-            {
-                // 4) (옵션) 기존 WAIT 미션 정리
-                if (!ChangeWaitDeleteMission(worker))
+                // group 이 다르면 스킵
+                if (job.group != worker.group)
                 {
-                    EventLogger.Warn($"[ASSIGN][REASSIGN][ABORT][WAIT-CLEAN-FAIL] workerId={worker.id}, workerName={worker.name}, jobSecondId={jobToReassign.guid}");
-                    return;
+                    continue;
                 }
 
-                // 5) Job 자체를 Worker 에 재할당
-                jobToReassign.assignedWorkerId = worker.id;
-                jobToReassign.state = nameof(JobState.WORKERASSIGNED);
-                _repository.Jobs.Update(jobToReassign);
-                EventLogger.Info($"[ASSIGN][REASSIGN][DONE] workerId={worker.id}, workerName={worker.name}, jobSecondId={jobToReassign.guid}, jobType={jobToReassign.type}, group={jobToReassign.group}");
+                // CHARGE / WAIT Job 은 재할당 대상에서 제외
+                if (job.type == nameof(JobType.CHARGE) ||
+                    job.type == nameof(JobType.WAIT))
+                {
+                    continue;
+                }
+
+                // 지정 워커(Job.specifiedWorkerId) 체크
+                bool specifiedIsEmpty = IsInvalid(job.specifiedWorkerId);
+                bool specifiedIsThisWorker = (!specifiedIsEmpty && job.specifiedWorkerId == worker.id);
+
+                // 지정이 없거나, 나에게 지정된 Job 만 후보에 포함
+                if (specifiedIsEmpty || specifiedIsThisWorker)
+                {
+                    candidateJobs.Add(job);
+                }
+                else
+                {
+                    // 다른 워커에게 지정된 Job → 이 워커 기준 후보에서 제외
+                    continue;
+                }
             }
-            else
+
+            if (candidateJobs == null || candidateJobs.Count == 0)
             {
-                // 재구성 실패 → 이번 재할당 시도 포기.
-                EventLogger.Warn($"[ASSIGN][REASSIGN][FAIL][MQUEUE-REBUILD] workerId={worker.id}, workerName={worker.name}, jobSecondId={jobToReassign.guid}");
+                EventLogger.Info($"[ASSIGN][REASSIGN][AFTER][NO-CANDIDATE] workerName={worker.name}, workerId={worker.id} → 조건에 맞는 후보 Job 없음.");
                 return;
             }
+
+            EventLogger.Info($"[ASSIGN][REASSIGN][AFTER][CANDIDATE] workerName={worker.name}, workerId={worker.id}, candidateCount={candidateJobs.Count}");
+
+            // ------------------------------------------------------------
+            // [4] 이 Worker 에게 가장 적합한 Job 하나 선택
+            //      - 거리 기준 (SelectNearestJobForWorker 사용)
+            // ------------------------------------------------------------
+            var jobToReassign = SelectNearestJobForWorker(worker, candidateJobs);
+
+            if (jobToReassign == null)
+            {
+                EventLogger.Info($"[ASSIGN][REASSIGN][AFTER][SKIP][NO-SELECT] workerName={worker.name}, workerId={worker.id} → SelectNearestJobForWorker 결과 없음.");
+                return;
+            }
+
+            EventLogger.Info($"[ASSIGN][REASSIGN][AFTER][SELECT] workerName={worker.name}, workerId={worker.id}, secondJobId={jobToReassign.guid}, jobType={jobToReassign.type}");
+
+            // ------------------------------------------------------------
+            // [5] WorkerCondition 검사 (배터리, 상태 등)
+            // ------------------------------------------------------------
+            bool canRun = WorkerCondition(jobToReassign, worker, batterySetting);
+            if (!canRun)
+            {
+                EventLogger.Info($"[ASSIGN][REASSIGN][AFTER][SKIP][WORKER-CONDITION] workerName={worker.name}, workerId={worker.id}, secondJobId={jobToReassign.guid}");
+                return;
+            }
+
+            // ------------------------------------------------------------
+            // [6] 재할당 Job 을 반영해서 MissionQueue 재구성
+            //      - InsertReassignJobMission 내부에서:
+            //          * A_CompletedSegment
+            //          * Second_PreMission
+            //          * A_RemainSegment
+            //          * Second_FinalMission
+            //        구조로 새 큐를 구성하고 sequence 재배열
+            // ------------------------------------------------------------
+            bool ok = InsertReassignJobMission(worker, completedMission, jobToReassign);
+
+            if (!ok)
+            {
+                EventLogger.Warn($"[ASSIGN][REASSIGN][AFTER][FAIL][REBUILD-MISSION] workerName={worker.name}, workerId={worker.id}, secondJobId={jobToReassign.guid}");
+                return;
+            }
+
+            EventLogger.Info($"[ASSIGN][REASSIGN][AFTER][REBUILD-MISSION][OK] workerName={worker.name}, workerId={worker.id}, secondJobId={jobToReassign.guid}");
+
+            // ------------------------------------------------------------
+            // [7] 기존 WAIT 미션 정리 (정책에 따라)
+            //      - 재구성 후에도 Worker 에 WAIT 미션이 필요 없다면 삭제
+            // ------------------------------------------------------------
+            bool waitCleaned = ChangeWaitDeleteMission(worker);
+            if (!waitCleaned)
+            {
+                // WAIT 삭제 실패했다고 해서 재구성 자체를 롤백하지는 않음(정책에 따라 조정 가능)
+                EventLogger.Warn($"[ASSIGN][REASSIGN][AFTER][WARN][WAIT-CLEAN-FAIL] workerName={worker.name}, workerId={worker.id}, secondJobId={jobToReassign.guid}");
+                // 필요하다면 여기서 return; 으로 바꿔도 됨
+            }
+
+            // ------------------------------------------------------------
+            // [8] Job 자체를 Worker 에 재할당 (DB 업데이트)
+            // ------------------------------------------------------------
+            jobToReassign.assignedWorkerId = worker.id;
+            jobToReassign.state = nameof(JobState.WORKERASSIGNED);
+            _repository.Jobs.Update(jobToReassign);
+
+            EventLogger.Info($"[ASSIGN][REASSIGN][AFTER][DONE] workerName={worker.name}, workerId={worker.id}, secondJobId={jobToReassign.guid}, jobState={jobToReassign.state}");
         }
 
         /// <summary>
-        /// InsertReassignJobMission
-        /// ------------------------------------------------------------
-        /// JobFirst 의 PICK 미션이 끝난 이후,
-        /// 현재 실행 중인 미션을 기준으로 JobSecond 를 끼워 넣어
-        /// MissionQueue 를 다음 순서로 재구성한다.
+        /// 재할당 시 기존 Job 들의 Mission 큐에
+        /// 새 Job 을 끼워 넣으면서, Drop 목적지 체인을
+        /// JobA → JobB → JobC → ... 순서로 이어가도록 재구성한다.
         ///
-        ///   1) First_CompletedSegment   : JobFirst 에서 이미 지나간 구간
-        ///   2) Second_PreMission        : (WorkerNearest) → JobSecond 출발지(PICK/ELEVATOR 전까지)
-        ///   3) First_RemainSegment      : JobFirst 의 남은 구간 (ElevatorExit 이후 ~ Drop 까지)
-        ///   4) Second_FinalMission      : JobFirst 목적지 → JobSecond 목적지 → JobSecond DROP
-        ///
-        /// 추가 규칙:
-        ///   - "지금 실행 중인 미션" 은 Cancel + deleteMission() 요청
-        ///   - "Cancel 이후 ~ ElevatorExit 까지" 미션들도 deleteMission() 요청 대상
-        ///   - deleteMission() 이 한 개라도 실패하면
-        ///        → 재할당 전체를 중단하고 false 를 반환
-        ///
-        /// 경로(패스 플랜) 규칙:
-        ///   - Second_PreMission      : WorkerNearestPosition → JobSecond Source(Pick)
-        ///   - Second_FinalMission    : JobFirst Destination  → JobSecond Destination
+        /// - completedMission 이 속한 Job 을 "firstJob" 으로 보고
+        ///   그 Job 의 Pick 이후 구간 일부를 잘라내고,
+        ///   새 Job(secondJob) 의 PreMission + FinalMission 을 삽입한다.
+        /// - FinalMission 의 시작 위치는
+        ///   "현재 Worker 미션 큐에서 가장 마지막에 있는 Job 의 목적지" 기준으로
+        ///   → JobA 목적지 → JobB 목적지 → JobC 목적지 ... 형태의 체인을 만든다.
         /// </summary>
         private bool InsertReassignJobMission(Worker worker, Mission completedMission, Job jobSecond)
         {
             // ------------------------------------------------------------
             // [0] 기본 유효성 확인
             // ------------------------------------------------------------
-            if (worker == null) return false;
-            if (completedMission == null) return false;
-            if (jobSecond == null) return false;
+            if (worker == null)
+            {
+                EventLogger.Warn("[ASSIGN][REASSIGN][MERGE][FAIL] worker is null.");
+                return false;
+            }
+
+            if (completedMission == null)
+            {
+                EventLogger.Warn($"[ASSIGN][REASSIGN][MERGE][FAIL] completedMission is null. workerName={worker.name}, workerId={worker.id}");
+                return false;
+            }
+
+            if (jobSecond == null)
+            {
+                EventLogger.Warn($"[ASSIGN][REASSIGN][MERGE][FAIL] secondJob is null. workerName={worker.name}, workerId={worker.id}, completedJobId={completedMission.jobId}");
+                return false;
+            }
+
+            EventLogger.Info($"[ASSIGN][REASSIGN][MERGE][START] workerName={worker.name}, workerId={worker.id}, completedMissionId={completedMission.guid}" +
+                             $", firstJobId={completedMission.jobId}, secondJobId={jobSecond.guid}");
 
             // ------------------------------------------------------------
-            // [1] JobFirst 조회
+            // [1] JobFirst 조회 (completedMission 이 속해 있는 Job)
             // ------------------------------------------------------------
             var jobFirst = _repository.Jobs.GetByid(completedMission.jobId);
-            if (jobFirst == null) return false;
+            if (jobFirst == null)
+            {
+                EventLogger.Warn($"[ASSIGN][REASSIGN][MERGE][FAIL][FIRST-JOB-NOTFOUND] workerName={worker.name}, workerId={worker.id}, firstJobId={completedMission.jobId}");
+                return false;
+            }
 
             // ------------------------------------------------------------
-            // [2] RoutePlan API (Resource 서비스) 조회
+            // [2] RoutePlan API (Resource 서비스) 조회 준비
             // ------------------------------------------------------------
             var resource = _repository.ServiceApis.GetAll().FirstOrDefault(s => s.type == "Resource");
-            if (resource == null) return false;
+            if (resource == null)
+            {
+                EventLogger.Warn($"[ASSIGN][REASSIGN][MERGE][FAIL][NO-RESOURCE-SERVICE] workerName={worker.name}, workerId={worker.id}, firstJobId={jobFirst.guid}" +
+                                 $", secondJobId={jobSecond.guid}");
+                return false;
+            }
 
             // ------------------------------------------------------------
             // [3] Worker 기준 가장 가까운 Position 조회
             // ------------------------------------------------------------
             var posList = _repository.Positions.MiR_GetByMapId(worker.mapId);
-            if (posList == null || posList.Count == 0) return false;
+            if (posList == null || posList.Count == 0)
+            {
+                EventLogger.Warn($"[ASSIGN][REASSIGN][MERGE][FAIL][NO-POSITION-LIST] workerName={worker.name}, workerId={worker.id}, mapId={worker.mapId}");
+                return false;
+            }
 
             var workerNearestPosition = _repository.Positions.FindNearestWayPoint(worker, posList).FirstOrDefault();
-            if (workerNearestPosition == null) return false;
+            if (workerNearestPosition == null)
+            {
+                EventLogger.Warn($"[ASSIGN][REASSIGN][MERGE][FAIL][NO-NEAREST-POSITION] workerName={worker.name}, workerId={worker.id}, mapId={worker.mapId}");
+                return false;
+            }
+
+            EventLogger.Info($"[ASSIGN][REASSIGN][MERGE][WORKER-POS] workerName={worker.name}, workerId={worker.id}, nearestPositionId={workerNearestPosition.id}");
 
             // ------------------------------------------------------------
-            // [4] JobFirst 목적지 Position (Drop 위치)
+            // [4] "현재 큐에서 마지막 목적지" 계산
+            //
+            //  - 기존 코드: firstJob.destinationId 를 사용
+            //  - 변경 코드: 현재 Worker 에 할당된 전체 미션을 보고
+            //               가장 sequence 가 큰 미션의 Job 을 기준으로
+            //               그 Job 의 목적지(destinationId) Position 을 사용
+            //
+            //  이렇게 하면:
+            //   1차 재할당: 마지막 Job = A → startPos = A 목적지
+            //   2차 재할당: 현재 마지막 Job = B → startPos = B 목적지
+            //   3차 재할당: 마지막 Job = C → startPos = C 목적지
+            //   ...
+            //   ⇒ A → B → C → D 체인 보장
             // ------------------------------------------------------------
-            var firstDestination = _repository.Positions.GetById(jobFirst.destinationId);
-            if (firstDestination == null) return false;
+            var allMissionsOfWorker = _repository.Missions.GetByAssignedWorkerId(worker.id).OrderBy(m => m.sequence).ToList();
+
+            if (allMissionsOfWorker == null || allMissionsOfWorker.Count == 0)
+            {
+                EventLogger.Warn(
+                    $"[ASSIGN][REASSIGN][MERGE][FAIL][NO-WORKER-MISSIONS] workerName={worker.name}, workerId={worker.id}"
+                );
+                return false;
+            }
+
+            // sequence 가 가장 큰 (큐의 맨 마지막) 미션
+            var lastMission = allMissionsOfWorker.OrderBy(m => m.sequence).LastOrDefault();
+
+            if (lastMission == null)
+            {
+                EventLogger.Warn($"[ASSIGN][REASSIGN][MERGE][FAIL][NO-LAST-MISSION] workerName={worker.name}, workerId={worker.id}");
+                return false;
+            }
+
+            var lastJob = _repository.Jobs.GetByid(lastMission.jobId);
+            if (lastJob == null)
+            {
+                EventLogger.Warn($"[ASSIGN][REASSIGN][MERGE][FAIL][LAST-JOB-NOTFOUND] workerName={worker.name}, workerId={worker.id}, lastMissionId={lastMission.guid}" +
+                                 $", lastJobId={lastMission.jobId}");
+                return false;
+            }
+
+            var lastDestinationPosition = _repository.Positions.GetById(lastJob.destinationId);
+            if (lastDestinationPosition == null)
+            {
+                EventLogger.Warn($"[ASSIGN][REASSIGN][MERGE][FAIL][LAST-DEST-NOTFOUND] workerName={worker.name}, workerId={worker.id}" +
+                                 $", lastJobId={lastJob.guid}, destId={lastJob.destinationId}");
+                return false;
+            }
+
+            EventLogger.Info($"[ASSIGN][REASSIGN][MERGE][TAIL-START] workerName={worker.name}, workerId={worker.id}, tailStartJobId={lastJob.guid}" +
+                             $", tailStartPosId={lastDestinationPosition.id}");
 
             // ------------------------------------------------------------
             // [5] JobSecond 의 출발/목적 Position 계산
+            //      - 출발(sourceId) 없으면 Worker 현재 위치 사용
             // ------------------------------------------------------------
             Position secondSourcePosition = null;
 
@@ -271,110 +456,214 @@ namespace JOB.Services
             {
                 // source 가 없으면 Worker 위치를 출발점으로 사용
                 secondSourcePosition = workerNearestPosition;
+                EventLogger.Info($"[ASSIGN][REASSIGN][MERGE][SECOND-SRC] use WORKER position as source. secondJobId={jobSecond.guid}, workerNearestPosId={workerNearestPosition.id}");
             }
             else
             {
                 secondSourcePosition = _repository.Positions.GetById(jobSecond.sourceId);
+                if (secondSourcePosition != null)
+                {
+                    EventLogger.Info($"[ASSIGN][REASSIGN][MERGE][SECOND-SRC] use jobSecond.sourceId. secondJobId={jobSecond.guid}, sourceId={jobSecond.sourceId}" +
+                                     $", secondSourcePositionName={secondSourcePosition.name}, secondSourcePositionId={secondSourcePosition.id}");
+                }
             }
 
-            if (secondSourcePosition == null) return false;
+            if (secondSourcePosition == null)
+            {
+                EventLogger.Warn($"[ASSIGN][REASSIGN][MERGE][FAIL][SECOND-SRC-NOTFOUND] secondJobId={jobSecond.guid}, sourceId={jobSecond.sourceId}");
+                return false;
+            }
 
             var secondDestinationPosition = _repository.Positions.GetById(jobSecond.destinationId);
-            if (secondDestinationPosition == null) return false;
-
-            // ------------------------------------------------------------
-            // [6] 현재 Worker 에 할당된 전체 Mission 조회
-            // ------------------------------------------------------------
-            var currentMissions = _repository.Missions.GetByAssignedWorkerId(worker.id).OrderBy(m => m.sequence).ToList();
-
-            if (currentMissions == null || currentMissions.Count == 0)
+            if (secondDestinationPosition == null)
+            {
+                EventLogger.Warn($"[ASSIGN][REASSIGN][MERGE][FAIL][SECOND-DEST-NOTFOUND] secondJobId={jobSecond.guid}, destId={jobSecond.destinationId}");
                 return false;
+            }
 
             // ------------------------------------------------------------
-            // [7] JobFirst 에 속한 Mission 만 필터링
+            // [6] 현재 Worker 에 할당된 전체 Mission 중,
+            //     JobFirst 에 속한 미션들만 필터링
             // ------------------------------------------------------------
-            var firstMissions = currentMissions.Where(m => m.jobId == jobFirst.guid).OrderBy(m => m.sequence).ToList();
-            if (firstMissions == null || firstMissions.Count == 0)
+            var currentMissions = allMissionsOfWorker; // 이미 위에서 정렬한 목록 재사용
+
+            var firstMissions = new List<Mission>();
+            foreach (var item in currentMissions)
+            {
+                if (item.jobId == jobFirst.guid)
+                {
+                    firstMissions.Add(item);
+                }
+            }
+
+            if (firstMissions.Count == 0)
+            {
+                EventLogger.Warn($"[ASSIGN][REASSIGN][MERGE][FAIL][NO-FIRST-MISSIONS] workerName={worker.name}, workerId={worker.id}, firstJobId={jobFirst.guid}");
                 return false;
+            }
 
             // ------------------------------------------------------------
             // [7-1] "지금 실행 중인 미션" 찾기
             // ------------------------------------------------------------
-            var currentFirstMission = firstMissions.FirstOrDefault(m => m.state == nameof(MissionState.EXECUTING));
+            Mission currentFirstMission = null;
+
+            foreach (var item in firstMissions)
+            {
+                if (item.state == nameof(MissionState.EXECUTING))
+                {
+                    currentFirstMission = item;
+                    break;
+                }
+            }
 
             if (currentFirstMission == null)
             {
-                // EXECUTING 이 없으면, 최소 completedMission 기준으로 사용
-                currentFirstMission = firstMissions.FirstOrDefault(m => m.guid == completedMission.guid);
+                foreach (var item in firstMissions)
+                {
+                    if (item.guid == completedMission.guid)
+                    {
+                        currentFirstMission = item;
+                        break;
+                    }
+                }
+            }
 
-                if (currentFirstMission == null) return false;
+            if (currentFirstMission == null)
+            {
+                EventLogger.Warn($"[ASSIGN][REASSIGN][MERGE][FAIL][NO-CURRENT-FIRST-MISSION] workerName={worker.name}, workerId={worker.id}, firstJobId={jobFirst.guid}");
+                return false;
             }
 
             int cancelSeq = currentFirstMission.sequence;
 
+            EventLogger.Info($"[ASSIGN][REASSIGN][MERGE][CURRENT-FIRST] workerName={worker.name}, workerId={worker.id}, firstJobId={jobFirst.guid}, cancelSeq={cancelSeq}" +
+                             $", currentMissionId={currentFirstMission.guid}");
+
             // ------------------------------------------------------------
-            // [7-2] ElevatorExitMission 찾기
+            // [7-2] ElevatorExitMission(A 의 EV Exit) 찾기
             // ------------------------------------------------------------
-            var firstElevatorExit = firstMissions.FirstOrDefault(m => m.type == nameof(MissionSubType.ELEVATOREXITMOVE));
-            if (firstElevatorExit == null) return false;
+            Mission firstElevatorExit = null;
+
+            foreach (var item in firstMissions)
+            {
+                if (item.type == nameof(MissionSubType.ELEVATOREXITMOVE))
+                {
+                    firstElevatorExit = item;
+                    break;
+                }
+            }
+
+            if (firstElevatorExit == null)
+            {
+                EventLogger.Warn($"[ASSIGN][REASSIGN][MERGE][FAIL][NO-EV-EXIT] workerName={worker.name}, workerId={worker.id}, firstJobId={jobFirst.guid}");
+                return false;
+            }
+
             int elevatorExitSeq = firstElevatorExit.sequence;
+
+            EventLogger.Info($"[ASSIGN][REASSIGN][MERGE][EV-EXIT] workerName={worker.name}, workerId={worker.id}, firstJobId={jobFirst.guid}, elevatorExitSeq={elevatorExitSeq}" +
+                             $", evExitMissionId={firstElevatorExit.guid}");
 
             // ------------------------------------------------------------
             // [8] JobFirst 의 Mission 을 4개 구간으로 나누기
             // ------------------------------------------------------------
+            var First_CompletedSegment = new List<Mission>();
+            var First_SkipSegment = new List<Mission>();
+            var First_RemainSegment = new List<Mission>();
+            Mission First_CancelMission = null;
 
-            // 1) 이미 지나간 구간
-            var First_CompletedSegment = firstMissions.Where(m => m.sequence < cancelSeq).ToList();
+            foreach (var item in firstMissions)
+            {
+                if (item.sequence < cancelSeq)
+                {
+                    First_CompletedSegment.Add(item);
+                }
+                else if (item.sequence == cancelSeq)
+                {
+                    First_CancelMission = item;
+                }
+                else if (item.sequence > cancelSeq && item.sequence <= elevatorExitSeq)
+                {
+                    First_SkipSegment.Add(item);
+                }
+                else if (item.sequence > elevatorExitSeq)
+                {
+                    First_RemainSegment.Add(item);
+                }
+            }
 
-            // 2) 지금 실행 중인 미션 1개 (Cancel 대상)
-            var First_CancelMission = firstMissions.FirstOrDefault(m => m.sequence == cancelSeq);
-
-            // 3) Cancel 이후 ~ ElevatorExit 까지 (Skip + Delete 대상)
-            var First_SkipSegment = firstMissions.Where(m => m.sequence > cancelSeq && m.sequence <= elevatorExitSeq).ToList();
-
-            // 4) ElevatorExit 이후 ~ Drop 까지 (A 의 남은 구간)
-            var First_RemainSegment = firstMissions.Where(m => m.sequence > elevatorExitSeq).ToList();
+            EventLogger.Info($"[ASSIGN][REASSIGN][MERGE][SEGMENT] workerName={worker.name}, workerId={worker.id}, firstJobId={jobFirst.guid}" +
+                             $", completedCount={First_CompletedSegment.Count} , skipCount={First_SkipSegment.Count}, remainCount={First_RemainSegment.Count}");
 
             // ------------------------------------------------------------
-            // [8-1] Cancel 대상 미션에 대한 deleteMission 호출
-            //       - 삭제 실패 시 전체 재할당 중단
+            // [8-1] Cancel 대상 미션 삭제 요청
             // ------------------------------------------------------------
             if (First_CancelMission != null)
             {
+                EventLogger.Info($"[ASSIGN][REASSIGN][MERGE][CANCEL-MISSION] workerName={worker.name}, workerId={worker.id}, missionId={First_CancelMission.guid}" +
+                                 $", sequence={First_CancelMission.sequence}");
+
                 bool deleted = deleteMission(First_CancelMission);
-                // Service 에 미션 삭제 요청 실패 → 재할당 시도 포기
-                if (deleted == false) return false;
+                if (!deleted)
+                {
+                    EventLogger.Warn($"[ASSIGN][REASSIGN][MERGE][FAIL][CANCEL-DELETE] workerName={worker.name}, workerId={worker.id}, missionId={First_CancelMission.guid}");
+                    return false;
+                }
             }
 
             // ------------------------------------------------------------
-            // [8-2] Skip 대상 구간들에 Skipped 상태로 변경
+            // [8-2] Skip 대상 구간 상태를 SKIPPED 로 변경
             // ------------------------------------------------------------
             foreach (var skipMission in First_SkipSegment)
             {
                 updateStateMission(skipMission, nameof(MissionState.SKIPPED), true);
+                EventLogger.Info($"[ASSIGN][REASSIGN][MERGE][SKIP-MISSION] workerName={worker.name}, workerId={worker.id}, missionId={skipMission.guid}" +
+                                 $", sequence={skipMission.sequence}");
             }
-
-            // 여기까지 왔다면:
-            //  - 현재 실행중인 미션 + EV Exit 까지 이어지는 구간은
-            //    Service / Worker 쪽에서 실제 삭제 완료된 상태
-            //  - DB 상에서도 삭제된 상태 (혹은 상태만 남겨도 됨 → 정책에 따라 조정)
 
             // ------------------------------------------------------------
             // [9] Second_PreMission 생성
+            //    - Worker 현재 위치(workerNearestPosition) → secondSourcePosition → (B 의 PICK/Elevator)
             // ------------------------------------------------------------
             var Second_PreMission = BuildSecondPreMissions(jobSecond, worker, resource, workerNearestPosition, secondSourcePosition);
 
+            if (Second_PreMission != null)
+            {
+                EventLogger.Info($"[ASSIGN][REASSIGN][MERGE][SECOND-PRE] workerName={worker.name}, workerId={worker.id}, secondJobId={jobSecond.guid}" +
+                                 $", count={Second_PreMission.Count}");
+            }
+
             // ------------------------------------------------------------
             // [10] Second_FinalMission 생성
+            //     - ★ 중요: 시작 위치 = lastDestinationPosition
+            //       (현재 큐에서 마지막 Job 의 목적지)
+            //     - lastDestinationPosition → secondDestinationPosition → B Drop ...
+            //  기존: firstDestination → 변경: lastDestinationPosition
             // ------------------------------------------------------------
-            var Second_FinalMission = BuildSecondFinalMissions(jobSecond, worker, resource, firstDestination, secondDestinationPosition);
+            var Second_FinalMission = BuildSecondFinalMissions(jobSecond, worker, resource, lastDestinationPosition, secondDestinationPosition);
+
+            if (Second_FinalMission != null)
+            {
+                EventLogger.Info($"[ASSIGN][REASSIGN][MERGE][SECOND-FINAL] workerName={worker.name}, workerId={worker.id}, secondJobId={jobSecond.guid}" +
+                                 $", count={Second_FinalMission.Count}");
+            }
 
             // ------------------------------------------------------------
             // [11] 새 Mission Queue 재구성
+            //      순서:
+            //        1) A_CompletedSegment
+            //        2) Second_PreMission
+            //        3) First_RemainSegment
+            //        4) (기존 tail 까지 포함된) 나머지 미션들 + Second_FinalMission
+            //
+            //  ※ 여기서는 간단하게:
+            //     - currentMissions 에서 JobFirst 관련 세그먼트들을 제거하고
+            //     - 위에서 새로 구성한 순서로 삽입 + 기존 나머지 Job 들은 뒤에 그대로 두는 구조로 확장 가능
+            //     (지금 버전은 기본 구조만 보여주는 예시)
             // ------------------------------------------------------------
             var newQueue = new List<Mission>();
 
-            if (First_CompletedSegment != null && First_CompletedSegment.Count > 0)
+            if (First_CompletedSegment.Count > 0)
             {
                 newQueue.AddRange(First_CompletedSegment);
             }
@@ -384,7 +673,7 @@ namespace JOB.Services
                 newQueue.AddRange(Second_PreMission);
             }
 
-            if (First_RemainSegment != null && First_RemainSegment.Count > 0)
+            if (First_RemainSegment.Count > 0)
             {
                 newQueue.AddRange(First_RemainSegment);
             }
@@ -392,6 +681,13 @@ namespace JOB.Services
             if (Second_FinalMission != null && Second_FinalMission.Count > 0)
             {
                 newQueue.AddRange(Second_FinalMission);
+            }
+
+            if (newQueue.Count == 0)
+            {
+                EventLogger.Warn($"[ASSIGN][REASSIGN][MERGE][FAIL][EMPTY-QUEUE] workerName={worker.name}, workerId={worker.id}, firstJobId={jobFirst.guid}" +
+                                 $", secondJobId={jobSecond.guid}");
+                return false;
             }
 
             // ------------------------------------------------------------
@@ -405,51 +701,69 @@ namespace JOB.Services
                 mission.assignedWorkerId = worker.id;
 
                 _repository.Missions.Update(mission);
+
+                EventLogger.Info($"[ASSIGN][REASSIGN][MERGE][UPDATE] workerName={worker.name}, workerId={worker.id}, missionId={mission.guid}" +
+                                 $", sequence={mission.sequence}, jobId={mission.jobId}");
+
                 seq++;
             }
+
+            EventLogger.Info($"[ASSIGN][REASSIGN][MERGE][DONE] workerName={worker.name}, workerId={worker.id}, firstJobId={jobFirst.guid}, secondJobId={jobSecond.guid}" +
+                             $", totalSequence={newQueue.Count}");
 
             return true;
         }
 
         /// <summary>
-        /// BuildSecondPreMissions
-        /// ------------------------------------------------------------
-        /// Second_PreMission 구간을 생성한다.
+        /// 재할당 시, 두 번째 Job(jobSecond)의 "PICK 전까지" 미션들을 생성한다.
         ///
-        /// 목적:
-        ///   - 현재 Worker 위치(WorkerNearestPosition)에서
-        ///     JobSecond 의 출발지(secondSourcePosition, 보통 PICK 위치)까지
-        ///     이동 경로를 계산하고, 그에 따른 Mission 들을 생성한다.
+        /// 경로:
+        ///   1) workerNearestPosition → secondSourcePosition 까지 MOVE / TRAFFIC / ELEVATOR
+        ///   2) secondSourcePosition 에서 PICK 그룹 생성
         ///
-        /// 경로(패스 플랜) 규칙:
-        ///   - 시작: workerNearestPosition.positionId
-        ///   - 도착: secondSourcePosition.positionId
-        ///
-        /// 미션 생성 규칙:
-        ///   - 중간 노드:
-        ///       → MOVE(STOPOVERMOVE) 또는 TRAFFIC/ELEVATOR 그룹 (NodeType 에 따라)
-        ///   - 마지막 노드(= secondSourcePosition):
-        ///       → MissionsTemplateGroup.PICK 그룹 생성
-        ///
-        /// 주의:
-        ///   - 실제 Mission 엔티티 생성 / DB Insert 는
-        ///     create_SingleMission / create_GroupMission 내부에서 수행한다고 가정.
-        ///   - 이 함수의 반환 List<Mission> 은 선택적으로 활용 가능하며,
-        ///     필요 시 _repository.Missions 에서 JobSecond 기준으로 다시 조회해 사용하는 것을 추천.
+        /// ※ 이 함수는 실제 Mission 엔티티를 생성( create_SingleMission / create_GroupMission )
+        ///   한 뒤, DB에서 다시 조회해서 List<Mission> 으로 반환한다.
         /// </summary>
         private List<Mission> BuildSecondPreMissions(Job jobSecond, Worker worker, ServiceApi resource, Position workerNearestPosition, Position secondSourcePosition)
         {
-            // 반환용 리스트 (현재는 구조상 제공, 실제 데이터는 필요 시 재조회 권장)
+            // 반환용 리스트
             var result = new List<Mission>();
 
             // ------------------------------------------------------------
             // [0] 기본 방어 코드
             // ------------------------------------------------------------
-            if (jobSecond == null) return result;
-            if (worker == null) return result;
-            if (resource == null) return result;
-            if (workerNearestPosition == null) return result;
-            if (secondSourcePosition == null) return result;
+            if (jobSecond == null)
+            {
+                EventLogger.Warn("[ASSIGN][REASSIGN][BUILD-PRE][FAIL] jobSecond is null.");
+                return result;
+            }
+
+            if (worker == null)
+            {
+                EventLogger.Warn($"[ASSIGN][REASSIGN][BUILD-PRE][FAIL] worker is null. jobSecondId={jobSecond.guid}");
+                return result;
+            }
+
+            if (resource == null)
+            {
+                EventLogger.Warn($"[ASSIGN][REASSIGN][BUILD-PRE][FAIL] resource(ServiceApi) is null. workerName={worker.name}, workerId={worker.id}, jobSecondId={jobSecond.guid}");
+                return result;
+            }
+
+            if (workerNearestPosition == null)
+            {
+                EventLogger.Warn($"[ASSIGN][REASSIGN][BUILD-PRE][FAIL] workerNearestPosition is null. workerName={worker.name},workerId={worker.id}, jobSecondId={jobSecond.guid}");
+                return result;
+            }
+
+            if (secondSourcePosition == null)
+            {
+                EventLogger.Warn($"[ASSIGN][REASSIGN][BUILD-PRE][FAIL] secondSourcePosition is null. workerName={worker.name}, workerId={worker.id}, jobSecondId={jobSecond.guid}");
+                return result;
+            }
+
+            EventLogger.Info($"[ASSIGN][REASSIGN][BUILD-PRE][START] workerName={worker.name}, workerId={worker.id}, workerPosId={workerNearestPosition.positionId}, " +
+                             $"jobSecondId={jobSecond.guid}, secondSourcePosId={secondSourcePosition.positionId}");
 
             // ------------------------------------------------------------
             // [1] 시작/도착 Position 이 같다면:
@@ -459,12 +773,17 @@ namespace JOB.Services
             {
                 int seqFrom = 1;
 
-                // 바로 PICK 그룹만 생성 (필요 시 Elevator/Traffic 은 이후 구간에서 처리)
-                // secondSourcePosition Pick위치
+                EventLogger.Info($"[ASSIGN][REASSIGN][BUILD-PRE][DIRECT-PICK] workerName={worker.name}, workerId={worker.id}, jobSecondId={jobSecond.guid}" +
+                                 $", posId={secondSourcePosition.positionId}");
+
+                // 바로 PICK 그룹만 생성
                 seqFrom = create_GroupMission(jobSecond, secondSourcePosition, worker, seqFrom, nameof(MissionsTemplateGroup.PICK));
 
-                // 실제 Mission 엔티티는 위 create_GroupMission 안에서 생성된다고 가정.
-                // 필요하다면 여기서 _repository.Missions.GetByJobId(jobSecond.id) 로 다시 조회 가능.
+                // 여기까지 미션 생성은 DB에 반영되었으므로, 다시 조회해서 result 채움
+                result = _repository.Missions.GetByJobId(jobSecond.guid).Where(m => m.assignedWorkerId == worker.id).OrderBy(m => m.sequence).ToList();
+
+                EventLogger.Info($"[ASSIGN][REASSIGN][BUILD-PRE][DIRECT-PICK][DONE] workerName={worker.name}, workerId={worker.id}, jobSecondId={jobSecond.guid}" +
+                                 $", preMissionCount={result.Count}");
 
                 return result;
             }
@@ -473,12 +792,25 @@ namespace JOB.Services
             // [2] Routes_Plan 호출:
             //     WorkerNearestPosition → secondSourcePosition
             // ------------------------------------------------------------
-            var routesPlanRequest = _mapping.RoutesPlanas.Request(workerNearestPosition.positionId, secondSourcePosition.positionId);
+            var routesPlanRequest = _mapping.RoutesPlanas.Request(
+                workerNearestPosition.positionId,
+                secondSourcePosition.positionId);
 
             var routesPlanResponse = resource.Api.Post_Routes_Plan_Async(routesPlanRequest).Result;
 
-            if (routesPlanResponse == null) return result;
-            if (routesPlanResponse.nodes == null) return result;
+            if (routesPlanResponse == null)
+            {
+                EventLogger.Warn($"[ASSIGN][REASSIGN][BUILD-PRE][FAIL][NO-ROUTE-RESP] workerName={worker.name}, workerId={worker.id}, jobSecondId={jobSecond.guid}");
+                return result;
+            }
+
+            if (routesPlanResponse.nodes == null)
+            {
+                EventLogger.Warn($"[ASSIGN][REASSIGN][BUILD-PRE][FAIL][NO-ROUTE-NODES] workerName={worker.name}, workerId={worker.id}, jobSecondId={jobSecond.guid}");
+                return result;
+            }
+
+            EventLogger.Info($"[ASSIGN][REASSIGN][BUILD-PRE][ROUTE] workerName={worker.name}, workerId={worker.id}, jobSecondId={jobSecond.guid}, nodeCount={routesPlanResponse.nodes.Count}");
 
             // Mission sequence 시작 값 (일단 1부터 시작; 이후 전체 Queue 에서 재정렬할 예정)
             int seq = 1;
@@ -491,8 +823,6 @@ namespace JOB.Services
             // ------------------------------------------------------------
             foreach (var node in routesPlanResponse.nodes)
             {
-                // Elevator 타입 노드는 position 이 없을 수도 있으므로,
-                // 먼저 Position 조회를 시도하고, 없으면 nodeType 으로 분기 처리
                 Position position = null;
 
                 if (!string.IsNullOrEmpty(node.positionId))
@@ -511,27 +841,30 @@ namespace JOB.Services
                 // --------------------------------------------------------
                 if (node.positionId == secondSourcePosition.positionId)
                 {
-                    // PICK 그룹 생성
                     if (position != null)
                     {
+                        EventLogger.Info($"[ASSIGN][REASSIGN][BUILD-PRE][PICK-GROUP] workerName={worker.name}, workerId={worker.id}" +
+                                         $", jobSecondId={jobSecond.guid}, pickPosId={position.positionId}, seqStart={seq}");
+
                         seq = create_GroupMission(jobSecond, position, worker, seq, nameof(MissionsTemplateGroup.PICK));
                     }
-                    // PICK 까지만 필요하므로 나머지 노드는 없다고 가정하고, 루프 종료 가능
-                    // break;  // 필요 시 사용
+
+                    // 여기서 break 를 걸면, PICK 이후의 노드는 없다고 보는 정책(현재 설계상 OK)
+                    // break;
                 }
                 // --------------------------------------------------------
-                // [3-2] Elevator 노드 처리 (필요 시)
-                //       - WorkerNearest → B 출발지 사이에 Elevator 가 있을 수도 있다고 가정
+                // [3-2] Elevator 노드 처리
                 // --------------------------------------------------------
                 else if (nodeTypeUpper == nameof(NodeType.ELEVATOR))
                 {
                     if (!elevatorMissionCreated)
                     {
-                        // Elevator 그룹은 Position 없이 생성 (템플릿에서 처리한다고 가정)
+                        EventLogger.Info($"[ASSIGN][REASSIGN][BUILD-PRE][ELEVATOR-GROUP] workerName={worker.name}, workerId={worker.id}, jobSecondId={jobSecond.guid}, seq={seq}");
+
+                        // Elevator 그룹은 Position 없이 생성 (템플릿 처리 가정)
                         seq = create_GroupMission(jobSecond, null, worker, seq, nameof(MissionsTemplateGroup.ELEVATOR));
                         elevatorMissionCreated = true;
                     }
-                    // 두 번째 이후 Elevator 노드는 무시 (이미 그룹 생성됨)
                 }
                 // --------------------------------------------------------
                 // [3-3] TRAFFIC 노드 → TRAFFIC 그룹
@@ -540,6 +873,8 @@ namespace JOB.Services
                 {
                     if (position != null)
                     {
+                        EventLogger.Info($"[ASSIGN][REASSIGN][BUILD-PRE][TRAFFIC-GROUP] workerName={worker.name}, workerId={worker.id}, jobSecondId={jobSecond.guid}, posId={position.positionId}, seq={seq}");
+
                         seq = create_GroupMission(jobSecond, position, worker, seq, nameof(MissionsTemplateGroup.TRAFFIC));
                     }
                 }
@@ -551,88 +886,129 @@ namespace JOB.Services
                     if (position != null)
                     {
                         seq = create_SingleMission(jobSecond, position, worker, seq, nameof(MissionTemplateType.MOVE), nameof(MissionTemplateSubType.STOPOVERMOVE));
+
+                        // 로깅은 너무 많아질 수 있으니 필요하면만
+                        // EventLogger.Info($"[ASSIGN][REASSIGN][BUILD-PRE][MOVE] workerName={worker.name}, workerId={worker.id}, jobSecondId={jobSecond.guid}, posId={position.positionId}, seq={seq - 1}");
                     }
                 }
             }
 
             // ------------------------------------------------------------
-            // [4] 생성된 미션을 반환하고 싶다면, 여기서 다시 조회해서 채울 수 있다.
-            //     (예: JobSecond 에 속하고, 아직 EXECUTING 이전 상태의 미션만 모아오기 등)
-            //     지금은 구조 설명용으로 비워둔다.
+            // [4] 생성된 미션들을 DB 에서 다시 조회하여 반환용 리스트 구성
+            //
+            //    ※ 현재 시점에서는:
+            //       - jobSecond 에 대한 Pre 구간 미션(PRE MOVE + PICK)이 모두 생성된 상태이고,
+            //       - Final 구간(Second_FinalMission)은 아직 생성되지 않은 상태이므로
+            //         → jobSecond 에 속한 모든 미션 = 곧 Pre 구간 전체라고 볼 수 있다.
             // ------------------------------------------------------------
-            // 예시)
-            // result = _repository.Missions
-            //     .GetByJobId(jobSecond.id)
-            //     .Where(m => m.assignedWorkerId == worker.id)
-            //     .OrderBy(m => m.sequence)
-            //     .ToList();
+            result = _repository.Missions.GetByJobId(jobSecond.guid).Where(m => m.assignedWorkerId == worker.id).OrderBy(m => m.sequence).ToList();
+
+            EventLogger.Info($"[ASSIGN][REASSIGN][BUILD-PRE][DONE] workerName={worker.name}, workerId={worker.id}, jobSecondId={jobSecond.guid}, preMissionCount={result.Count}");
 
             return result;
         }
 
         /// <summary>
-        /// BuildSecondFinalMissions
-        /// ------------------------------------------------------------
-        /// Second_FinalMission 구간을 생성한다.
+        /// 두 번째 Job(jobSecond)의 "최종 목적지(DROP)"까지 가는
+        /// 마지막 구간 미션들을 생성한다.
         ///
-        /// 목적:
-        ///   - JobFirst 의 최종 목적지(firstDestination)에서
-        ///     JobSecond 의 최종 목적지(secondDestinationPosition)까지
-        ///     이동 경로를 계산하고, 그에 따른 Mission 들을 생성한다.
+        /// 경로:
+        ///   1) startPosition(firstDestination) → secondDestinationPosition 까지
+        ///      MOVE / TRAFFIC / ELEVATOR 미션들
+        ///   2) secondDestinationPosition 에서 DROP 그룹 생성
         ///
-        /// 경로(패스 플랜) 규칙:
-        ///   - 시작: firstDestination.positionId
-        ///   - 도착: secondDestinationPosition.positionId
-        ///
-        /// 미션 생성 규칙:
-        ///   - 중간 노드:
-        ///       → MOVE(STOPOVERMOVE) 또는 TRAFFIC/ELEVATOR 그룹 (NodeType 에 따라)
-        ///   - 마지막 노드(= secondDestinationPosition):
-        ///       → MissionsTemplateGroup.DROP 그룹 생성
-        ///
-        /// 주의:
-        ///   - 실제 Mission 엔티티 생성 / DB Insert 는
-        ///     create_SingleMission / create_GroupMission 내부에서 수행한다고 가정.
-        ///   - 이 함수의 반환 List<Mission> 은 선택적으로 활용 가능하며,
-        ///     필요 시 _repository.Missions 에서 JobSecond 기준으로 다시 조회해 사용하는 것을 추천.
+        /// ※ InsertReassignJobMission 에서 startPosition 으로 넘기는 값은
+        ///    "현재 큐의 마지막 Job 목적지 Position (tailStartPosition)" 이다.
+        ///    즉, A→B→C→D ... 체인을 만드는 tail 구간 생성 함수.
         /// </summary>
+        ///  tailStartPosition (A, B, C... 마지막 목적지)
+        ///   jobSecond 의 최종 목적지 Position
         private List<Mission> BuildSecondFinalMissions(Job jobSecond, Worker worker, ServiceApi resource, Position firstDestination, Position secondDestinationPosition)
         {
-            // 반환용 리스트 (구조 상 제공. 실제 데이터는 필요 시 재조회 권장)
+            // 반환용 리스트
             var result = new List<Mission>();
 
             // ------------------------------------------------------------
             // [0] 기본 방어 코드
             // ------------------------------------------------------------
-            if (jobSecond == null) return result;
-            if (worker == null) return result;
-            if (resource == null) return result;
-            if (firstDestination == null) return result;
-            if (secondDestinationPosition == null) return result;
+            if (jobSecond == null)
+            {
+                EventLogger.Warn("[ASSIGN][REASSIGN][BUILD-FINAL][FAIL] jobSecond is null.");
+                return result;
+            }
+
+            if (worker == null)
+            {
+                EventLogger.Warn($"[ASSIGN][REASSIGN][BUILD-FINAL][FAIL] worker is null. jobSecondId={jobSecond.guid}");
+                return result;
+            }
+
+            if (resource == null)
+            {
+                EventLogger.Warn($"[ASSIGN][REASSIGN][BUILD-FINAL][FAIL] resource(ServiceApi) is null. workerName={worker.name}, workerId={worker.id}, jobSecondId={jobSecond.guid}");
+                return result;
+            }
+
+            if (firstDestination == null)
+            {
+                EventLogger.Warn($"[ASSIGN][REASSIGN][BUILD-FINAL][FAIL] firstDestination(startPosition) is null. workerName={worker.name},workerId={worker.id}, jobSecondId={jobSecond.guid}");
+                return result;
+            }
+
+            if (secondDestinationPosition == null)
+            {
+                EventLogger.Warn($"[ASSIGN][REASSIGN][BUILD-FINAL][FAIL] secondDestination is null. workerName={worker.name},workerId={worker.id}, jobSecondId={jobSecond.guid}");
+                return result;
+            }
+
+            EventLogger.Info($"[ASSIGN][REASSIGN][BUILD-FINAL][START] workerName={worker.name},workerId={worker.id}, jobSecondId={jobSecond.guid}, " +
+                             $"startPosId={firstDestination.positionId}, finalPosId={secondDestinationPosition.positionId}");
 
             // ------------------------------------------------------------
             // [1] 시작/도착 Position 이 같다면:
-            //     - 굳이 경로계산 없이 DROP 그룹만 생성해도 된다.
+            //     - 굳이 경로계산 없이 DROP 그룹만 생성
             // ------------------------------------------------------------
             if (firstDestination.positionId == secondDestinationPosition.positionId)
             {
                 int seqFrom = 1;
 
+                EventLogger.Info($"[ASSIGN][REASSIGN][BUILD-FINAL][DIRECT-DROP] workerName={worker.name}, workerId={worker.id}, jobSecondId={jobSecond.guid}" +
+                                 $", posId={secondDestinationPosition.positionId}");
+
                 // 같은 위치라면 바로 DROP 그룹 생성
                 seqFrom = create_GroupMission(jobSecond, secondDestinationPosition, worker, seqFrom, nameof(MissionsTemplateGroup.DROP));
+
+                // 생성된 미션들을 DB에서 다시 조회하여 result 에 채운다.
+                result = _repository.Missions.GetByJobId(jobSecond.guid).Where(m => m.assignedWorkerId == worker.id).OrderBy(m => m.sequence).ToList();
+
+                EventLogger.Info($"[ASSIGN][REASSIGN][BUILD-FINAL][DIRECT-DROP][DONE] workerName={worker.name}, workerId={worker.id}, jobSecondId={jobSecond.guid}" +
+                                 $", finalMissionCount={result.Count}");
+
                 return result;
             }
 
             // ------------------------------------------------------------
             // [2] Routes_Plan 호출:
             //     firstDestination → secondDestinationPosition
+            //     (현재 tail 의 목적지 → jobSecond 최종 목적지)
             // ------------------------------------------------------------
             var routesPlanRequest = _mapping.RoutesPlanas.Request(firstDestination.positionId, secondDestinationPosition.positionId);
 
             var routesPlanResponse = resource.Api.Post_Routes_Plan_Async(routesPlanRequest).Result;
 
-            if (routesPlanResponse == null) return result;
-            if (routesPlanResponse.nodes == null) return result;
+            if (routesPlanResponse == null)
+            {
+                EventLogger.Warn($"[ASSIGN][REASSIGN][BUILD-FINAL][FAIL][NO-ROUTE-RESP] workerName={worker.name}, workerId={worker.id}, jobSecondId={jobSecond.guid}");
+                return result;
+            }
+
+            if (routesPlanResponse.nodes == null)
+            {
+                EventLogger.Warn($"[ASSIGN][REASSIGN][BUILD-FINAL][FAIL][NO-ROUTE-NODES] workerName={worker.name}, workerId={worker.id}, jobSecondId={jobSecond.guid}");
+                return result;
+            }
+
+            EventLogger.Info($"[ASSIGN][REASSIGN][BUILD-FINAL][ROUTE] workerName={worker.name}, workerId={worker.id}, jobSecondId={jobSecond.guid}, nodeCount={routesPlanResponse.nodes.Count}");
 
             // Mission sequence 시작 값
             int seq = 1;
@@ -645,7 +1021,6 @@ namespace JOB.Services
             // ------------------------------------------------------------
             foreach (var node in routesPlanResponse.nodes)
             {
-                // positionId 가 있는 노드는 Position 조회
                 Position position = null;
 
                 if (!string.IsNullOrEmpty(node.positionId))
@@ -666,12 +1041,15 @@ namespace JOB.Services
                 {
                     if (position != null)
                     {
+                        EventLogger.Info($"[ASSIGN][REASSIGN][BUILD-FINAL][DROP-GROUP] workerName={worker.name}, workerId={worker.id}, jobSecondId={jobSecond.guid}" +
+                                         $", dropPosId={position.positionId}, seqStart={seq}");
+
                         // B 의 최종 목적지에서 DROP 그룹 생성
                         seq = create_GroupMission(jobSecond, position, worker, seq, nameof(MissionsTemplateGroup.DROP));
                     }
 
-                    // DROP 까지 생성했으므로 이후 노드는 없다고 가정하고 종료해도 됨
-                    // break;   // 필요 시 사용
+                    // DROP 까지 생성했으므로 이후 노드는 없다고 가정하고 종료 가능
+                    // break;   // 정책상 필요하면 사용
                 }
                 // --------------------------------------------------------
                 // [3-2] Elevator 노드 → Elevator 그룹 (최대 1번)
@@ -680,7 +1058,9 @@ namespace JOB.Services
                 {
                     if (!elevatorMissionCreated)
                     {
-                        // Elevator 그룹은 Position 없이 생성한다고 가정
+                        EventLogger.Info($"[ASSIGN][REASSIGN][BUILD-FINAL][ELEVATOR-GROUP] workerName={worker.name}, workerId={worker.id}, jobSecondId={jobSecond.guid}, seq={seq}");
+
+                        // Elevator 그룹은 Position 없이 생성(템플릿에서 처리)
                         seq = create_GroupMission(jobSecond, null, worker, seq, nameof(MissionsTemplateGroup.ELEVATOR));
                         elevatorMissionCreated = true;
                     }
@@ -692,6 +1072,9 @@ namespace JOB.Services
                 {
                     if (position != null)
                     {
+                        EventLogger.Info($"[ASSIGN][REASSIGN][BUILD-FINAL][TRAFFIC-GROUP] workerName={worker.name}, workerId={worker.id}, jobSecondId={jobSecond.guid}" +
+                                         $", posId={position.positionId}, seq={seq}");
+
                         seq = create_GroupMission(jobSecond, position, worker, seq, nameof(MissionsTemplateGroup.TRAFFIC));
                     }
                 }
@@ -703,20 +1086,21 @@ namespace JOB.Services
                     if (position != null)
                     {
                         seq = create_SingleMission(jobSecond, position, worker, seq, nameof(MissionTemplateType.MOVE), nameof(MissionTemplateSubType.STOPOVERMOVE));
+
+                        // 너무 로그가 많아질 수 있어서 필요시만 활성화
+                        // EventLogger.Info(
+                        //     $"[ASSIGN][REASSIGN][BUILD-FINAL][MOVE] workerId={worker.id}, jobSecondId={jobSecond.guid}, posId={position.positionId}, seq={seq - 1}");
                     }
                 }
             }
 
             // ------------------------------------------------------------
-            // [4] 필요하다면 여기서 실제로 생성된 미션을 다시 조회하여
-            //     result 리스트를 채울 수 있다.
+            // [4] 생성된 미션들을 DB 에서 다시 조회하여 result 리스트 구성
+            //     (현재 시점에서는 jobSecond 에 해당하는 Final 구간 미션들 전체)
             // ------------------------------------------------------------
-            // 예시)
-            // result = _repository.Missions
-            //     .GetByJobId(jobSecond.id)
-            //     .Where(m => m.assignedWorkerId == worker.id)
-            //     .OrderBy(m => m.sequence)
-            //     .ToList();
+            result = _repository.Missions.GetByJobId(jobSecond.guid).Where(m => m.assignedWorkerId == worker.id).OrderBy(m => m.sequence).ToList();
+
+            EventLogger.Info($"[ASSIGN][REASSIGN][BUILD-FINAL][DONE] workerName={worker.name}, workerId={worker.id}, jobSecondId={jobSecond.guid}, finalMissionCount={result.Count}");
 
             return result;
         }

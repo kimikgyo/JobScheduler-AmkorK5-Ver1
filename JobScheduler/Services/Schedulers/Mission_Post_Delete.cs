@@ -32,6 +32,10 @@ namespace JOB.Services
                 case nameof(Service.ELEVATOR):
                     CommandRequst = ElevatorPostMission(mission);
                     break;
+
+                case nameof(Service.TRAFFIC):
+                    CommandRequst = TrafficPostMission(mission);
+                    break;
             }
             if (CommandRequst)
             {
@@ -62,6 +66,10 @@ namespace JOB.Services
                 case nameof(Service.ELEVATOR):
 
                     completed = ElevatorDeleteMission(mission);
+                    break;
+
+                case nameof(Service.TRAFFIC):
+                    completed = TrafficDeleteMission(mission);
                     break;
             }
             return completed;
@@ -123,6 +131,35 @@ namespace JOB.Services
                             CommandRequst = true;
                         }
                         else EventLogger.Warn($"[PostMission][ELEVATOR][Failed], Message = {postmission.message}, MissionName = {mission.name}, MissionId = {mission.guid}" +
+                                              $", AssignedWorkerId = {mission.assignedWorkerId}");
+                    }
+                }
+            }
+            return CommandRequst;
+        }
+
+        private bool TrafficPostMission(Mission mission)
+        {
+            bool CommandRequst = false;
+            var Api = _repository.ServiceApis.GetAll().FirstOrDefault(r => r.type == "traffic");
+            if (Api != null)
+            {
+                //[조건3] API 형식에 맞추어서 Mapping 을 한다.
+                var mapping_mission = _mapping.Missions.Request(mission);
+                if (mapping_mission != null)
+                {
+                    //[조건4] Service 로 Api Mission 전송을 한다.
+                    var postmission = Api.Api.Post_Traffic_Mission_Async(mapping_mission).Result;
+                    if (postmission != null)
+                    {
+                        //[조건5] 상태코드 200~300 까지는 완료 처리
+                        if (postmission.statusCode >= 200 && postmission.statusCode < 300)
+                        {
+                            EventLogger.Info($"[PostMission][TRAFFIC][Success], Message = {postmission.statusText}, MissionName = {mission.name}, MissionId = {mission.guid}" +
+                                             $", AssignedWorkerId = {mission.assignedWorkerId}");
+                            CommandRequst = true;
+                        }
+                        else EventLogger.Warn($"[PostMission][TRAFFIC][Failed], Message = {postmission.message}, MissionName = {mission.name}, MissionId = {mission.guid}" +
                                               $", AssignedWorkerId = {mission.assignedWorkerId}");
                     }
                 }
@@ -201,6 +238,35 @@ namespace JOB.Services
                             CommandRequst = true;
                         }
                         else EventLogger.Warn($"[DeleteMission][ELEVATOR][Failed], Message = {postmission.message}, MissionName = {mission.name}, MissionId = {mission.guid}" +
+                                             $", AssignedWorkerId = {mission.assignedWorkerId}");
+                    }
+                }
+            }
+            return CommandRequst;
+        }
+
+        private bool TrafficDeleteMission(Mission mission)
+        {
+            bool CommandRequst = false;
+            var service = _repository.ServiceApis.GetAll().FirstOrDefault(r => r.type == "traffic");
+            if (service != null)
+            {
+                //[조건3] API 형식에 맞추어서 Mapping 을 한다.
+                var mapping_mission = _mapping.Missions.Request(mission);
+                if (mapping_mission != null)
+                {
+                    //[조건4] Service 로 Api Mission 전송을 한다.
+                    var postmission = service.Api.Deletet_Elevator_Mission_Async(mapping_mission.guid).Result;
+                    if (postmission != null)
+                    {
+                        //[조건5] 상태코드 200~300 까지는 완료 처리
+                        if (postmission.statusCode >= 200 && postmission.statusCode < 300)
+                        {
+                            EventLogger.Info($"[DeleteMission][TRAFFIC][Success], Message = {postmission.statusText}, MissionName = {mission.name}, MissionId = {mission.guid}" +
+                                             $", AssignedWorkerId = {mission.assignedWorkerId}");
+                            CommandRequst = true;
+                        }
+                        else EventLogger.Warn($"[DeleteMission][TRAFFIC][Failed], Message = {postmission.message}, MissionName = {mission.name}, MissionId = {mission.guid}" +
                                              $", AssignedWorkerId = {mission.assignedWorkerId}");
                     }
                 }

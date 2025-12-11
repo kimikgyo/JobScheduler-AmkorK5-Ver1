@@ -9,7 +9,8 @@ namespace Common.Models.Jobs
     {
         WORKER,
         ELEVATOR,
-        MIDDLEWARE
+        MIDDLEWARE,
+        TRAFFIC
     }
 
     public enum MissionType

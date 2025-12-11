@@ -28,6 +28,11 @@ namespace Common.Interfaces
 
         Task<ResponseDto> Post_Middleware_Mission_Async(object value);
 
+        Task<ResponseDto> Post_Traffic_Mission_Async(object value);
+
+        Task<ResponseDto> Deletet_Traffic_Mission_Async(string id);
+
+
         Task<ResponseDto> Delete_Worker_Mission_Async(string id);
 
         Task<ResponseDto> Delete_Middleware_Mission_Async(string id);

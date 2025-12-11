@@ -10,7 +10,7 @@ namespace JOB.Services
         private void JobPlanner()
         {
             createJob();
-            createWaitControl();
+            //createWaitControl();
             //createChargeControl();
         }
 

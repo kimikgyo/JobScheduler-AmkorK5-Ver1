@@ -33,7 +33,7 @@ namespace JOB.Services
 
         private void cancelAbortCompleteControl()
         {
-            var cancelAbortJobs = _repository.Jobs.GetAll().Where(j => (j.terminateState == nameof(TerminateState.EXECUTING)) || (j.terminateState == nameof(TerminateState.COMPLETED))).ToList();
+            var cancelAbortJobs = _repository.Jobs.GetAll().Where(j => (j.terminateState == nameof(TerminateState.INITED)) || (j.terminateState == nameof(TerminateState.COMPLETED))).ToList();
             foreach (var cancelAbortJob in cancelAbortJobs)
             {
                 var missions = _repository.Missions.GetByJobId(cancelAbortJob.guid);

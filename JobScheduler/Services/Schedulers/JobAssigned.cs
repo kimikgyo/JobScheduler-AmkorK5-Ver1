@@ -259,7 +259,8 @@ namespace JOB.Services
                     // 실제 Job 할당 및 Mission 생성
                     Create_Mission(job, worker);
 
-                    EventLogger.Info($"[ASSIGN][NORMAL][DISTANCE][SPECIFIED][ASSIGNED], workerId={worker.id}, workerName={worker.name}, jobId={job.guid}, jobType={job.type}, group={job.group}");
+                    EventLogger.Info($"[ASSIGN][NORMAL][DISTANCE][SPECIFIED][ASSIGNED], workerId={worker.id}, workerName={worker.name}, jobName={job.name}, jobId={job.guid}, jobType={job.type}" +
+                                     $", group={job.group}");
 
                     assignedWorkers.Add(worker);
                 }
@@ -274,7 +275,7 @@ namespace JOB.Services
             // 지정 워커 Job 처리가 끝났는데 워커가 하나도 남지 않았다면 종료
             if (workers == null || workers.Count == 0)
             {
-                EventLogger.Info("[ASSIGN][NORMAL][DISTANCE], No workers left after specified jobs.");
+                //EventLogger.Info("[ASSIGN][NORMAL][DISTANCE], No workers left after specified jobs.");
                 return;
             }
 
@@ -515,9 +516,7 @@ namespace JOB.Services
             // ------------------------------------------------------------
             // [2] Worker 기준 가장 가까운 Position 선택
             // ------------------------------------------------------------
-            var nearestPosition = _repository.Positions
-                .FindNearestWayPoint(worker, candidatePositions)
-                .FirstOrDefault();
+            var nearestPosition = _repository.Positions.FindNearestWayPoint(worker, candidatePositions).FirstOrDefault();
 
             if (nearestPosition == null)
             {
@@ -525,7 +524,7 @@ namespace JOB.Services
                 return null;
             }
 
-            EventLogger.Info($"[ASSIGN][NEAREST-JOB][NEAREST-POSITION] workerName={worker.name}, workerId={worker.id}, positionId={nearestPosition.id}");
+            EventLogger.Info($"[ASSIGN][NEAREST-JOB][NEAREST-POSITION] workerName={worker.name}, workerId={worker.id}, positionName={nearestPosition.name}, positionId={nearestPosition.id}");
 
             // ------------------------------------------------------------
             // [3] "가장 가까운 Position" 과 연결된 Job 찾기
@@ -592,7 +591,8 @@ namespace JOB.Services
             }
 
             EventLogger.Info(
-                $"[ASSIGN][NEAREST-JOB][SELECT] workerName={worker.name}, workerId={worker.id}, jobId={selectedJob.guid}, sourceId={selectedJob.sourceId}, destId={selectedJob.destinationId}"
+                $"[ASSIGN][NEAREST-JOB][SELECT] workerName={worker.name}, workerId={worker.id}, jobName={selectedJob.name}, jobId={selectedJob.guid}, sourceId={selectedJob.sourceId}" +
+                $", destId={selectedJob.destinationId}"
             );
 
             return selectedJob;
@@ -608,7 +608,7 @@ namespace JOB.Services
                 case nameof(JobType.TRANSPORT_SLURRY_RECOVERY):
                 case nameof(JobType.TRANSPORT_CHEMICAL_RECOVERY):
                 case nameof(JobType.TRANSPORT_CHEMICAL_SUPPLY):
-                    if (worker.batteryPercent > battery.minimum) Condition = false;
+                    if (worker.batteryPercent < battery.minimum) Condition = false;
                     //미들웨어가 사용중
                     if (worker.isMiddleware == true)
                     {

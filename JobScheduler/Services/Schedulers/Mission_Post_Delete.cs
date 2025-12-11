@@ -95,12 +95,12 @@ namespace JOB.Services
                             //[조건5] 상태코드 200~300 까지는 완료 처리
                             if (postmission.statusCode >= 200 && postmission.statusCode < 300)
                             {
-                                EventLogger.Info($"[PostMission][WORKER][Success], Message = {postmission.statusText}, MissionName = {mission.name}, MissionId = {mission.guid}" +
-                                                 $", AssignedWorkerId = {mission.assignedWorkerId}");
+                                EventLogger.Info($"[PostMission][WORKER][Success], Message = {postmission.statusText}, MissionName = {mission.name}, MissionSubType = {mission.subType}" +
+                                                 $", MissionId = {mission.guid}, AssignedWorkerId = {mission.assignedWorkerId}");
                                 CommandRequst = true;
                             }
-                            else EventLogger.Warn($"[PostMission][WORKER][Failed], Message = {postmission.message}, MissionName = {mission.name}, MissionId = {mission.guid}" +
-                                                  $", AssignedWorkerId = {mission.assignedWorkerId}");
+                            else EventLogger.Warn($"[PostMission][WORKER][Failed], Message = {postmission.message}, MissionName = {mission.name}, MissionSubType = {mission.subType}" +
+                                                  $", MissionId = {mission.guid}, AssignedWorkerId = {mission.assignedWorkerId}");
                         }
                     }
                 }
@@ -126,12 +126,12 @@ namespace JOB.Services
                         //[조건5] 상태코드 200~300 까지는 완료 처리
                         if (postmission.statusCode >= 200 && postmission.statusCode < 300)
                         {
-                            EventLogger.Info($"[PostMission][ELEVATOR][Success], Message = {postmission.statusText}, MissionName = {mission.name}, MissionId = {mission.guid}" +
-                                             $", AssignedWorkerId = {mission.assignedWorkerId}");
+                            EventLogger.Info($"[PostMission][ELEVATOR][Success], Message = {postmission.statusText}, MissionName = {mission.name}, MissionSubType = {mission.subType}" +
+                                             $", MissionId = {mission.guid}, AssignedWorkerId = {mission.assignedWorkerId}");
                             CommandRequst = true;
                         }
-                        else EventLogger.Warn($"[PostMission][ELEVATOR][Failed], Message = {postmission.message}, MissionName = {mission.name}, MissionId = {mission.guid}" +
-                                              $", AssignedWorkerId = {mission.assignedWorkerId}");
+                        else EventLogger.Warn($"[PostMission][ELEVATOR][Failed], Message = {postmission.message}, MissionName = {mission.name}, MissionSubType = {mission.subType}" +
+                                             $", MissionId = {mission.guid}, AssignedWorkerId = {mission.assignedWorkerId}");
                     }
                 }
             }
@@ -155,12 +155,12 @@ namespace JOB.Services
                         //[조건5] 상태코드 200~300 까지는 완료 처리
                         if (postmission.statusCode >= 200 && postmission.statusCode < 300)
                         {
-                            EventLogger.Info($"[PostMission][TRAFFIC][Success], Message = {postmission.statusText}, MissionName = {mission.name}, MissionId = {mission.guid}" +
-                                             $", AssignedWorkerId = {mission.assignedWorkerId}");
+                            EventLogger.Info($"[PostMission][TRAFFIC][Success], Message = {postmission.statusText}, MissionName = {mission.name}, MissionSubType = {mission.subType}" +
+                                             $", MissionId = {mission.guid}, AssignedWorkerId = {mission.assignedWorkerId}");
                             CommandRequst = true;
                         }
-                        else EventLogger.Warn($"[PostMission][TRAFFIC][Failed], Message = {postmission.message}, MissionName = {mission.name}, MissionId = {mission.guid}" +
-                                              $", AssignedWorkerId = {mission.assignedWorkerId}");
+                        else EventLogger.Warn($"[PostMission][TRAFFIC][Failed], Message = {postmission.message}, MissionName = {mission.name}, MissionSubType = {mission.subType}" +
+                                              $", MissionId = {mission.guid}, AssignedWorkerId = {mission.assignedWorkerId}");
                     }
                 }
             }
@@ -181,12 +181,12 @@ namespace JOB.Services
                     {
                         if (postmission.statusCode >= 200 && postmission.statusCode < 300)
                         {
-                            EventLogger.Info($"[PostMission][MIDDLEWARE][Success], Message = {postmission.statusText}, MissionId = {mission.guid}" +
-                                             $", AssignedWorkerId = {mission.assignedWorkerId}");
+                            EventLogger.Info($"[PostMission][MIDDLEWARE][Success], Message = {postmission.statusText}, MissionName = {mission.name}, MissionSubType = {mission.subType}" +
+                                             $", MissionId = {mission.guid}, AssignedWorkerId = {mission.assignedWorkerId}");
                             CommandRequst = true;
                         }
-                        else EventLogger.Warn($"[PostMission][MIDDLEWARE][Failed], Message = {postmission.message}, MissionId = {mission.guid}" +
-                                              $", AssignedWorkerId = {mission.assignedWorkerId}");
+                        else EventLogger.Warn($"[PostMission][MIDDLEWARE][Failed], Message = {postmission.message}, MissionName = {mission.name}, MissionSubType = {mission.subType}" +
+                                             $", MissionId = {mission.guid}, AssignedWorkerId = {mission.assignedWorkerId}");
                     }
                 }
             }
@@ -205,12 +205,12 @@ namespace JOB.Services
                 {
                     if (postmission.statusCode >= 200 && postmission.statusCode < 300)
                     {
-                        EventLogger.Info($"[DeleteMission][WORKER][Success], Message = {postmission.statusText}, MissionId = {mission.guid}" +
-                                         $", AssignedWorkerId = {mission.assignedWorkerId}");
+                        EventLogger.Info($"[DeleteMission][WORKER][Success], Message = {postmission.statusText}, MissionName = {mission.name}, MissionSubType = {mission.subType}" +
+                                             $", MissionId = {mission.guid}, AssignedWorkerId = {mission.assignedWorkerId}");
                         CommandRequst = true;
                     }
-                    else EventLogger.Warn($"[DeleteMission][WORKER][Failed], Message = {postmission.message}, MissionId = {mission.guid}" +
-                                          $", AssignedWorkerId = {mission.assignedWorkerId}");
+                    else EventLogger.Warn($"[DeleteMission][WORKER][Failed], Message = {postmission.message}, MissionName = {mission.name}, MissionSubType = {mission.subType}" +
+                                             $", MissionId = {mission.guid}, AssignedWorkerId = {mission.assignedWorkerId}");
                 }
             }
             return CommandRequst;
@@ -233,12 +233,12 @@ namespace JOB.Services
                         //[조건5] 상태코드 200~300 까지는 완료 처리
                         if (postmission.statusCode >= 200 && postmission.statusCode < 300)
                         {
-                            EventLogger.Info($"[DeleteMission][ELEVATOR][Success], Message = {postmission.statusText}, MissionName = {mission.name}, MissionId = {mission.guid}" +
-                                             $", AssignedWorkerId = {mission.assignedWorkerId}");
+                            EventLogger.Info($"[DeleteMission][ELEVATOR][Success], Message = {postmission.statusText}, MissionName = {mission.name}, MissionSubType = {mission.subType}" +
+                                             $", MissionId = {mission.guid}, AssignedWorkerId = {mission.assignedWorkerId}");
                             CommandRequst = true;
                         }
-                        else EventLogger.Warn($"[DeleteMission][ELEVATOR][Failed], Message = {postmission.message}, MissionName = {mission.name}, MissionId = {mission.guid}" +
-                                             $", AssignedWorkerId = {mission.assignedWorkerId}");
+                        else EventLogger.Warn($"[DeleteMission][ELEVATOR][Failed], Message = {postmission.message}, MissionName = {mission.name}, MissionSubType = {mission.subType}" +
+                                             $", MissionId = {mission.guid}, AssignedWorkerId = {mission.assignedWorkerId}");
                     }
                 }
             }
@@ -262,12 +262,12 @@ namespace JOB.Services
                         //[조건5] 상태코드 200~300 까지는 완료 처리
                         if (postmission.statusCode >= 200 && postmission.statusCode < 300)
                         {
-                            EventLogger.Info($"[DeleteMission][TRAFFIC][Success], Message = {postmission.statusText}, MissionName = {mission.name}, MissionId = {mission.guid}" +
-                                             $", AssignedWorkerId = {mission.assignedWorkerId}");
+                            EventLogger.Info($"[DeleteMission][TRAFFIC][Success], Message = {postmission.statusText}, MissionName = {mission.name}, MissionSubType = {mission.subType}" +
+                                             $", MissionId = {mission.guid}, AssignedWorkerId = {mission.assignedWorkerId}");
                             CommandRequst = true;
                         }
-                        else EventLogger.Warn($"[DeleteMission][TRAFFIC][Failed], Message = {postmission.message}, MissionName = {mission.name}, MissionId = {mission.guid}" +
-                                             $", AssignedWorkerId = {mission.assignedWorkerId}");
+                        else EventLogger.Warn($"[DeleteMission][TRAFFIC][Failed], Message = {postmission.message}, MissionName = {mission.name}, MissionSubType = {mission.subType}" +
+                                             $", MissionId = {mission.guid}, AssignedWorkerId = {mission.assignedWorkerId}");
                     }
                 }
             }

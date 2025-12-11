@@ -8,7 +8,8 @@ namespace Common.Templates
         PICK,
         DROP,
         TRAFFIC,
-        ELEVATOR,
+        ELEVATORSOURCE,
+        ELEVATORDEST,
     }
 
     public class MissionTemplate_Group

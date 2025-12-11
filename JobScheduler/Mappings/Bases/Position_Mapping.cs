@@ -16,6 +16,7 @@ namespace JOB.Mappings.Bases
                 group = model.groupId,
                 type = model.type.Replace(" ", "").ToUpper(),
                 subType = model.subType.Replace(" ", "").ToUpper(),
+                nodeType = model.nodeType.Replace(" ", "").ToUpper(),
                 mapId = model.mapId,
                 name = model.name,
                 x = model.x,
@@ -26,6 +27,7 @@ namespace JOB.Mappings.Bases
                 isOccupied = model.isOccupied,
                 linkedFacility = model.linkedFacility,
                 linkedRobotId = model.linkedRobotId,
+                linkedArea = model.linkedArea,
                 hasCharger = model.hasCharger,
             };
             return response;

@@ -115,44 +115,48 @@ namespace JOB.Services
                     var unlockMissions = missions.Where(m => m.isLocked == false).ToList();
 
                     // 미션을 전송완료 하거나 진행중인것이 아닌 미션
-                    var cancelPossibleMission = unlockMissions.Where(m => m.state != nameof(MissionState.PENDING)
-                                                                       && m.state != nameof(MissionState.COMMANDREQUESTCOMPLETED)
-                                                                       && m.state != nameof(MissionState.EXECUTING)
-                                                                        && m.state != nameof(MissionState.COMPLETED)
+                    var executingMission = unlockMissions.Where(m => m.state == nameof(MissionState.PENDING)
+                                                                        || m.state == nameof(MissionState.COMMANDREQUESTCOMPLETED)
+                                                                        || m.state == nameof(MissionState.EXECUTING)
                                                                        ).FirstOrDefault();
 
-                    if (cancelPossibleMission == null)
+                    if (executingMission == null)
                     {
-                        //취소할 Mission이없을경우
-                        terminateState_INITED_Job.terminateState = nameof(TerminateState.FAILED);
+                        foreach (var unlockMission in unlockMissions)
+                        {
+                            updateStateMission(unlockMission, nameof(MissionState.CANCELED));
+                        }
+                        terminateState_INITED_Job.terminatingAt = DateTime.Now;
                         updateStateJob(terminateState_INITED_Job, terminateState_INITED_Job.state, true);
                     }
                     else
                     {
-                        var cancelMissions = missions.Where(m => m.sequence >= cancelPossibleMission.sequence).ToList();
-
-                        //취소할 Mission 이 있을경우
-                        foreach (var cancelMission in cancelMissions)
+                        if (deleteMission(executingMission))
                         {
-                            updateStateMission(cancelMission, nameof(MissionState.CANCELED));
-                        }
+                            var cancelMissions = missions.Where(m => m.sequence > executingMission.sequence).ToList();
 
-                        terminateState_INITED_Job.terminateState = nameof(TerminateState.EXECUTING);
-                        terminateState_INITED_Job.terminatingAt = DateTime.Now;
-                        updateStateJob(terminateState_INITED_Job, terminateState_INITED_Job.state, true);
-
-                        var order = _repository.Orders.GetByid(terminateState_INITED_Job.orderId);
-                        if (order != null)
-                        {
-                            switch (terminateState_INITED_Job.terminationType)
+                            //취소할 Mission 이 있을경우
+                            foreach (var cancelMission in cancelMissions)
                             {
-                                case nameof(TerminateType.CANCEL):
-                                    updateStateOrder(order, OrderState.Canceling, true);
-                                    break;
+                                updateStateMission(cancelMission, nameof(MissionState.CANCELED));
+                            }
 
-                                case nameof(TerminateType.ABORT):
-                                    updateStateOrder(order, OrderState.Aborting, true);
-                                    break;
+                            terminateState_INITED_Job.terminatingAt = DateTime.Now;
+                            updateStateJob(terminateState_INITED_Job, terminateState_INITED_Job.state, true);
+
+                            var order = _repository.Orders.GetByid(terminateState_INITED_Job.orderId);
+                            if (order != null)
+                            {
+                                switch (terminateState_INITED_Job.terminationType)
+                                {
+                                    case nameof(TerminateType.CANCEL):
+                                        updateStateOrder(order, OrderState.Canceling, true);
+                                        break;
+
+                                    case nameof(TerminateType.ABORT):
+                                        updateStateOrder(order, OrderState.Aborting, true);
+                                        break;
+                                }
                             }
                         }
                     }

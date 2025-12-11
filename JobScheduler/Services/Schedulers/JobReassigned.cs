@@ -815,8 +815,9 @@ namespace JOB.Services
             // Mission sequence 시작 값 (일단 1부터 시작; 이후 전체 Queue 에서 재정렬할 예정)
             int seq = 1;
 
-            // Elevator 중복 생성을 막기 위한 플래그
-            bool elevatorMissionCreated = false;
+            //ELEVATOR 중복생성을 막기위함.
+            Position ElevatorSource = null;
+            Position Elevatordest = null;
 
             // ------------------------------------------------------------
             // [3] RoutesPlan 의 nodes 를 순회하며 Mission 생성
@@ -857,13 +858,18 @@ namespace JOB.Services
                 // --------------------------------------------------------
                 else if (nodeTypeUpper == nameof(NodeType.ELEVATOR))
                 {
-                    if (!elevatorMissionCreated)
+                    if (ElevatorSource == null)
                     {
-                        EventLogger.Info($"[ASSIGN][REASSIGN][BUILD-PRE][ELEVATOR-GROUP] workerName={worker.name}, workerId={worker.id}, jobSecondId={jobSecond.guid}, seq={seq}");
+                        ElevatorSource = position;
+                        seq = create_GroupMission(jobSecond, ElevatorSource, worker, seq, nameof(MissionsTemplateGroup.ELEVATORSOURCE));
+                        EventLogger.Info($"[ASSIGN][REASSIGN][BUILD-PRE][ELEVATOR-GROUP][ELEVATORSOURCE] workerName={worker.name}, workerId={worker.id}, jobSecondId={jobSecond.guid}, seq={seq}");
+                    }
+                    else if (ElevatorSource != null)
+                    {
+                        Elevatordest = position;
+                        seq = create_GroupMission(jobSecond, Elevatordest, worker, seq, nameof(MissionsTemplateGroup.ELEVATORDEST));
+                        EventLogger.Info($"[ASSIGN][REASSIGN][BUILD-PRE][ELEVATOR-GROUP][ELEVATORDEST] workerName={worker.name}, workerId={worker.id}, jobSecondId={jobSecond.guid}, seq={seq}");
 
-                        // Elevator 그룹은 Position 없이 생성 (템플릿 처리 가정)
-                        seq = create_GroupMission(jobSecond, null, worker, seq, nameof(MissionsTemplateGroup.ELEVATOR));
-                        elevatorMissionCreated = true;
                     }
                 }
                 // --------------------------------------------------------
@@ -1013,8 +1019,9 @@ namespace JOB.Services
             // Mission sequence 시작 값
             int seq = 1;
 
-            // Elevator 그룹이 여러 번 생기는 것을 막기 위한 플래그
-            bool elevatorMissionCreated = false;
+            //ELEVATOR 중복생성을 막기위함.
+            Position ElevatorSource = null;
+            Position Elevatordest = null;
 
             // ------------------------------------------------------------
             // [3] RoutesPlan 의 nodes 를 순회하며 Mission 생성
@@ -1056,13 +1063,18 @@ namespace JOB.Services
                 // --------------------------------------------------------
                 else if (nodeTypeUpper == nameof(NodeType.ELEVATOR))
                 {
-                    if (!elevatorMissionCreated)
+                    if (ElevatorSource == null)
                     {
-                        EventLogger.Info($"[ASSIGN][REASSIGN][BUILD-FINAL][ELEVATOR-GROUP] workerName={worker.name}, workerId={worker.id}, jobSecondId={jobSecond.guid}, seq={seq}");
+                        ElevatorSource = position;
+                        seq = create_GroupMission(jobSecond, ElevatorSource, worker, seq, nameof(MissionsTemplateGroup.ELEVATORSOURCE));
+                        EventLogger.Info($"[ASSIGN][REASSIGN][BUILD-PRE][ELEVATOR-GROUP][ELEVATORSOURCE] workerName={worker.name}, workerId={worker.id}, jobSecondId={jobSecond.guid}, seq={seq}");
+                    }
+                    else if (ElevatorSource != null)
+                    {
+                        Elevatordest = position;
+                        seq = create_GroupMission(jobSecond, Elevatordest, worker, seq, nameof(MissionsTemplateGroup.ELEVATORDEST));
+                        EventLogger.Info($"[ASSIGN][REASSIGN][BUILD-PRE][ELEVATOR-GROUP][ELEVATORDEST] workerName={worker.name}, workerId={worker.id}, jobSecondId={jobSecond.guid}, seq={seq}");
 
-                        // Elevator 그룹은 Position 없이 생성(템플릿에서 처리)
-                        seq = create_GroupMission(jobSecond, null, worker, seq, nameof(MissionsTemplateGroup.ELEVATOR));
-                        elevatorMissionCreated = true;
                     }
                 }
                 // --------------------------------------------------------

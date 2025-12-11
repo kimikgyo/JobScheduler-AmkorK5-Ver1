@@ -19,10 +19,8 @@ namespace Common.Models.Jobs
     {
         WAYPOINT,
         TRAFFIC,
+        WORK,
         ELEVATOR,
-        ELEVATORWAIT,
-        ELEVATORENTER,
-        ELEVATOREXIT
     }
 
     public class Position
@@ -67,7 +65,7 @@ namespace Common.Models.Jobs
                 $",linkedArea = {linkedArea,-5}" +
                 $",linkedFacility = {linkedFacility,-5}" +
                 $",linkedRobotId = {linkedRobotId,-5}" +
-                $",hasCharger = {hasCharger,-5}" + 
+                $",hasCharger = {hasCharger,-5}" +
                 $",nodeType = {nodeType,-5}";
         }
 

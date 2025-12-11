@@ -84,12 +84,7 @@ namespace JOB.JobQueues.Process
                 switch (parameta.key)
                 {
                     case "target":
-                        if (position != null
-                             && missionTemplate.subType != nameof(MissionTemplateSubType.ELEVATORWAITMOVE)
-                             && missionTemplate.subType != nameof(MissionTemplateSubType.ELEVATORENTERMOVE)
-                             && missionTemplate.subType != nameof(MissionTemplateSubType.ELEVATOREXITMOVE)
-                             && missionTemplate.subType != nameof(MissionTemplateSubType.SWITCHINGMAP)
-                             && missionTemplate.subType != nameof(MissionTemplateSubType.RIGHTTURN))
+                        if (position != null && position.nodeType != nameof(NodeType.WORK) && position.nodeType != nameof(NodeType.ELEVATOR))
                         {
                             param = new Parameter
                             {

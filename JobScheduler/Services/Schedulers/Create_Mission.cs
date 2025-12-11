@@ -58,8 +58,6 @@ namespace JOB.Services
             var jobDestination = GetJobDestinationPosition(job);
             if (jobDestination == null) return;
 
-            bool elevatorMissionFlag = false;
-
             // 3) Job 타입별로 미션 구성 위임
             switch (job.type)
             {
@@ -71,13 +69,13 @@ namespace JOB.Services
                 case nameof(JobType.TRANSPORT_AICERO_SUPPLY):
                 case nameof(JobType.TRANSPORT_AICERO_RESOVERY):
 
-                    BuildTransportMissions(job, worker, resource, workerStart, jobSource, jobDestination, seq, elevatorMissionFlag);
+                    BuildTransportMissions(job, worker, resource, workerStart, jobSource, jobDestination, seq);
                     break;
 
                 case nameof(JobType.CHARGE):
                 case nameof(JobType.WAIT):
 
-                    BuildChargeWaitMissions(job, worker, resource, workerStart, jobDestination, seq, elevatorMissionFlag);
+                    BuildChargeWaitMissions(job, worker, resource, workerStart, jobDestination, seq);
                     break;
             }
 
@@ -104,7 +102,7 @@ namespace JOB.Services
             if (worker == null) return null;
 
             // 해당 워커가 있는 맵의 모든 포지션 가져오기
-            var positions = _repository.Positions.MiR_GetByMapId(worker.mapId);
+            var positions = _repository.Positions.MiR_GetByMapId(worker.mapId).Where(r => r.nodeType != nameof(NodeType.WORK) && r.nodeType != nameof(NodeType.ELEVATOR)).ToList();
             if (positions == null || positions.Count == 0) return null;
 
             // 워커 기준 가장 가까운 포지션 선택
@@ -141,7 +139,7 @@ namespace JOB.Services
         // Segment A: WorkerStart → JobSource (MOVE만)
         // Segment B: JobSource   → JobDestination (PICK / DROP / ELEVATOR / TRAFFIC / MOVE)
         private void BuildTransportMissions(Job job, Worker worker, ServiceApi resource, Position workerStart, Position jobSource, Position jobDestination
-                                           , int seq, bool elevatorMissionFlag)
+                                           , int seq)
         {
             // A) Segment A: WorkerStart → JobSource
             if (workerStart.positionId != jobSource.positionId)
@@ -177,6 +175,9 @@ namespace JOB.Services
             if (routesB == null) return;
             if (routesB.nodes == null) return;
 
+            Position ElevatorSource = null;
+            Position Elevatordest = null;
+
             foreach (var node in routesB.nodes)
             {
                 var position = _repository.Positions.GetByPositionId(node.positionId);
@@ -206,19 +207,23 @@ namespace JOB.Services
                         nameof(MissionsTemplateGroup.DROP)
                     );
                 }
+
                 // 3) ELEVATOR 노드 → Elevator 그룹 (한 번만)
                 else if (node.nodeType.ToUpper() == nameof(NodeType.ELEVATOR))
                 {
-                    if (elevatorMissionFlag == false)
+                    if (ElevatorSource == null)
                     {
-                        seq = create_GroupMission(
-                            job,
-                            null,  // 엘리베이터 그룹은 템플릿 내부에서 포지션 처리
-                            worker,
-                            seq,
-                            nameof(MissionsTemplateGroup.ELEVATOR)
-                        );
-                        elevatorMissionFlag = true;
+                        ElevatorSource = position;
+                        seq = create_GroupMission(job, ElevatorSource, worker, seq, nameof(MissionsTemplateGroup.ELEVATORSOURCE));
+                        //EventLogger.Info($"[ASSIGN][ASSIGN][ELEVATOR-GROUP][ELEVATORSOURCE] workerName={worker.name}, workerId={worker.id}, jobSecondId={job.guid}, seq={seq}");
+
+                    }
+                    else if (ElevatorSource != null)
+                    {
+                        Elevatordest = position;
+                        seq = create_GroupMission(job, Elevatordest, worker, seq, nameof(MissionsTemplateGroup.ELEVATORDEST));
+                        //EventLogger.Info($"[ASSIGN][ASSIGN][ELEVATOR-GROUP][ELEVATORDEST] workerName={worker.name}, workerId={worker.id}, jobSecondId={job.guid}, seq={seq}");
+
                     }
                 }
                 // 4) TRAFFIC → TRAFFIC 그룹
@@ -250,12 +255,15 @@ namespace JOB.Services
         // CHARGE / WAIT Job 미션 구성
         // WorkerStart → JobDestination 한 번만
         private void BuildChargeWaitMissions(Job job, Worker worker, ServiceApi resource, Position workerStart, Position jobDestination
-                                            , int seq, bool elevatorMissionFlag)
+                                            , int seq)
         {
             var routes = resource.Api.Post_Routes_Plan_Async(_mapping.RoutesPlanas.Request(workerStart.positionId, jobDestination.positionId)).Result;
 
             if (routes == null) return;
             if (routes.nodes == null) return;
+
+            Position ElevatorSource = null;
+            Position Elevatordest = null;
 
             foreach (var node in routes.nodes)
             {
@@ -290,16 +298,15 @@ namespace JOB.Services
                 // 3) ELEVATOR 그룹 (한 번만)
                 else if (node.nodeType.ToUpper() == nameof(NodeType.ELEVATOR))
                 {
-                    if (elevatorMissionFlag == false)
+                    if (ElevatorSource == null)
                     {
-                        seq = create_GroupMission(
-                            job,
-                            null,
-                            worker,
-                            seq,
-                            nameof(MissionsTemplateGroup.ELEVATOR)
-                        );
-                        elevatorMissionFlag = true;
+                        ElevatorSource = position;
+                        seq = create_GroupMission(job, ElevatorSource, worker, seq, nameof(MissionsTemplateGroup.ELEVATORSOURCE));
+                    }
+                    else if (ElevatorSource != null)
+                    {
+                        Elevatordest = position;
+                        seq = create_GroupMission(job, Elevatordest, worker, seq, nameof(MissionsTemplateGroup.ELEVATORDEST));
                     }
                 }
                 // 4) TRAFFIC → TRAFFIC 그룹

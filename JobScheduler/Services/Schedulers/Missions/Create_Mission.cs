@@ -156,7 +156,7 @@ namespace JOB.Services
                 {
                     var position = _repository.Positions.GetByPositionId(node.positionId);
                     if (position == null) continue;
-                    if (position.id == jobSource.positionId) continue;
+                    if (position.id == jobSource.id) continue;
                     // 3) ELEVATOR 노드 → Elevator 그룹 (한 번만)
                     if (node.nodeType.ToUpper() == nameof(NodeType.ELEVATOR))
                     {

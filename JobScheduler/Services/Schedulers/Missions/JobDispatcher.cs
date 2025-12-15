@@ -336,6 +336,10 @@ namespace JOB.Services
                     _repository.Missions.Update(mission);
                     completed = true;
                 }
+                else
+                {
+                    completed = true;
+                }
                 if (completed == true)
                 {
                     //직접 파라메타를 변경하는것이기때문에 포지션점유를 업데이트한다

@@ -24,7 +24,7 @@ namespace JOB.Services
             double chargeStart = batterySetting.chargeStart; // 충전 시작 기준 배터리
             double chargeEnd = batterySetting.chargeEnd;     // 충전 종료 기준 배터리
 
-            EventLogger.Info("[CHARGE][BUILD] start charge decision");
+            //EventLogger.Info("[CHARGE][BUILD] start charge decision");
 
             // ------------------------------------------------------------
             // 2) 충전기(Charger) Position 필터링
@@ -44,7 +44,7 @@ namespace JOB.Services
             // 2-3) 충전기가 하나도 없으면 이번 사이클은 아무 일도 하지 않고 종료
             if (chargerPositions == null || chargerPositions.Count == 0)
             {
-                EventLogger.Info("[CHARGE][BUILD] no available chargers (subType=CHARGE) → exit");
+                //EventLogger.Info("[CHARGE][BUILD] no available chargers (subType=CHARGE) → exit");
                 return;
             }
 

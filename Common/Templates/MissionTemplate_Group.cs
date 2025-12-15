@@ -10,6 +10,7 @@ namespace Common.Templates
         TRAFFIC,
         ELEVATORSOURCE,
         ELEVATORDEST,
+        CHARGE
     }
 
     public class MissionTemplate_Group

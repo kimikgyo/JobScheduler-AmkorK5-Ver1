@@ -84,7 +84,7 @@ namespace JOB.Services
                 var jobFindAssignedWorker = _repository.Jobs.GetByWorkerId(worker.id).FirstOrDefault();
                 if (jobFindAssignedWorker != null)
                 {
-                    EventLogger.Warn($"[WAIT][CHECK][SKIP] worker already has job: workerId={worker.id}, workerName={worker.name}, jobGuid={jobFindAssignedWorker.guid}");
+                    //EventLogger.Warn($"[WAIT][CHECK][SKIP] worker already has job: workerId={worker.id}, workerName={worker.name}, jobGuid={jobFindAssignedWorker.guid}");
                     continue;
                 }
 
@@ -93,7 +93,7 @@ namespace JOB.Services
                 // --------------------------------------------------------
                 if (worker.state != nameof(WorkerState.IDLE))
                 {
-                    EventLogger.Warn($"[WAIT][CHECK][SKIP] worker not idle: workerId={worker.id}, workerName={worker.name}, state={worker.state}");
+                    //EventLogger.Warn($"[WAIT][CHECK][SKIP] worker not idle: workerId={worker.id}, workerName={worker.name}, state={worker.state}");
                     continue;
                 }
 
@@ -105,7 +105,7 @@ namespace JOB.Services
 
                 if (nowAtWait != null)
                 {
-                    EventLogger.Info($"[WAIT][CHECK][SKIP] worker already at wait position: workerId={worker.id}, workerName={worker.name}, posId={worker.PositionId}");
+                    //EventLogger.Info($"[WAIT][CHECK][SKIP] worker already at wait position: workerId={worker.id}, workerName={worker.name}, posId={worker.PositionId}");
                     continue;
                 }
 

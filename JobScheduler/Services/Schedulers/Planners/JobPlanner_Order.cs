@@ -36,10 +36,8 @@ namespace JOB.Services
                     //[조회]목적지 조회.
                     destination = _repository.Positions.GetById(Order.destinationId);
                     if (destination == null) continue;
-
-                    _Queue.Create_Job(destination.group, Order.id, Order.type, Order.subType, Order.carrierId, Order.priority, Order.drumKeyCode
-                                     , null, null, null, destination.id, destination.name, destination.linkedFacility
-                                     , Order.specifiedWorkerId);
+                    var carateJob = Createjob(Order, null, destination);
+                    if (carateJob == false) continue;
                 }
                 else
                 {
@@ -50,10 +48,51 @@ namespace JOB.Services
                     destination = _repository.Positions.GetById(Order.destinationId);
                     if (destination == null) continue;
 
-                    _Queue.Create_Job(source.group, Order.id, Order.type, Order.subType, Order.carrierId, Order.priority, Order.drumKeyCode
-                           , source.id, source.name, source.linkedFacility, destination.id, destination.name, destination.linkedFacility
-                           , Order.specifiedWorkerId);
+                    var carateJob = Createjob(Order, source, destination);
+                    if (carateJob == false) continue;
                 }
+            }
+        }
+
+        private bool Createjob(Order order, Position source, Position destination)
+        {
+            // ------------------------------------------------------------
+            // 1) 방어 코드
+            // ------------------------------------------------------------
+
+            if (order == null)
+            {
+                EventLogger.Error($"[Job][CREATE][ERROR] order is null → job creation aborted");
+                return false;
+            }
+            if (destination == null)
+            {
+                EventLogger.Error($"[Job][CREATE][ERROR] destination is null → job creation aborted");
+                return false;
+            }
+            if (source == null)
+            {
+                _Queue.Create_Job(destination.group, order.id, order.type, order.subType, order.carrierId, order.priority, order.drumKeyCode
+                                    , null, null, null, destination.id, destination.name, destination.linkedFacility
+                                    , order.specifiedWorkerId);
+                // --------------------------------------------------------
+                // 3) 생성 요청 성공 로그
+                // --------------------------------------------------------
+                EventLogger.Info($"[Job][CREATE] enqueue Soucre is Null job request: Group = {destination.group}, OrderId = {order.id}");
+
+                return true;
+            }
+            else
+            {
+                _Queue.Create_Job(source.group, order.id, order.type, order.subType, order.carrierId, order.priority, order.drumKeyCode
+                            , source.id, source.name, source.linkedFacility, destination.id, destination.name, destination.linkedFacility
+                            , order.specifiedWorkerId);
+                // --------------------------------------------------------
+                // 3) 생성 요청 성공 로그
+                // --------------------------------------------------------
+                EventLogger.Info($"[Job][CREATE] enqueue Soucre is Null job request: Group = {destination.group}, OrderId = {order.id}");
+
+                return true;
             }
         }
 

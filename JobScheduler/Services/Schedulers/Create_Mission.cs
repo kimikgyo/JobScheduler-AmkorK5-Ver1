@@ -144,28 +144,45 @@ namespace JOB.Services
             // A) Segment A: WorkerStart → JobSource
             if (workerStart.positionId != jobSource.positionId)
             {
-                var routesA = resource.Api
-                    .Post_Routes_Plan_Async(
-                        _mapping.RoutesPlanas.Request(workerStart.positionId, jobSource.positionId)
-                    ).Result;
+                var routesA = resource.Api.Post_Routes_Plan_Async(_mapping.RoutesPlanas.Request(workerStart.positionId, jobSource.positionId)).Result;
 
                 if (routesA == null) return;
                 if (routesA.nodes == null) return;
+
+                Position Segment_A_ElevatorSource = null;
+                Position Segment_A_Elevatordest = null;
 
                 foreach (var node in routesA.nodes)
                 {
                     var position = _repository.Positions.GetByPositionId(node.positionId);
                     if (position == null) continue;
-
-                    // 순수 이동 구간이므로 MOVE(STOPOVERMOVE)만 생성
-                    seq = create_SingleMission(
-                        job,
-                        position,
-                        worker,
-                        seq,
-                        nameof(MissionTemplateType.MOVE),
-                        nameof(MissionTemplateSubType.STOPOVERMOVE)
-                    );
+                    if (position.id == jobSource.positionId) continue;
+                    // 3) ELEVATOR 노드 → Elevator 그룹 (한 번만)
+                    if (node.nodeType.ToUpper() == nameof(NodeType.ELEVATOR))
+                    {
+                        if (Segment_A_ElevatorSource == null)
+                        {
+                            Segment_A_ElevatorSource = position;
+                            seq = create_GroupMission(job, Segment_A_ElevatorSource, worker, seq, nameof(MissionsTemplateGroup.ELEVATORSOURCE));
+                            //EventLogger.Info($"[ASSIGN][ASSIGN][ELEVATOR-GROUP][ELEVATORSOURCE] workerName={worker.name}, workerId={worker.id}, jobSecondId={job.guid}, seq={seq}");
+                        }
+                        else if (Segment_A_ElevatorSource != null)
+                        {
+                            Segment_A_Elevatordest = position;
+                            seq = create_GroupMission(job, Segment_A_Elevatordest, worker, seq, nameof(MissionsTemplateGroup.ELEVATORDEST));
+                            //EventLogger.Info($"[ASSIGN][ASSIGN][ELEVATOR-GROUP][ELEVATORDEST] workerName={worker.name}, workerId={worker.id}, jobSecondId={job.guid}, seq={seq}");
+                        }
+                    }
+                    // 4) TRAFFIC → TRAFFIC 그룹
+                    else if (node.nodeType.ToUpper() == nameof(NodeType.TRAFFIC))
+                    {
+                        seq = create_GroupMission(job, position, worker, seq, nameof(MissionsTemplateGroup.TRAFFIC));
+                    }
+                    else
+                    {
+                        // 순수 이동 구간이므로 MOVE(STOPOVERMOVE)만 생성
+                        seq = create_SingleMission(job, position, worker, seq, nameof(MissionTemplateType.MOVE), nameof(MissionTemplateSubType.STOPOVERMOVE));
+                    }
                 }
             }
 
@@ -175,8 +192,8 @@ namespace JOB.Services
             if (routesB == null) return;
             if (routesB.nodes == null) return;
 
-            Position ElevatorSource = null;
-            Position Elevatordest = null;
+            Position Segment_B_ElevatorSource = null;
+            Position Segment_B_Elevatordest = null;
 
             foreach (var node in routesB.nodes)
             {
@@ -188,66 +205,39 @@ namespace JOB.Services
                 // 1) 출발지 → PICK 그룹
                 if (node.positionId == jobSource.positionId)
                 {
-                    seq = create_GroupMission(
-                        job,
-                        position,
-                        worker,
-                        seq,
-                        nameof(MissionsTemplateGroup.PICK)
-                    );
+                    seq = create_GroupMission(job, position, worker, seq, nameof(MissionsTemplateGroup.PICK));
                 }
                 // 2) 목적지 → DROP 그룹
                 else if (node.positionId == jobDestination.positionId)
                 {
-                    seq = create_GroupMission(
-                        job,
-                        position,
-                        worker,
-                        seq,
-                        nameof(MissionsTemplateGroup.DROP)
-                    );
+                    seq = create_GroupMission(job, position, worker, seq, nameof(MissionsTemplateGroup.DROP));
                 }
 
                 // 3) ELEVATOR 노드 → Elevator 그룹 (한 번만)
                 else if (node.nodeType.ToUpper() == nameof(NodeType.ELEVATOR))
                 {
-                    if (ElevatorSource == null)
+                    if (Segment_B_ElevatorSource == null)
                     {
-                        ElevatorSource = position;
-                        seq = create_GroupMission(job, ElevatorSource, worker, seq, nameof(MissionsTemplateGroup.ELEVATORSOURCE));
+                        Segment_B_ElevatorSource = position;
+                        seq = create_GroupMission(job, Segment_B_ElevatorSource, worker, seq, nameof(MissionsTemplateGroup.ELEVATORSOURCE));
                         //EventLogger.Info($"[ASSIGN][ASSIGN][ELEVATOR-GROUP][ELEVATORSOURCE] workerName={worker.name}, workerId={worker.id}, jobSecondId={job.guid}, seq={seq}");
-
                     }
-                    else if (ElevatorSource != null)
+                    else if (Segment_B_ElevatorSource != null)
                     {
-                        Elevatordest = position;
-                        seq = create_GroupMission(job, Elevatordest, worker, seq, nameof(MissionsTemplateGroup.ELEVATORDEST));
+                        Segment_B_Elevatordest = position;
+                        seq = create_GroupMission(job, Segment_B_Elevatordest, worker, seq, nameof(MissionsTemplateGroup.ELEVATORDEST));
                         //EventLogger.Info($"[ASSIGN][ASSIGN][ELEVATOR-GROUP][ELEVATORDEST] workerName={worker.name}, workerId={worker.id}, jobSecondId={job.guid}, seq={seq}");
-
                     }
                 }
                 // 4) TRAFFIC → TRAFFIC 그룹
                 else if (node.nodeType.ToUpper() == nameof(NodeType.TRAFFIC))
                 {
-                    seq = create_GroupMission(
-                        job,
-                        position,
-                        worker,
-                        seq,
-                        nameof(MissionsTemplateGroup.TRAFFIC)
-                    );
+                    seq = create_GroupMission(job, position, worker, seq, nameof(MissionsTemplateGroup.TRAFFIC));
                 }
                 // 5) 나머지 → MOVE(STOPOVERMOVE)
                 else
                 {
-                    seq = create_SingleMission(
-                        job,
-                        position,
-                        worker,
-                        seq,
-                        nameof(MissionTemplateType.MOVE),
-                        nameof(MissionTemplateSubType.STOPOVERMOVE)
-                    );
+                    seq = create_SingleMission(job, position, worker, seq, nameof(MissionTemplateType.MOVE), nameof(MissionTemplateSubType.STOPOVERMOVE));
                 }
             }
         }
@@ -274,26 +264,12 @@ namespace JOB.Services
                 // 1) 시작 위치 → SOURCEMOVE
                 if (node.positionId == workerStart.positionId)
                 {
-                    seq = create_SingleMission(
-                        job,
-                        position,
-                        worker,
-                        seq,
-                        nameof(MissionTemplateType.MOVE),
-                        nameof(MissionTemplateSubType.SOURCEMOVE)
-                    );
+                    seq = create_SingleMission(job, position, worker, seq, nameof(MissionTemplateType.MOVE), nameof(MissionTemplateSubType.SOURCEMOVE));
                 }
                 // 2) 목적지 → DESTINATIONMOVE
                 else if (node.positionId == jobDestination.positionId)
                 {
-                    seq = create_SingleMission(
-                        job,
-                        position,
-                        worker,
-                        seq,
-                        nameof(MissionTemplateType.MOVE),
-                        nameof(MissionTemplateSubType.DESTINATIONMOVE)
-                    );
+                    seq = create_SingleMission(job, position, worker, seq, nameof(MissionTemplateType.MOVE), nameof(MissionTemplateSubType.DESTINATIONMOVE));
                 }
                 // 3) ELEVATOR 그룹 (한 번만)
                 else if (node.nodeType.ToUpper() == nameof(NodeType.ELEVATOR))
@@ -312,25 +288,12 @@ namespace JOB.Services
                 // 4) TRAFFIC → TRAFFIC 그룹
                 else if (node.nodeType.ToUpper() == nameof(NodeType.TRAFFIC))
                 {
-                    seq = create_GroupMission(
-                        job,
-                        position,
-                        worker,
-                        seq,
-                        nameof(MissionsTemplateGroup.TRAFFIC)
-                    );
+                    seq = create_GroupMission(job, position, worker, seq, nameof(MissionsTemplateGroup.TRAFFIC));
                 }
                 // 5) 나머지 → STOPOVERMOVE
                 else
                 {
-                    seq = create_SingleMission(
-                        job,
-                        position,
-                        worker,
-                        seq,
-                        nameof(MissionTemplateType.MOVE),
-                        nameof(MissionTemplateSubType.STOPOVERMOVE)
-                    );
+                    seq = create_SingleMission(job, position, worker, seq, nameof(MissionTemplateType.MOVE), nameof(MissionTemplateSubType.STOPOVERMOVE));
                 }
             }
         }

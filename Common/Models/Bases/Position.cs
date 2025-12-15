@@ -25,25 +25,25 @@ namespace Common.Models.Jobs
 
     public class Position
     {
-        [JsonPropertyOrder(1)] public string id { get; set; }
-        [JsonPropertyOrder(2)] public string positionId { get; set; }
-        [JsonPropertyOrder(3)] public string source { get; set; }
-        [JsonPropertyOrder(4)] public string group { get; set; }
-        [JsonPropertyOrder(5)] public string type { get; set; }
-        [JsonPropertyOrder(6)] public string subType { get; set; }
-        [JsonPropertyOrder(7)] public string mapId { get; set; }
-        [JsonPropertyOrder(8)] public string name { get; set; }
-        [JsonPropertyOrder(9)] public double x { get; set; }
-        [JsonPropertyOrder(10)] public double y { get; set; }
-        [JsonPropertyOrder(11)] public double theth { get; set; }
-        [JsonPropertyOrder(12)] public bool isDisplayed { get; set; }
-        [JsonPropertyOrder(13)] public bool isEnabled { get; set; }
-        [JsonPropertyOrder(14)] public bool isOccupied { get; set; }
-        [JsonPropertyOrder(15)] public string linkedArea { get; set; }
-        [JsonPropertyOrder(16)] public string linkedFacility { get; set; }
-        [JsonPropertyOrder(17)] public string linkedRobotId { get; set; }
-        [JsonPropertyOrder(18)] public bool hasCharger { get; set; }
-        [JsonPropertyOrder(19)] public string nodeType { get; set; }
+        [JsonPropertyOrder(1)] public string id { get; set; }                   //ACS 포지션 Id
+        [JsonPropertyOrder(2)] public string positionId { get; set; }           //Fleet 포지션Id
+        [JsonPropertyOrder(3)] public string source { get; set; }               //어떠한 Robot인지
+        [JsonPropertyOrder(4)] public string group { get; set; }                //ACS 설정한그룹
+        [JsonPropertyOrder(5)] public string type { get; set; }                 //포지션 타입
+        [JsonPropertyOrder(6)] public string subType { get; set; }              //포지션 서브타입
+        [JsonPropertyOrder(7)] public string mapId { get; set; }                //포지션 맵Id
+        [JsonPropertyOrder(8)] public string name { get; set; }                 //포지션 이름
+        [JsonPropertyOrder(9)] public double x { get; set; }                    //포지션 위치값
+        [JsonPropertyOrder(10)] public double y { get; set; }                   //포지션 위치값
+        [JsonPropertyOrder(11)] public double theth { get; set; }               //포지션 방향
+        [JsonPropertyOrder(12)] public bool isDisplayed { get; set; }           //화면 설정
+        [JsonPropertyOrder(13)] public bool isEnabled { get; set; }             //사용유무
+        [JsonPropertyOrder(14)] public bool isOccupied { get; set; }            //점유 상태
+        [JsonPropertyOrder(15)] public string linkedArea { get; set; }          //포지션 관련 Area
+        [JsonPropertyOrder(16)] public string linkedFacility { get; set; }      //포지션 관련 장비
+        [JsonPropertyOrder(17)] public string linkedRobotId { get; set; }       //포지션 지정 Robot
+        [JsonPropertyOrder(18)] public bool hasCharger { get; set; }            //충전기에 대한 포지션인지
+        [JsonPropertyOrder(19)] public string nodeType { get; set; }            //포지션 로드타입
 
         public override string ToString()
         {

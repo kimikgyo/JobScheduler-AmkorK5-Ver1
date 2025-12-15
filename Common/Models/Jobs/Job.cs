@@ -20,7 +20,7 @@ namespace Common.Models.Jobs
 
     public enum JobSubType
     {
-        None,
+        None,   
         SIMPLEMOVE,             // 같은 층 간 이동
         PICKONLY,               // 같은 층 자재 픽업만 수행
         DROPONLY,               // 같은 층 자재 Drop만 수행
@@ -53,6 +53,13 @@ namespace Common.Models.Jobs
         EXECUTING,
         COMPLETED,
         FAILED
+    }
+
+    public enum ChargeCreateType
+    {
+        Reserved,
+        Normal,
+        Cross
     }
 
     public class Job

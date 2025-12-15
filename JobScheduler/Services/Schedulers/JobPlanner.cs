@@ -1,5 +1,4 @@
 ﻿using Common.Models.Jobs;
-using Common.Templates;
 
 namespace JOB.Services
 {
@@ -9,13 +8,16 @@ namespace JOB.Services
 
         private void JobPlanner()
         {
-            createJob();
+            OrderJobs();
+            ChargeJobs();
+            WaitJobs();
+            //OLD
             //createWaitControl();
             //createChargeControl();
         }
 
         //Job생성
-        private void createJob()
+        private void OrderJobs()
         {
             Position source = null;
             Position destination = null;

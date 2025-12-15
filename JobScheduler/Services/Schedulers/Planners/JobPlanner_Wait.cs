@@ -32,7 +32,7 @@ namespace JOB.Services
             // 방어: worker 없으면 종료
             if (workers == null || workers.Count == 0)
             {
-                EventLogger.Warn($"[WAIT][LOOP][SKIP] no active workers");
+                //EventLogger.Warn($"[WAIT][LOOP][SKIP] no active workers");
                 return;
             }
 
@@ -194,12 +194,11 @@ namespace JOB.Services
             //    - 같은 그룹/같은 층(mapId) 범위에서만 찾는다.
             //    - 사용 가능(isEnabled) + 미점유(!isOccupied) 조건
             // ------------------------------------------------------------
-            var waitCandidates = allPositions.Where(p => p != null && p.subType == nameof(PositionSubType.WAIT) && p.isEnabled == true && p.isOccupied == false && p.group == group
-                                                  && p.mapId == mapId).ToList();
+            var waitCandidates = allPositions.Where(p => p != null && p.subType == nameof(PositionSubType.WAIT) && p.isEnabled == true && p.isOccupied == false && p.group == group).ToList();
 
             if (waitCandidates == null || waitCandidates.Count == 0)
             {
-                EventLogger.Warn($"[WAIT][FIND][SKIP] no available wait positions: workerId={worker.id}, workerName={worker.name}, group={group}, mapId={mapId}");
+                EventLogger.Warn($"[WAIT][FIND][SKIP] no available wait positions: workerId={worker.id}, workerName={worker.name}, group={group}");
                 return null;
             }
 
@@ -217,24 +216,33 @@ namespace JOB.Services
             }
 
             // ------------------------------------------------------------
-            // 4) 가까운 WAIT 선택
+            // 4) 가까운 WAIT 선택 같은층
+            //    - linkedRobotId 가 worker.id 인 WAIT 포지션이 있으면 그걸 사용
             // ------------------------------------------------------------
-            var ordered = _repository.Positions.FindNearestWayPoint(worker, waitCandidates);
-            if (ordered == null || ordered.Count == 0)
+
+            var sameMapId = _repository.Positions.FindNearestWayPoint(worker, waitCandidates).FirstOrDefault(p => p.mapId == mapId);
+            if (sameMapId != null)
             {
-                EventLogger.Warn($"[WAIT][FIND][SKIP] nearest wait list empty: workerId={worker.id}, workerName={worker.name}, group={group}, mapId={mapId}");
-                return null;
+                EventLogger.Info($"[WAIT][FIND] sameMapId wait selected: workerId={worker.id}, workerName={worker.name}, waitPOSId={sameMapId.id}, waitPOSName={sameMapId.name}" +
+                               $", mapId={sameMapId.mapId}");
+
+                return sameMapId;
             }
 
-            var nearestWait = ordered.FirstOrDefault();
-            if (nearestWait == null)
+            // ------------------------------------------------------------
+            // 5) 가까운 WAIT 선택 다른층
+            // ------------------------------------------------------------
+            var AnotherMapId = _repository.Positions.FindNearestWayPoint(worker, waitCandidates).FirstOrDefault(p => p.mapId != mapId);
+            if (AnotherMapId == null)
             {
-                EventLogger.Warn($"[WAIT][FIND][SKIP] nearest wait resolved null: workerId={worker.id}, workerName={worker.name}, group={group}, mapId={mapId}");
+                EventLogger.Warn($"[WAIT][FIND][SKIP] AnotherMap wait list empty: workerId={worker.id}, workerName={worker.name}, group={group}, mapId={mapId}");
                 return null;
             }
-
-            EventLogger.Info($"[WAIT][FIND] nearest wait selected: workerId={worker.id}, workerName={worker.name}, waitPOSId={nearestWait.id}, waitPOSName={nearestWait.name}, mapId={nearestWait.mapId}");
-            return nearestWait;
+            else
+            {
+                EventLogger.Info($"[WAIT][FIND] AnotherMap wait selected: workerId={worker.id}, workerName={worker.name}, waitPOSId={AnotherMapId.id}, waitPOSName={AnotherMapId.name}, mapId={AnotherMapId.mapId}");
+                return AnotherMapId;
+            }
         }
 
         /// <summary>

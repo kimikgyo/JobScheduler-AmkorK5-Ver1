@@ -186,17 +186,17 @@ namespace JOB.Services
                 return;
             }
 
-            // IDLE 상태인 워커만 필터링
-            var idleWorkers = workers.Where(r => r.state == nameof(WorkerState.IDLE)).ToList();
+            //// IDLE 상태인 워커만 필터링
+            //var idleWorkers = workers.Where(r => r.state == nameof(WorkerState.IDLE)).ToList();
 
-            if (idleWorkers == null || idleWorkers.Count == 0)
-            {
-                EventLogger.Info("[ASSIGN][NORMAL][DISTANCE], No IDLE workers.");
-                return;
-            }
+            //if (idleWorkers == null || idleWorkers.Count == 0)
+            //{
+            //    EventLogger.Info("[ASSIGN][NORMAL][DISTANCE], No IDLE workers.");
+            //    return;
+            //}
 
-            // 작업 대상 워커 리스트는 idleWorkers 기준으로 사용
-            workers = idleWorkers;
+            //// 작업 대상 워커 리스트는 idleWorkers 기준으로 사용
+            //workers = idleWorkers;
 
             // 2) 이미 Job 이 할당된 워커 중, CHARGE/WAIT 아닌 Job 실행중인 워커 제거
             var runningJobs = _repository.Jobs.GetAll().Where(r => r.assignedWorkerId != null).ToList();
@@ -319,15 +319,17 @@ namespace JOB.Services
         private bool ChangeWaitDeleteMission(Worker worker)
         {
             bool reValue = true;
-            var runjob = _repository.Jobs.GetByAssignWorkerId(worker.id).FirstOrDefault();
+            var runjob = _repository.Jobs.GetByWorkerId(worker.id).FirstOrDefault();
             if (runjob != null)
             {
                 if ((runjob.type == nameof(JobType.WAIT)) || (runjob.type == nameof(JobType.CHARGE)))
                 {
+                    runjob.terminateState = nameof(TerminateState.INITED);
                     runjob.terminator = "JobScheduler";
                     runjob.terminationType = "CANCEL";
                     runjob.terminatedAt = DateTime.Now;
-                    reValue = false;
+                    _repository.Jobs.Update(runjob);
+                    reValue = true;
                 }
             }
             return reValue;

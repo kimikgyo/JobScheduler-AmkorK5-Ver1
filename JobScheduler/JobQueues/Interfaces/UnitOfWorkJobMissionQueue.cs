@@ -46,6 +46,7 @@ namespace JOB.JobQueues.Interfaces
                 priority = priority,
                 specifiedWorkerId = specifiedWorkerId,
             });
+
         }
 
         public void Remove_Job(Job job, DateTime? finishedAt)

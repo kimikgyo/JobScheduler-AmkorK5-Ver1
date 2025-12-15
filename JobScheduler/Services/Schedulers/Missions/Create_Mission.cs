@@ -106,7 +106,7 @@ namespace JOB.Services
             if (positions == null || positions.Count == 0) return null;
 
             // 워커 기준 가장 가까운 포지션 선택
-            var nearest = _repository.Positions.FindNearestWayPoint(worker, positions).FirstOrDefault();
+            var nearest = _repository.Positions.FindNearestWayPoint(worker, positions).Where(P=>P.isOccupied == false).FirstOrDefault();
             return nearest;
         }
 

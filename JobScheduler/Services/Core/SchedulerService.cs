@@ -2,6 +2,7 @@
 using Common.Models.Jobs;
 using Data.Interfaces;
 using JOB.JobQueues.Interfaces;
+using JOB.JobQueues.Process;
 using JOB.Mappings.Interfaces;
 using JOB.MQTTs.Interfaces;
 using JobScheduler.Services;
@@ -20,6 +21,8 @@ namespace JOB.Services
         public readonly IUnitOfWorkMapping _mapping;
         public readonly IUnitofWorkMqttQueue _mqttQueue;
         private readonly object _positionLock = new object();
+        private QueueProcess _queueProcess = null;
+
         private MainService main = null;
 
         //    현재 실행 중인 작업들을 추적하기 위한 리스트
@@ -32,13 +35,15 @@ namespace JOB.Services
         //    - Start/Stop 간 레이스를 줄이려면 bool 대신 volatile 추천
         private bool _running;
 
-        public SchedulerService(MainService mainService, IUnitOfWorkRepository repository, IUnitOfWorkJobMissionQueue queue, IUnitOfWorkMapping mapping, IUnitofWorkMqttQueue mqttQueue)
+        public SchedulerService(MainService mainService, QueueProcess queueProcess, IUnitOfWorkRepository repository, IUnitOfWorkJobMissionQueue queue
+                                , IUnitOfWorkMapping mapping, IUnitofWorkMqttQueue mqttQueue)
         {
             main = mainService;
             _repository = repository;
             _Queue = queue;
             _mapping = mapping;
             _mqttQueue = mqttQueue;
+            _queueProcess = queueProcess;
         }
 
         /// <summary>
@@ -102,9 +107,11 @@ namespace JOB.Services
                 {
                     try
                     {
+                        QuqueProcess();
                         JobPlanner();
                         WorkerAssined();
                         Dispatcher();
+                        QuqueProcess();
                         await Task.Delay(300);
                     }
                     catch (Exception ex)
@@ -117,6 +124,30 @@ namespace JOB.Services
             {
                 EventLogger.Info("[JobScheduler Task] Stop");  // 루프 정지 로그
             }
+        }
+
+        private void QuqueProcess()
+        {
+            Order();
+            Job();
+            Mission();
+        }
+
+        private void Order()
+        {
+            _queueProcess.Crate_Order();
+            _queueProcess.Remove_Order_Job_Mission();
+        }
+
+        private void Job()
+        {
+            _queueProcess.Crate_Job();
+            _queueProcess.Remove_Job_Mission();
+        }
+
+        private void Mission()
+        {
+            _queueProcess.Create_Mission();
         }
 
         /// <summary>

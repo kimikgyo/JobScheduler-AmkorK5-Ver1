@@ -4,10 +4,13 @@ namespace Common.Models.Queues
 {
     public static class QueueStorage
     {
-        #region Order
+        #region Order,Job,Mission
 
         private static readonly ConcurrentQueue<Create_Order> Add_Order = new ConcurrentQueue<Create_Order>();
         private static readonly ConcurrentQueue<Remove_Order> Remove_Order = new ConcurrentQueue<Remove_Order>();
+        private static readonly ConcurrentQueue<Create_Job> Add_Job = new ConcurrentQueue<Create_Job>();
+        private static readonly ConcurrentQueue<Remove_Job> Remove_Job = new ConcurrentQueue<Remove_Job>();
+        private static readonly ConcurrentQueue<Create_Mission> Add_Mission = new ConcurrentQueue<Create_Mission>();
 
         public static void Create_Order_Enqueue(Create_Order item)
         {
@@ -32,14 +35,6 @@ namespace Common.Models.Queues
             //실행하면 순차적으로 하나씩 Return한다
             return Remove_Order.TryDequeue(out item);
         }
-
-        #endregion Order
-
-        #region Job
-
-        private static readonly ConcurrentQueue<Create_Job> Add_Job = new ConcurrentQueue<Create_Job>();
-        private static readonly ConcurrentQueue<Remove_Job> Remove_Job = new ConcurrentQueue<Remove_Job>();
-        private static readonly ConcurrentQueue<Create_Mission> Add_Mission = new ConcurrentQueue<Create_Mission>();
 
         public static void Create_Job_Enqueue(Create_Job item)
         {
@@ -77,7 +72,7 @@ namespace Common.Models.Queues
             return Add_Mission.TryDequeue(out item);
         }
 
-        #endregion Job
+        #endregion Order,Job,Mission
 
         #region MQTT
 

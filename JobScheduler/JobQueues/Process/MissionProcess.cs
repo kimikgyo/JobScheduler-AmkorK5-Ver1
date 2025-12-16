@@ -27,7 +27,7 @@ namespace JOB.JobQueues.Process
                     isLocked = cmd.missionTemplate.isLook,
                     sequenceChangeCount = 0,
                     retryCount = 0,
-                    state = nameof(MissionState.WORKERASSIGNED),
+                    state = nameof(MissionState.WAITING),
                     specifiedWorkerId = cmd.job.specifiedWorkerId,
                     assignedWorkerId = cmd.worker.id,
                     createdAt = DateTime.Now,

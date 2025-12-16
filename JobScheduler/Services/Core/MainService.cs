@@ -41,10 +41,10 @@ namespace JobScheduler.Services
 
         private void createClass()
         {
-            queueProcess = new QueueProcess(main, _repository, _mqttQueue, _mapping);
+            schedulerService = new SchedulerService(main, _repository, _jobMissionQueue, _mapping, _mqttQueue);
             mQTT = new MQTTService(_mqtt, _mqttQueue);
             Response_Data = new Response_Data_Service(EventLogger, _repository, _mapping);
-            schedulerService = new SchedulerService(main, queueProcess, _repository, _jobMissionQueue, _mapping, _mqttQueue);
+            queueProcess = new QueueProcess(main, _repository, _mqttQueue, _mapping);
         }
 
         private async Task stratAsync()
@@ -55,6 +55,7 @@ namespace JobScheduler.Services
             {
                 mQTT.Start();
                 schedulerService.Start();
+                queueProcess.Start();
             }
         }
 
@@ -75,6 +76,7 @@ namespace JobScheduler.Services
                 //_mqtt.Start();
 
                 // 4. 스케줄러 다시 시작
+                queueProcess.Start();
                 schedulerService.Start();
             }
         }

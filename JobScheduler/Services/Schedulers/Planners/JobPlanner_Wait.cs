@@ -74,7 +74,7 @@ namespace JOB.Services
 
                 if (jobFindNotAssignedWorker != null && worker.batteryPercent > batterySetting.minimum)
                 {
-                    EventLogger.Warn($"[WAIT][CHECK][SKIP] unassigned job exists and battery ok: workerId={worker.id}, workerName={worker.name}, battery={worker.batteryPercent}");
+                    //EventLogger.Warn($"[WAIT][CHECK][SKIP] unassigned job exists and battery ok: workerId={worker.id}, workerName={worker.name}, battery={worker.batteryPercent}");
                     continue;
                 }
 

@@ -2,7 +2,6 @@
 using Common.Models.Jobs;
 using Data.Interfaces;
 using JOB.JobQueues.Interfaces;
-using JOB.JobQueues.Process;
 using JOB.Mappings.Interfaces;
 using JOB.MQTTs.Interfaces;
 using JobScheduler.Services;
@@ -21,7 +20,6 @@ namespace JOB.Services
         public readonly IUnitOfWorkMapping _mapping;
         public readonly IUnitofWorkMqttQueue _mqttQueue;
         private readonly object _positionLock = new object();
-        private QueueProcess _queueProcess = null;
 
         private MainService main = null;
 
@@ -35,7 +33,7 @@ namespace JOB.Services
         //    - Start/Stop 간 레이스를 줄이려면 bool 대신 volatile 추천
         private bool _running;
 
-        public SchedulerService(MainService mainService, QueueProcess queueProcess, IUnitOfWorkRepository repository, IUnitOfWorkJobMissionQueue queue
+        public SchedulerService(MainService mainService, IUnitOfWorkRepository repository, IUnitOfWorkJobMissionQueue queue
                                 , IUnitOfWorkMapping mapping, IUnitofWorkMqttQueue mqttQueue)
         {
             main = mainService;
@@ -43,7 +41,6 @@ namespace JOB.Services
             _Queue = queue;
             _mapping = mapping;
             _mqttQueue = mqttQueue;
-            _queueProcess = queueProcess;
         }
 
         /// <summary>
@@ -107,11 +104,11 @@ namespace JOB.Services
                 {
                     try
                     {
-                        QuqueProcess();
                         JobPlanner();
                         WorkerAssined();
                         Dispatcher();
-                        QuqueProcess();
+                        cancelControl();
+
                         await Task.Delay(300);
                     }
                     catch (Exception ex)
@@ -124,30 +121,6 @@ namespace JOB.Services
             {
                 EventLogger.Info("[JobScheduler Task] Stop");  // 루프 정지 로그
             }
-        }
-
-        private void QuqueProcess()
-        {
-            Order();
-            Job();
-            Mission();
-        }
-
-        private void Order()
-        {
-            _queueProcess.Crate_Order();
-            _queueProcess.Remove_Order_Job_Mission();
-        }
-
-        private void Job()
-        {
-            _queueProcess.Crate_Job();
-            _queueProcess.Remove_Job_Mission();
-        }
-
-        private void Mission()
-        {
-            _queueProcess.Create_Mission();
         }
 
         /// <summary>
@@ -191,7 +164,7 @@ namespace JOB.Services
             }
         }
 
-        public void updateStateJob(Job job, string state, bool historyAdd = false)
+        public void updateStateJob(Job job, string state, string terminateState, string terminationType, string terminator, bool historyAdd = false)
         {
             if (job.state != state)
             {
@@ -210,6 +183,26 @@ namespace JOB.Services
                     case nameof(JobState.COMPLETED):
                         break;
                 }
+                _repository.Jobs.Update(job);
+                if (historyAdd) _repository.JobHistorys.Add(job);
+                _mqttQueue.MqttPublishMessage(TopicType.job, TopicSubType.status, _mapping.Jobs.Publish(job));
+            }
+            if (job.terminateState != terminateState)
+            {
+                job.terminationType = terminationType;
+                job.terminateState = terminateState;
+                job.terminator = terminator;
+                switch (terminateState)
+                {
+                    case nameof(TerminateState.INITED):
+                        job.terminatedAt = DateTime.Now;
+                        break;
+
+                    case nameof(TerminateState.EXECUTING):
+                        job.terminatingAt = DateTime.Now;
+                        break;
+                }
+
                 _repository.Jobs.Update(job);
                 if (historyAdd) _repository.JobHistorys.Add(job);
                 _mqttQueue.MqttPublishMessage(TopicType.job, TopicSubType.status, _mapping.Jobs.Publish(job));

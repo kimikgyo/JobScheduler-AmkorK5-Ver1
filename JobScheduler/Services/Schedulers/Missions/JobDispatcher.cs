@@ -9,159 +9,7 @@ namespace JOB.Services
         private void Dispatcher()
         {
             postMissionControl();
-            cancelControl();
             ElevatorModeChange();
-        }
-
-        /// <summary>
-        /// Cancel 제어
-        /// </summary>
-        private void cancelControl()
-        {
-            var jobs = _repository.Jobs.GetAll();
-
-            terminateState_Null(jobs);
-            terminateState_Inited(jobs);
-            terminateState_Executing(jobs);
-        }
-
-        private void terminateState_Executing(List<Job> jobs)
-        {
-            var terminateState_EXECUTING_Jobs = jobs.Where(j => j.terminateState == nameof(TerminateState.EXECUTING)).ToList();
-            if (terminateState_EXECUTING_Jobs == null || terminateState_EXECUTING_Jobs.Count == 0) return;
-
-            foreach (var terminateState_EXECUTING_Job in terminateState_EXECUTING_Jobs)
-            {
-                var missions = _repository.Missions.GetByJobId(terminateState_EXECUTING_Job.guid);
-
-                var unlockMissions = missions.Where(m => m.isLocked == false).ToList();
-                var executingMission = unlockMissions.FirstOrDefault(m => (m.state == nameof(MissionState.PENDING))
-                                                            || (m.state == nameof(MissionState.EXECUTING))
-                                                            || (m.state == nameof(MissionState.COMMANDREQUESTCOMPLETED)));
-
-                if (executingMission != null)
-                {
-                    deleteMission(executingMission);
-                }
-            }
-        }
-
-        /// <summary>
-        /// UI상이나 어떠한상황에서 Mission 만 Cancel을 했을경우
-        /// </summary>
-        /// <param name="jobs"></param>
-        private void terminateState_Null(List<Job> jobs)
-        {
-            var terminateState_Null_jobs = jobs.Where(j => j.terminateState == null).ToList();
-            if (terminateState_Null_jobs == null || terminateState_Null_jobs.Count == 0) return;
-
-            foreach (var terminateState_Null_Job in terminateState_Null_jobs)
-            {
-                var Cancelmission = _repository.Missions.GetByJobId(terminateState_Null_Job.guid).Where(r => r.state == nameof(MissionState.CANCELED)).FirstOrDefault();
-                if (Cancelmission != null)
-                {
-                    terminateState_Null_Job.terminationType = nameof(TerminateType.CANCEL);
-                    terminateState_Null_Job.terminateState = nameof(TerminateState.INITED);
-                    terminateState_Null_Job.terminatingAt = DateTime.Now;
-                    terminateState_Null_Job.terminator = "JobScheduler";
-                    updateStateJob(terminateState_Null_Job, terminateState_Null_Job.state, true);
-                }
-            }
-        }
-
-        /// <summary>
-        /// Job Cancel 명령을 받았을경우
-        /// </summary>
-        /// <param name="jobs"></param>
-        private void terminateState_Inited(List<Job> jobs)
-        {
-            var terminateState_INITED_Jobs = jobs.Where(j => j.terminateState == nameof(TerminateState.INITED)).ToList();
-            if (terminateState_INITED_Jobs == null || terminateState_INITED_Jobs.Count == 0) return;
-
-            foreach (var terminateState_INITED_Job in terminateState_INITED_Jobs)
-            {
-                var missions = _repository.Missions.GetByJobId(terminateState_INITED_Job.guid);
-                if (terminateState_INITED_Job.terminator.ToUpper() == "INATECH")
-                {
-                    //관리자가 취소할경우
-                    var cancelMissions = missions.Where(m => m.state != nameof(MissionState.COMPLETED)).ToList();
-                    foreach (var cancelMission in cancelMissions)
-                    {
-                        updateStateMission(cancelMission, nameof(MissionState.CANCELED));
-                    }
-
-                    terminateState_INITED_Job.terminateState = nameof(TerminateState.EXECUTING);
-                    terminateState_INITED_Job.terminatingAt = DateTime.Now;
-                    updateStateJob(terminateState_INITED_Job, terminateState_INITED_Job.state, true);
-
-                    var order = _repository.Orders.GetByid(terminateState_INITED_Job.orderId);
-                    if (order != null)
-                    {
-                        switch (terminateState_INITED_Job.terminationType)
-                        {
-                            case nameof(TerminateType.CANCEL):
-                                updateStateOrder(order, OrderState.Canceling, true);
-                                break;
-
-                            case nameof(TerminateType.ABORT):
-                                updateStateOrder(order, OrderState.Aborting, true);
-                                break;
-                        }
-                    }
-                }
-                else
-                {
-                    // 상위에서 취소할경우 unlock 일경우
-                    var unlockMissions = missions.Where(m => m.isLocked == false).ToList();
-
-                    // 미션을 전송완료 하거나 진행중인것이 아닌 미션
-                    var executingMission = unlockMissions.Where(m => m.state == nameof(MissionState.PENDING)
-                                                                        || m.state == nameof(MissionState.COMMANDREQUESTCOMPLETED)
-                                                                        || m.state == nameof(MissionState.EXECUTING)
-                                                                       ).FirstOrDefault();
-
-                    if (executingMission == null)
-                    {
-                        foreach (var unlockMission in unlockMissions)
-                        {
-                            updateStateMission(unlockMission, nameof(MissionState.CANCELED));
-                        }
-                        terminateState_INITED_Job.terminatingAt = DateTime.Now;
-                        updateStateJob(terminateState_INITED_Job, terminateState_INITED_Job.state, true);
-                    }
-                    else
-                    {
-                        if (deleteMission(executingMission))
-                        {
-                            var cancelMissions = missions.Where(m => m.sequence > executingMission.sequence).ToList();
-
-                            //취소할 Mission 이 있을경우
-                            foreach (var cancelMission in cancelMissions)
-                            {
-                                updateStateMission(cancelMission, nameof(MissionState.CANCELED));
-                            }
-
-                            terminateState_INITED_Job.terminatingAt = DateTime.Now;
-                            updateStateJob(terminateState_INITED_Job, terminateState_INITED_Job.state, true);
-
-                            var order = _repository.Orders.GetByid(terminateState_INITED_Job.orderId);
-                            if (order != null)
-                            {
-                                switch (terminateState_INITED_Job.terminationType)
-                                {
-                                    case nameof(TerminateType.CANCEL):
-                                        updateStateOrder(order, OrderState.Canceling, true);
-                                        break;
-
-                                    case nameof(TerminateType.ABORT):
-                                        updateStateOrder(order, OrderState.Aborting, true);
-                                        break;
-                                }
-                            }
-                        }
-                    }
-                }
-            }
         }
 
         /// <summary>
@@ -179,7 +27,7 @@ namespace JOB.Services
                 Parameter ChargeEquest = null;
 
                 //[조회] 현재 Worker에게 할당된 Mission
-                var missions = _repository.Missions.GetByAssignedWorkerId(worker.id).ToList();
+                var missions = _repository.Missions.GetByAssignedWorkerId(worker.id).OrderBy(r=>r.sequence).ToList();
                 if (missions == null || missions.Count == 0) continue;
 
                 //[조회] Middlewares 정보
@@ -188,8 +36,6 @@ namespace JOB.Services
                 //[조회] 현재 진행중인 Mission
                 var runmission = _repository.Missions.GetByRunMissions(missions).FirstOrDefault();
 
-                //[업데이트] 재정렬 및 상태변경된 Mission
-                missions = missionDispatcher(missions, runmission, worker);
 
                 bool c1 = worker.isMiddleware == true;
 
@@ -354,89 +200,53 @@ namespace JOB.Services
         {
             bool completed = false;
 
+            Position sourcePosition = null;
+            Position destPosition = null;
+            Position mapSwitchPosition = null;
             //Map스위칭 포지션 적용
             var job = _repository.Jobs.GetByid(mission.jobId);
             if (job != null)
             {
-                var position = _repository.Positions.MiR_GetById(job.destinationId);
-                var switchMapMission = _repository.Missions.GetByJobId(job.guid).FirstOrDefault(r => r.subType == nameof(MissionSubType.SWITCHINGMAP));
-                if (position != null && switchMapMission != null)
-                {
-                    var mapSwitchPosition = positions.FirstOrDefault(r => r.mapId == position.mapId);
-                    if (mapSwitchPosition != null)
-                    {
-                        var mapSwitchParam = switchMapMission.parameters.FirstOrDefault(p => p.key == "target");
-                        if (IsInvalid(mapSwitchParam.value))
-                        {
-                            mapSwitchParam.value = mapSwitchPosition.id;
-                            switchMapMission.parametersJson = JsonSerializer.Serialize(switchMapMission.parameters);
-                            _repository.Missions.Update(switchMapMission);
+                var missions = _repository.Missions.GetByJobId(job.guid);
+                if (job.sourceId != null) sourcePosition = _repository.Positions.MiR_GetById(job.sourceId);
 
-                            completed = true;
-                        }
-                        if (completed == true)
-                        {
-                            //직접 파라메타를 변경하는것이기때문에 포지션점유를 업데이트한다
-                            updateOccupied(mapSwitchPosition, true);
-                        }
+                //출발지 가 현재 Worker층과 다를경우
+                var sourceMission = missions.Where(r => r.subType == nameof(MissionSubType.SOURCEMOVE) && r.state == nameof(MissionState.WAITING)).FirstOrDefault();
+                if (sourceMission != null && sourcePosition != null)
+                {
+                    mapSwitchPosition = positions.FirstOrDefault(r => r.mapId == sourcePosition.mapId);
+                }
+                else
+                {
+                    //도착지층 과 다를경우
+                    destPosition = _repository.Positions.MiR_GetById(job.destinationId);
+                    var destMission = missions.Where(r => r.subType == nameof(MissionSubType.DESTINATIONMOVE) && r.state == nameof(MissionState.WAITING)).FirstOrDefault();
+                    if (destMission != null && destPosition != null)
+                    {
+                        mapSwitchPosition = positions.FirstOrDefault(r => r.mapId == destPosition.mapId);
                     }
+                }
+
+                if (mapSwitchPosition != null)
+                {
+                    var switchMapMission = missions.FirstOrDefault(r => r.subType == nameof(MissionSubType.SWITCHINGMAP) && r.state == nameof(MissionState.WAITING));
+                    var mapSwitchParam = switchMapMission.parameters.FirstOrDefault(p => p.key == "target");
+                    if (IsInvalid(mapSwitchParam.value))
+                    {
+                        mapSwitchParam.value = mapSwitchPosition.id;
+                        switchMapMission.parametersJson = JsonSerializer.Serialize(switchMapMission.parameters);
+                        _repository.Missions.Update(switchMapMission);
+                        //직접 파라메타를 변경하는것이기때문에 포지션점유를 업데이트한다
+                        updateOccupied(mapSwitchPosition, true);
+                    }
+                    completed = true;
                 }
             }
 
             return completed;
         }
 
-        /// <summary>
-        /// [Sub] postMissionControl
-        /// 새로운 미션 시퀀스 재배치
-        /// </summary>
-        /// <param name="missions"></param>
-        /// <param name="runmission"></param>
-        /// <param name="worker"></param>
-        /// <returns>Worker 기준 Missions 목록 반환</returns>
-        private List<Mission> missionDispatcher(List<Mission> missions, Mission runmission, Worker worker)
-        {
-            //[초기화] Return Mission
-            List<Mission> _missions = null;
-
-            //[조회] 현재 Mission 상태중 WORKERASSIGNED 일치하는 Mission
-            var newmissions = missions.Where(m => m.state == nameof(MissionState.WORKERASSIGNED)).ToList();
-            if (newmissions != null && newmissions.Count > 0)
-            {
-                //[조회] 현재 Mission 중 WAITING 상태의 맨마지막 미션
-                var mission = missions.LastOrDefault(m => m.state == nameof(MissionState.WAITING));
-                if (mission == null && runmission == null)
-                {
-                    foreach (var Initmission in newmissions)
-                    {
-                        //[업데이트] 미션상태 를 WAITING 으로 변경
-                        updateStateMission(Initmission, nameof(MissionState.WAITING), true);
-                    }
-                }
-                else
-                {
-                    //[업데이트] 실행중인 미션이 있는경우 , 시퀀스 번호 재정렬
-                    int seq = 0;
-                    if (runmission != null) seq = runmission.sequence;
-                    if (mission != null) seq = mission.sequence;
-
-                    //[업데이트] 신규 미션들을 순차적으로 시퀀스 및 상태를 갱신
-                    foreach (var Initmission in newmissions)
-                    {
-                        seq = seq + 1;
-                        Initmission.sequence = seq;
-                        Initmission.sequenceChangeCount = Initmission.sequenceChangeCount + 1;
-                        Initmission.sequenceUpdatedAt = DateTime.Now;
-
-                        //[업데이트] 미션상태 를 WAITING 으로 변경
-                        updateStateMission(Initmission, nameof(MissionState.WAITING), true);
-                    }
-                }
-            }
-            //[조회] Worker 기준 Mission 목록 반환(시퀀스 순으로 정렬한다)
-            _missions = _repository.Missions.GetByAssignedWorkerId(worker.id).OrderBy(s => s.sequence).ToList();
-            return _missions;
-        }
+  
 
         private void ElevatorModeChange()
         {

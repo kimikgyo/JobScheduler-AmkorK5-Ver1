@@ -37,26 +37,27 @@ namespace JOB.Services
         ///  - 재할당 Job 미션 생성 시, 시작 위치 override 가능
         ///  - Mission 재정렬, Mission Skip 등 고급 미션 관리 구조와 연계 가능
         /// </summary>
-        private void Create_Mission(Job job, Worker worker)
+        private bool Create_Mission(Job job, Worker worker)
         {
-            if (job == null) return;
-            if (worker == null) return;
+            bool CreateMission = false;
+            if (job == null) return CreateMission;
+            if (worker == null) return CreateMission;
 
             int seq = 1;
 
             // 1) 외부 Route API 핸들
             var resource = _repository.ServiceApis.GetAll().FirstOrDefault(s => s.type == "Resource");
-            if (resource == null) return;
+            if (resource == null) return CreateMission;
 
             // 2) Worker 기준 시작 위치 + Job 출발/목적지 계산
             var workerStart = GetWorkerStartPosition(worker);
-            if (workerStart == null) return;
+            if (workerStart == null) return CreateMission;
 
             var jobSource = GetJobSourcePosition(job, workerStart);
-            if (jobSource == null) return;
+            if (jobSource == null) return CreateMission;
 
             var jobDestination = GetJobDestinationPosition(job);
-            if (jobDestination == null) return;
+            if (jobDestination == null) return CreateMission;
 
             // 3) Job 타입별로 미션 구성 위임
             switch (job.type)
@@ -69,29 +70,32 @@ namespace JOB.Services
                 case nameof(JobType.TRANSPORT_AICERO_SUPPLY):
                 case nameof(JobType.TRANSPORT_AICERO_RESOVERY):
 
-                    BuildTransportMissions(job, worker, resource, workerStart, jobSource, jobDestination, seq);
+                    CreateMission = BuildTransportMissions(job, worker, resource, workerStart, jobSource, jobDestination, seq);
                     break;
 
                 case nameof(JobType.CHARGE):
                 case nameof(JobType.WAIT):
 
-                    BuildChargeWaitMissions(job, worker, resource, workerStart, jobDestination, seq);
+                    CreateMission = BuildChargeWaitMissions(job, worker, resource, workerStart, jobDestination, seq);
                     break;
             }
-
-            // 4) Job / Order 상태 업데이트 (기존 로직 유지)
-            job.assignedWorkerId = worker.id;
-            updateStateJob(job, nameof(JobState.WORKERASSIGNED), true);
-
-            if (job.orderId != null)
+            if (CreateMission)
             {
-                var order = _repository.Orders.GetByid(job.orderId);
-                if (order != null)
+                // 4) Job / Order 상태 업데이트 (기존 로직 유지)
+                job.assignedWorkerId = worker.id;
+                updateStateJob(job, nameof(JobState.WORKERASSIGNED), job.terminateState, job.terminationType, job.terminator, true);
+
+                if (job.orderId != null)
                 {
-                    order.assignedWorkerId = worker.id;
-                    updateStateOrder(order, OrderState.Transferring, true);
+                    var order = _repository.Orders.GetByid(job.orderId);
+                    if (order != null)
+                    {
+                        order.assignedWorkerId = worker.id;
+                        updateStateOrder(order, OrderState.Transferring, true);
+                    }
                 }
             }
+            return CreateMission;
         }
 
         // 0) Worker 기준 시작 위치 구하기
@@ -106,7 +110,7 @@ namespace JOB.Services
             if (positions == null || positions.Count == 0) return null;
 
             // 워커 기준 가장 가까운 포지션 선택
-            var nearest = _repository.Positions.FindNearestWayPoint(worker, positions).Where(P=>P.isOccupied == false).FirstOrDefault();
+            var nearest = _repository.Positions.FindNearestWayPoint(worker, positions).Where(P => P.isOccupied == false).FirstOrDefault();
             return nearest;
         }
 
@@ -138,17 +142,25 @@ namespace JOB.Services
         // TRANSPORT 계열 Job 미션 구성
         // Segment A: WorkerStart → JobSource (MOVE만)
         // Segment B: JobSource   → JobDestination (PICK / DROP / ELEVATOR / TRAFFIC / MOVE)
-        private void BuildTransportMissions(Job job, Worker worker, ServiceApi resource, Position workerStart, Position jobSource, Position jobDestination
+        private bool BuildTransportMissions(Job job, Worker worker, ServiceApi resource, Position workerStart, Position jobSource, Position jobDestination
                                            , int seq)
         {
+            bool reValue = false;
             // A) Segment A: WorkerStart → JobSource
             if (workerStart.positionId != jobSource.positionId)
             {
                 var routesA = resource.Api.Post_Routes_Plan_Async(_mapping.RoutesPlanas.Request(workerStart.positionId, jobSource.positionId)).Result;
 
-                if (routesA == null) return;
-                if (routesA.nodes == null) return;
-
+                if (routesA == null)
+                {
+                    EventLogger.Warn($"[ROUTE_A][PLAN][NO_ROUTE] response is null (path not found?) jobId={job?.guid} from={jobSource?.positionId} to={jobDestination?.positionId}");
+                    return reValue;
+                }
+                if (routesA.nodes == null)
+                {
+                    EventLogger.Warn($"[ROUTE_A][PLAN][NO_ROUTE] nodes is null/empty (path not found) jobId={job?.guid} from={jobSource?.positionId} to={jobDestination?.positionId}");
+                    return reValue;
+                }
                 Position Segment_A_ElevatorSource = null;
                 Position Segment_A_Elevatordest = null;
 
@@ -183,14 +195,23 @@ namespace JOB.Services
                         // 순수 이동 구간이므로 MOVE(STOPOVERMOVE)만 생성
                         seq = create_SingleMission(job, position, worker, seq, nameof(MissionTemplateType.MOVE), nameof(MissionTemplateSubType.STOPOVERMOVE));
                     }
+                    reValue = true;
                 }
             }
 
             // B) Segment B: JobSource → JobDestination
             var routesB = resource.Api.Post_Routes_Plan_Async(_mapping.RoutesPlanas.Request(jobSource.positionId, jobDestination.positionId)).Result;
 
-            if (routesB == null) return;
-            if (routesB.nodes == null) return;
+            if (routesB == null)
+            {
+                EventLogger.Warn($"[ROUTE_B][PLAN][NO_ROUTE] response is null (path not found?) jobId={job?.guid} from={jobSource?.positionId} to={jobDestination?.positionId}");
+                return reValue;
+            }
+            if (routesB.nodes == null)
+            {
+                EventLogger.Warn($"[ROUTE_B][PLAN][NO_ROUTE] nodes is null/empty (path not found) jobId={job?.guid} from={jobSource?.positionId} to={jobDestination?.positionId}");
+                return reValue;
+            }
 
             Position Segment_B_ElevatorSource = null;
             Position Segment_B_Elevatordest = null;
@@ -239,18 +260,31 @@ namespace JOB.Services
                 {
                     seq = create_SingleMission(job, position, worker, seq, nameof(MissionTemplateType.MOVE), nameof(MissionTemplateSubType.STOPOVERMOVE));
                 }
+                reValue = true;
             }
+            return reValue;
         }
 
         // CHARGE / WAIT Job 미션 구성
         // WorkerStart → JobDestination 한 번만
-        private void BuildChargeWaitMissions(Job job, Worker worker, ServiceApi resource, Position workerStart, Position jobDestination
+        private bool BuildChargeWaitMissions(Job job, Worker worker, ServiceApi resource, Position workerStart, Position jobDestination
                                             , int seq)
         {
+            bool reValue = false;
             var routes = resource.Api.Post_Routes_Plan_Async(_mapping.RoutesPlanas.Request(workerStart.positionId, jobDestination.positionId)).Result;
 
-            if (routes == null) return;
-            if (routes.nodes == null) return;
+            if (routes == null)
+            {
+                EventLogger.Warn($"[ChargeWait][PLAN][NO_ROUTE] response is null (path not found?) jobId={job.guid} from={workerStart.positionId} to={jobDestination?.positionId}");
+                return reValue;
+            }
+
+            if (routes.nodes == null)
+            {
+                EventLogger.Warn($"[ChargeWait][PLAN][NO_ROUTE] nodes is null/empty (path not found) jobId={job.guid} from={workerStart.positionId} to={jobDestination?.positionId}");
+
+                return reValue;
+            }
 
             Position ElevatorSource = null;
             Position Elevatordest = null;
@@ -295,7 +329,9 @@ namespace JOB.Services
                 {
                     seq = create_SingleMission(job, position, worker, seq, nameof(MissionTemplateType.MOVE), nameof(MissionTemplateSubType.STOPOVERMOVE));
                 }
+                reValue = true;
             }
+            return reValue;
         }
     }
 }

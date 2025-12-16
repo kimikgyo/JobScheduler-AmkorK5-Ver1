@@ -20,7 +20,7 @@ namespace JOB.Services
                 var job = _repository.Jobs.GetByid(mission.jobId);
                 if (job != null)
                 {
-                    updateStateJob(job, nameof(JobState.INPROGRESS), true);
+                    updateStateJob(job, nameof(JobState.INPROGRESS),job.terminateState,job.terminationType,job.terminator, true);
 
                     var order = _repository.Orders.GetByid(mission.orderId);
                     if (order != null && order.state != nameof(OrderState.Transferring))
@@ -33,7 +33,7 @@ namespace JOB.Services
 
         private void cancelAbortCompleteControl()
         {
-            var cancelAbortJobs = _repository.Jobs.GetAll().Where(j => (j.terminateState == nameof(TerminateState.INITED)) || (j.terminateState == nameof(TerminateState.COMPLETED))).ToList();
+                var cancelAbortJobs = _repository.Jobs.GetAll().Where(j => (j.terminateState == nameof(TerminateState.INITED)) || (j.terminateState == nameof(TerminateState.EXECUTING)) || (j.terminateState == nameof(TerminateState.COMPLETED))).ToList();
             foreach (var cancelAbortJob in cancelAbortJobs)
             {
                 var missions = _repository.Missions.GetByJobId(cancelAbortJob.guid);
@@ -47,13 +47,13 @@ namespace JOB.Services
                             case nameof(TerminateType.CANCEL):
                                 cancelAbortJob.terminateState = nameof(TerminateState.COMPLETED);
                                 cancelAbortJob.terminatedAt = DateTime.Now;
-                                updateStateJob(cancelAbortJob, nameof(JobState.CANCELCOMPLETED), true);
+                                updateStateJob(cancelAbortJob, nameof(JobState.CANCELCOMPLETED), cancelAbortJob.terminateState, cancelAbortJob.terminationType, cancelAbortJob.terminator, true);
                                 break;
 
                             case nameof(TerminateType.ABORT):
                                 cancelAbortJob.terminateState = nameof(TerminateState.COMPLETED);
                                 cancelAbortJob.terminatedAt = DateTime.Now;
-                                updateStateJob(cancelAbortJob, nameof(JobState.ABORTCOMPLETED), true);
+                                updateStateJob(cancelAbortJob, nameof(JobState.ABORTCOMPLETED), cancelAbortJob.terminateState, cancelAbortJob.terminationType, cancelAbortJob.terminator, true);
                                 break;
                         }
                     }
@@ -84,13 +84,13 @@ namespace JOB.Services
                     var order = _repository.Orders.GetByid(job.orderId);
                     if (order != null)
                     {
-                        updateStateJob(job, nameof(JobState.COMPLETED));
+                        updateStateJob(job, nameof(JobState.COMPLETED),job.terminateState,job.terminationType,job.terminator);
                         updateStateOrder(order, OrderState.None);
                         _Queue.Remove_Order(order, DateTime.Now);
                     }
                     else
                     {
-                        updateStateJob(job, nameof(JobState.COMPLETED));
+                        updateStateJob(job, nameof(JobState.COMPLETED),job.terminateState,job.terminationType, job.terminator);
                         _Queue.Remove_Job(job, DateTime.Now);
                     }
                 }
@@ -99,16 +99,14 @@ namespace JOB.Services
 
         private void MissionCompleteControl()
         {
-
             var missions = _repository.Missions.GetAll().Where(r => r.jobId == null).ToList();
             if (missions.Count == 0 || missions == null) return;
 
             foreach (var mission in missions)
             {
-                if (mission.state == nameof(MissionState.COMPLETED) || mission.state == nameof(MissionState.SKIPPED)) 
-                _repository.Missions.Remove(mission);
+                if (mission.state == nameof(MissionState.COMPLETED) || mission.state == nameof(MissionState.SKIPPED))
+                    _repository.Missions.Remove(mission);
             }
-
         }
     }
 }

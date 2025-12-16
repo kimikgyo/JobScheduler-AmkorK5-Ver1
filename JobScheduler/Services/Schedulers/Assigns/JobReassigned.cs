@@ -297,13 +297,13 @@ namespace JOB.Services
             // [7] 기존 WAIT 미션 정리 (정책에 따라)
             //      - 재구성 후에도 Worker 에 WAIT 미션이 필요 없다면 삭제
             // ------------------------------------------------------------
-            bool waitCleaned = ChangeWaitDeleteMission(worker);
-            if (!waitCleaned)
-            {
-                // WAIT 삭제 실패했다고 해서 재구성 자체를 롤백하지는 않음(정책에 따라 조정 가능)
-                EventLogger.Warn($"[ASSIGN][REASSIGN][AFTER][WARN][WAIT-CLEAN-FAIL] workerName={worker.name}, workerId={worker.id}, secondJobId={jobToReassign.guid}");
-                // 필요하다면 여기서 return; 으로 바꿔도 됨
-            }
+            ChangeWaitDeleteMission(worker);
+            //if (!waitCleaned)
+            //{
+            //    // WAIT 삭제 실패했다고 해서 재구성 자체를 롤백하지는 않음(정책에 따라 조정 가능)
+            //    EventLogger.Warn($"[ASSIGN][REASSIGN][AFTER][WARN][WAIT-CLEAN-FAIL] workerName={worker.name}, workerId={worker.id}, secondJobId={jobToReassign.guid}");
+            //    // 필요하다면 여기서 return; 으로 바꿔도 됨
+            //}
 
             // ------------------------------------------------------------
             // [8] Job 자체를 Worker 에 재할당 (DB 업데이트)
@@ -869,7 +869,6 @@ namespace JOB.Services
                         Elevatordest = position;
                         seq = create_GroupMission(jobSecond, Elevatordest, worker, seq, nameof(MissionsTemplateGroup.ELEVATORDEST));
                         EventLogger.Info($"[ASSIGN][REASSIGN][BUILD-PRE][ELEVATOR-GROUP][ELEVATORDEST] workerName={worker.name}, workerId={worker.id}, jobSecondId={jobSecond.guid}, seq={seq}");
-
                     }
                 }
                 // --------------------------------------------------------
@@ -1074,7 +1073,6 @@ namespace JOB.Services
                         Elevatordest = position;
                         seq = create_GroupMission(jobSecond, Elevatordest, worker, seq, nameof(MissionsTemplateGroup.ELEVATORDEST));
                         EventLogger.Info($"[ASSIGN][REASSIGN][BUILD-PRE][ELEVATOR-GROUP][ELEVATORDEST] workerName={worker.name}, workerId={worker.id}, jobSecondId={jobSecond.guid}, seq={seq}");
-
                     }
                 }
                 // --------------------------------------------------------

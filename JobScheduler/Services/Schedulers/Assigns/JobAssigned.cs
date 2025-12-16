@@ -148,16 +148,17 @@ namespace JOB.Services
                     continue;
 
                 // 7) 기존 WAIT 미션 정리 (필요시)
-                if (!ChangeWaitDeleteMission(worker))
-                    continue;
+                ChangeWaitDeleteMission(worker);
 
                 // 8) 최종 Job 할당 및 미션 생성
-                Create_Mission(job, worker);
+                if (Create_Mission(job, worker))
+                {
 
-                EventLogger.Info($"[ASSIGN][NORMAL][FIRSTJOB][ASSIGNED] workerId={worker.id}, workerName={worker.name}, jobId={job.guid}, jobType={job.type}, group={job.group}");
+                    EventLogger.Info($"[ASSIGN][NORMAL][FIRSTJOB][ASSIGNED] workerId={worker.id}, workerName={worker.name}, jobId={job.guid}, jobType={job.type}, group={job.group}");
 
-                // 9) 이 Job 은 더 이상 UnAssigned 가 아니므로 리스트에서 제거
-                unAssignedWorkerJobs.Remove(job);
+                    // 9) 이 Job 은 더 이상 UnAssigned 가 아니므로 리스트에서 제거
+                    unAssignedWorkerJobs.Remove(job);
+                }
             }
         }
 
@@ -250,19 +251,20 @@ namespace JOB.Services
                         continue;
 
                     // 기존 WAIT 미션 정리 (필요 시)
-                    if (!ChangeWaitDeleteMission(worker))
-                    {
-                        EventLogger.Warn($"[ASSIGN][NORMAL][DISTANCE][SPECIFIED][ABORT], ChangeWaitDeleteMission failed. workerId={worker.id}, workerName={worker.name}");
-                        continue;
-                    }
+                    ChangeWaitDeleteMission(worker);
+                    //{
+                    //    EventLogger.Warn($"[ASSIGN][NORMAL][DISTANCE][SPECIFIED][ABORT], ChangeWaitDeleteMission failed. workerId={worker.id}, workerName={worker.name}");
+                    //    continue;
+                    //}
 
                     // 실제 Job 할당 및 Mission 생성
-                    Create_Mission(job, worker);
+                    if (Create_Mission(job, worker))
+                    {
+                        EventLogger.Info($"[ASSIGN][NORMAL][DISTANCE][SPECIFIED][ASSIGNED], workerId={worker.id}, workerName={worker.name}, jobName={job.name}, jobId={job.guid}, jobType={job.type}" +
+                                         $", group={job.group}");
 
-                    EventLogger.Info($"[ASSIGN][NORMAL][DISTANCE][SPECIFIED][ASSIGNED], workerId={worker.id}, workerName={worker.name}, jobName={job.name}, jobId={job.guid}, jobType={job.type}" +
-                                     $", group={job.group}");
-
-                    assignedWorkers.Add(worker);
+                        assignedWorkers.Add(worker);
+                    }
                 }
 
                 // 위에서 이미 할당된 워커는 이후 비지정 Job 에서 제외
@@ -302,24 +304,25 @@ namespace JOB.Services
                         continue;
 
                     // 기존 WAIT 미션 정리
-                    if (!ChangeWaitDeleteMission(worker))
-                    {
-                        EventLogger.Warn($"[ASSIGN][NORMAL][DISTANCE][UNSPECIFIED][ABORT], ChangeWaitDeleteMission failed. workerId={worker.id}, workerName={worker.name}");
-                        continue;
-                    }
+                    ChangeWaitDeleteMission(worker);
+                    //{
+                    //    EventLogger.Warn($"[ASSIGN][NORMAL][DISTANCE][UNSPECIFIED][ABORT], ChangeWaitDeleteMission failed. workerId={worker.id}, workerName={worker.name}");
+                    //    continue;
+                    //}
 
                     // 실제 Job 할당 및 Mission 생성
-                    Create_Mission(job, worker);
-                    EventLogger.Info($"[ASSIGN][NORMAL][DISTANCE][UNSPECIFIED][ASSIGNED], workerId={worker.id}, workerName={worker.name}, jobId={job.guid}, jobType={job.type}, group={job.group}");
+                    if (Create_Mission(job, worker))
+                    {
+                        EventLogger.Info($"[ASSIGN][NORMAL][DISTANCE][UNSPECIFIED][ASSIGNED], workerId={worker.id}, workerName={worker.name}, jobId={job.guid}, jobType={job.type}, group={job.group}");
+                    }
                 }
             }
         }
 
-        //충전이나 대기위치 미션을 삭제한다.
-        private bool ChangeWaitDeleteMission(Worker worker)
+        //충전이나 대기위치 진행중인 미션을 삭제한다.
+        private void ChangeWaitDeleteMission(Worker worker)
         {
-            bool reValue = true;
-            var runjob = _repository.Jobs.GetByWorkerId(worker.id).FirstOrDefault();
+            var runjob = _repository.Jobs.GetByWorkerId(worker.id).FirstOrDefault(r=>r.state == nameof(JobState.INPROGRESS));
             if (runjob != null)
             {
                 if ((runjob.type == nameof(JobType.WAIT)) || (runjob.type == nameof(JobType.CHARGE)))
@@ -329,10 +332,8 @@ namespace JOB.Services
                     runjob.terminationType = "CANCEL";
                     runjob.terminatedAt = DateTime.Now;
                     _repository.Jobs.Update(runjob);
-                    reValue = true;
                 }
             }
-            return reValue;
         }
 
         /// <summary>
@@ -458,7 +459,7 @@ namespace JOB.Services
                 return null;
             }
 
-            EventLogger.Info($"[ASSIGN][NEAREST-JOB][START] workerName={worker.name}, workerId={worker.id}, jobCount={jobs.Count}");
+            //EventLogger.Info($"[ASSIGN][NEAREST-JOB][START] workerName={worker.name}, workerId={worker.id}, jobCount={jobs.Count}");
 
             // Job 마다 "대표 포지션" 을 기억해 두기 위한 매핑
             //  - key: job.guid
@@ -511,9 +512,9 @@ namespace JOB.Services
                 return null;
             }
 
-            EventLogger.Info(
-                $"[ASSIGN][NEAREST-JOB][CANDIDATE] workerName={worker.name}, workerId={worker.id}, candidatePositionCount={candidatePositions.Count}"
-            );
+            //EventLogger.Info(
+            //    $"[ASSIGN][NEAREST-JOB][CANDIDATE] workerName={worker.name}, workerId={worker.id}, candidatePositionCount={candidatePositions.Count}"
+            //);
 
             // ------------------------------------------------------------
             // [2] Worker 기준 가장 가까운 Position 선택

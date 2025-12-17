@@ -11,6 +11,7 @@
         {
             return
                 $"minimum = {minimum,-5}" +
+                $",crossCharge = {crossCharge,-5}" +
                 $",chargeStart = {chargeStart,-5}" +
                 $",chargeEnd = {chargeEnd,-5}";
         }

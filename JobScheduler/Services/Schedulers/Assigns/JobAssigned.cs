@@ -153,7 +153,6 @@ namespace JOB.Services
                 // 8) 최종 Job 할당 및 미션 생성
                 if (Create_Mission(job, worker))
                 {
-
                     EventLogger.Info($"[ASSIGN][NORMAL][FIRSTJOB][ASSIGNED] workerId={worker.id}, workerName={worker.name}, jobId={job.guid}, jobType={job.type}, group={job.group}");
 
                     // 9) 이 Job 은 더 이상 UnAssigned 가 아니므로 리스트에서 제거
@@ -260,8 +259,8 @@ namespace JOB.Services
                     // 실제 Job 할당 및 Mission 생성
                     if (Create_Mission(job, worker))
                     {
-                        EventLogger.Info($"[ASSIGN][NORMAL][DISTANCE][SPECIFIED][ASSIGNED], workerId={worker.id}, workerName={worker.name}, jobName={job.name}, jobId={job.guid}, jobType={job.type}" +
-                                         $", group={job.group}");
+                        EventLogger.Info($"[ASSIGN][NORMAL][DISTANCE][SPECIFIED][ASSIGNED], workerId={worker.id}, workerName={worker.name}, jobName={job.name}, jobId={job.guid}" +
+                                         $", jobType={job.type}, group={job.group}");
 
                         assignedWorkers.Add(worker);
                     }
@@ -313,7 +312,8 @@ namespace JOB.Services
                     // 실제 Job 할당 및 Mission 생성
                     if (Create_Mission(job, worker))
                     {
-                        EventLogger.Info($"[ASSIGN][NORMAL][DISTANCE][UNSPECIFIED][ASSIGNED], workerId={worker.id}, workerName={worker.name}, jobId={job.guid}, jobType={job.type}, group={job.group}");
+                        EventLogger.Info($"[ASSIGN][NORMAL][DISTANCE][UNSPECIFIED][ASSIGNED], workerId={worker.id}, workerName={worker.name}, jobId={job.guid}, jobType={job.type}" +
+                                         $", group={job.group}");
                     }
                 }
             }
@@ -322,7 +322,7 @@ namespace JOB.Services
         //충전이나 대기위치 진행중인 미션을 삭제한다.
         private void ChangeWaitDeleteMission(Worker worker)
         {
-            var runjob = _repository.Jobs.GetByWorkerId(worker.id).FirstOrDefault(r=>r.state == nameof(JobState.INPROGRESS));
+            var runjob = _repository.Jobs.GetByWorkerId(worker.id).FirstOrDefault(r => r.state == nameof(JobState.INPROGRESS));
             if (runjob != null)
             {
                 if ((runjob.type == nameof(JobType.WAIT)) || (runjob.type == nameof(JobType.CHARGE)))

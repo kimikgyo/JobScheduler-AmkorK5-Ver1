@@ -21,6 +21,7 @@ namespace Common.Models.Jobs
         TRAFFIC,
         WORK,
         ELEVATOR,
+        CHARGER,
     }
 
     public class Position

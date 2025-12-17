@@ -96,7 +96,7 @@ namespace JOB.JobQueues.Process
                         Order();
                         Job();
                         Mission();
-                        await Task.Delay(300);
+                        await Task.Delay(100);
                     }
                     catch (Exception ex)
                     {

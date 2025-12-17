@@ -114,7 +114,6 @@ namespace Data.Repositorys.Settings
                         ,[ChargeEnd]       = @chargeEnd
                         ,[createAt]        = @createAt
                         ,[updatedAt]       = @updatedAt
-
                         ";
 
                     con.Execute(UPDATE_SQL, param: model);

@@ -4,6 +4,7 @@ using Data.Interfaces;
 using JOB.JobQueues.Interfaces;
 using JOB.Mappings.Interfaces;
 using Microsoft.AspNetCore.Mvc;
+using System.Diagnostics.Eventing.Reader;
 
 // For more information on enabling Web API for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
 
@@ -38,10 +39,29 @@ namespace JOB.Controllers.Settings
         //    return "value";
         //}
 
-        //// POST api/<BatteryController>
+        // POST api/<BatteryController>
         //[HttpPost]
-        //public void Request([FromBody] string value)
+        //public ActionResult Post([FromBody] Post_BatteryDto post)
         //{
+        //    var batteryGetAll = _repository.Battery.GetAll();
+        //    if(batteryGetAll == null)
+        //    {
+        //        var battery = new Battery
+        //        {
+        //            minimum = post.minimum,
+        //            crossCharge = post.crossCharge,
+        //            chargeStart = post.chargeStart,
+        //            chargeEnd = post.chargeEnd,
+        //            createAt = post.createAt,
+        //        };
+        //        _repository.Battery.Add(battery);
+        //        return Ok(battery);
+        //    }
+        //    else
+        //    {
+        //        return NotFound(batteryGetAll);
+
+        //    }
         //}
 
         // PUT api/<BatteryController>/5

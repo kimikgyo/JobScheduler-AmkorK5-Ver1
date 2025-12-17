@@ -24,7 +24,8 @@ namespace JOB.Services
             var moveMissions = _repository.Missions.GetAll().Where(m => m.type == nameof(MissionType.MOVE)).ToList();
             var runMission = _repository.Missions.GetByRunMissions(moveMissions).ToList();
             var runMissionPositionId = _repository.Missions.GetParametas(runMission).Select(r => r.value).ToList();
-            var NotOrderJobPositionNames = _repository.Jobs.GetAll().Where(m => m.orderId == null && (m.state == nameof(JobState.WORKERASSIGNED) || m.state == nameof(JobState.INIT))).Select(r => r.destinationId).ToList();
+            var NotOrderJobPositionNames = _repository.Jobs.GetAll().Where(m => m.orderId == null && m.state != nameof(JobState.COMPLETED))
+                                            .Select(r => r.destinationId).ToList();
             OccupiedPositionIds.AddRange(runMissionPositionId);
             OccupiedPositionIds.AddRange(NotOrderJobPositionNames);
             OccupiedPositionIds.AddRange(workerPositionOccupied());

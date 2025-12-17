@@ -75,6 +75,8 @@ namespace JOB.Services
                 _Queue.Create_Job(destination.group, order.id, order.type, order.subType, order.carrierId, order.priority, order.drumKeyCode
                                     , null, null, null, destination.id, destination.name, destination.linkedFacility
                                     , order.specifiedWorkerId);
+                updateOccupied(destination, true);
+
                 // --------------------------------------------------------
                 // 3) 생성 요청 성공 로그
                 // --------------------------------------------------------
@@ -87,6 +89,9 @@ namespace JOB.Services
                 _Queue.Create_Job(source.group, order.id, order.type, order.subType, order.carrierId, order.priority, order.drumKeyCode
                             , source.id, source.name, source.linkedFacility, destination.id, destination.name, destination.linkedFacility
                             , order.specifiedWorkerId);
+                updateOccupied(source, true);
+                updateOccupied(destination, true);
+
                 // --------------------------------------------------------
                 // 3) 생성 요청 성공 로그
                 // --------------------------------------------------------
@@ -175,6 +180,8 @@ namespace JOB.Services
                     {
                         _Queue.Create_Job(worker.group, null, nameof(JobType.CHARGE), nameof(JobSubType.CHARGE), null, 0, null,
                                           null, null, null, DestPosition.id, DestPosition.name, DestPosition.linkedFacility, worker.id);
+                        updateOccupied(DestPosition, true);
+
                     }
                 }
                 if (CrossPosition != null)
@@ -184,6 +191,8 @@ namespace JOB.Services
                     {
                         _Queue.Create_Job(worker.group, null, nameof(JobType.WAIT), nameof(JobSubType.WAIT), null, 0, null,
                                           null, null, null, CrossPosition.id, CrossPosition.name, CrossPosition.linkedFacility, worker.id);
+                        updateOccupied(CrossPosition, true);
+
                     }
                 }
             }

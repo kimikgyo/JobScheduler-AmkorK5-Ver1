@@ -39,7 +39,7 @@ namespace JOB.Services
             // 충전용 포지션
             // 실제 충전기 존재
             // 사용 가능 상태
-            var chargerPositions = _repository.Positions.GetAll().Where(r => r.subType == nameof(PositionSubType.CHARGE) && r.hasCharger == true && r.isEnabled == true).ToList();
+            var chargerPositions = _repository.Positions.GetAll().Where(r => r.subType == nameof(PositionSubType.CHARGE) && r.nodeType == nameof(NodeType.CHARGER) && r.isEnabled == true).ToList();
 
             // 2-3) 충전기가 하나도 없으면 이번 사이클은 아무 일도 하지 않고 종료
             if (chargerPositions == null || chargerPositions.Count == 0)
@@ -53,11 +53,11 @@ namespace JOB.Services
             //      - Worker.state == WorkerState.IDLE 인 로봇만 선별
             //      - 실제로 새 충전 Job을 받을 수 있는 후보들
             // ------------------------------------------------------------
-            var idleWorkers = _repository.Workers.ANT_GetByActive().Where(r => r.state == nameof(WorkerState.IDLE)).ToList();
+            var idleWorkers = _repository.Workers.MiR_GetByActive().Where(r => r.state == nameof(WorkerState.IDLE)).ToList();
 
             if (idleWorkers == null || idleWorkers.Count == 0)
             {
-                EventLogger.Info("[CHARGE][BUILD] no active workers → exit");
+                //EventLogger.Info("[CHARGE][BUILD] no active workers → exit");
                 return;
             }
 
@@ -100,10 +100,10 @@ namespace JOB.Services
             // ------------------------------------------------------------
 
             // 5-1) 전용 충전기(linkedRobotId) 처리
-            HandleReservedChargerChargeStart(idleWorkers, chargerPositions, chargeStart, workerPlanned, chargerPlanned);
+            HandleReservedChargerChargeStart(idleWorkers, chargingWorkers, chargerPositions, chargeStart, workerPlanned, chargerPlanned);
 
             // 5-2) 일반 충전기 충전 시작 처리
-            HandleNormalChargerChargeStart(idleWorkers, chargerPositions, minimum, chargeStart, workerPlanned, chargerPlanned);
+            HandleNormalChargerChargeStart(idleWorkers, chargingWorkers, chargerPositions, minimum, chargeStart, workerPlanned, chargerPlanned);
 
             // 5-3) 스위칭(crossCharge) 처리
             HandleCrossCharge(idleWorkers, chargingWorkers, chargerPositions, crossCharge, chargeEnd, workerPlanned, chargerPlanned);
@@ -139,7 +139,8 @@ namespace JOB.Services
             }
 
             // 3) 충전 중 Job(INPROGRESS) 필터링
-            var jobs = allJobs.Where(j => j != null && j.state == nameof(JobState.INPROGRESS) && (j.type == nameof(JobType.CHARGE) || j.subType == nameof(JobSubType.CHARGE))).ToList();
+            var jobs = allJobs.Where(j => j != null && j.state != nameof(JobState.COMPLETED)
+                                    && (j.type == nameof(JobType.CHARGE) || j.subType == nameof(JobSubType.CHARGE))).ToList();
 
             // 4) 충전 Job 존재 여부 판단
             if (jobs == null || jobs.Count == 0)
@@ -174,7 +175,8 @@ namespace JOB.Services
         ///   5) chargerPositions 중 해당 충전기가 isOccupied == false 여야 한다.
         ///   6) 같은 사이클 내에서 이미 Job 계획된 Worker/Charger 는 workerPlanned, chargerPlanned 로 중복 방지
         /// </summary>
-        private void HandleReservedChargerChargeStart(List<Worker> idleWorkers, List<Position> chargerPositions, double chargeStart, List<string> workerPlanned, List<string> chargerPlanned)
+        private void HandleReservedChargerChargeStart(List<Worker> idleWorkers, List<Worker> chargingWorkers, List<Position> chargerPositions
+                                                        , double chargeStart, List<string> workerPlanned, List<string> chargerPlanned)
         {
             // 방어 코드: 입력 컬렉션이 null 인 경우 빈 리스트로 간주
             if (idleWorkers == null)
@@ -210,6 +212,17 @@ namespace JOB.Services
                 return;
             }
 
+            List<Worker> candidateWorkers = new List<Worker>();
+
+            foreach (var idleWorker in idleWorkers)
+            {
+                var chargingWorker = chargingWorkers.FirstOrDefault(r => r.id == idleWorker.id);
+                if (chargingWorker == null)
+                {
+                    candidateWorkers.Add(idleWorker);
+                }
+            }
+
             // ------------------------------------------------------------
             // 2) 전용 충전기 하나씩 검사
             //    - 각 충전기에 대해:
@@ -235,7 +248,7 @@ namespace JOB.Services
                 }
                 // 2-2) linkedRobotId 와 일치하는 IDLE Worker 찾기
                 //      - 같은 그룹인 Worker 만 대상 (충전기 group == Worker.group)
-                var targetWorker = idleWorkers.FirstOrDefault(w => w != null && w.id == chargerPosition.linkedRobotId && w.group == chargerPosition.group);
+                var targetWorker = candidateWorkers.FirstOrDefault(w => w != null && w.id == chargerPosition.linkedRobotId);
 
                 if (targetWorker == null)
                 {
@@ -317,8 +330,8 @@ namespace JOB.Services
         ///   4) Worker 배터리 <= chargeStart 인 경우에만 충전 Job 생성
         ///   5) 같은 사이클 내에서 이미 Job 이 계획된 Worker/Charger 는 workerPlanned / chargerPlanned 로 중복 방지
         /// </summary>
-        private void HandleNormalChargerChargeStart(List<Worker> idleWorkers, List<Position> chargerPositions, double minimum, double chargeStart, List<string> workerPlanned
-                                                    , List<string> chargerPlanned)
+        private void HandleNormalChargerChargeStart(List<Worker> idleWorkers, List<Worker> chargingWorkers, List<Position> chargerPositions
+                                                  , double minimum, double chargeStart, List<string> workerPlanned, List<string> chargerPlanned)
         {
             // 방어 코드: null 이면 빈 리스트로 대체
             if (idleWorkers == null)
@@ -358,6 +371,16 @@ namespace JOB.Services
                 return;
             }
 
+            List<Worker> candidateWorkers = new List<Worker>();
+
+            foreach (var idleWorker in idleWorkers)
+            {
+                var chargingWorker = chargingWorkers.FirstOrDefault(r => r.id == idleWorker.id);
+                if (chargingWorker == null)
+                {
+                    candidateWorkers.Add(idleWorker);
+                }
+            }
             // ------------------------------------------------------------
             // 2) 일반 충전기 하나씩 검사
             //    - 각 충전기에 대해:
@@ -393,8 +416,9 @@ namespace JOB.Services
                 //      - 이번 사이클에 아직 Job 이 계획되지 않았고
                 //      - 배터리가 chargeStart 이하인 Worker 후보 목록 생성
                 // 배터리 낮은 순으로 정렬 (가장 급한 로봇 우선)
-                var candidateWorkers = idleWorkers.Where(w => w != null && !workerPlanned.Contains(w.id) && w.group == charger.group && w.mapId == charger.mapId
-                                                      && w.batteryPercent <= chargeStart).OrderBy(w => w.batteryPercent).ToList();
+
+                candidateWorkers = candidateWorkers.Where(w => w != null && !workerPlanned.Contains(w.id) && w.group == charger.group
+                                                     && w.batteryPercent <= chargeStart).OrderBy(w => w.batteryPercent).ToList();
 
                 if (candidateWorkers.Count == 0)
                 {
@@ -477,35 +501,21 @@ namespace JOB.Services
             // ------------------------------------------------------------
             // 2) Queue 를 통한 Job 생성 요청
             // ------------------------------------------------------------
-            try
-            {
-                _Queue.Create_Job(worker.group, null, nameof(JobType.CHARGE), nameof(JobSubType.CHARGE), null, 0, null,
-                                 null, null, null, chargerPosition.id, chargerPosition.name, chargerPosition.linkedFacility
-                                 , worker.id);
 
-                // --------------------------------------------------------
-                // 3) 생성 요청 성공 로그
-                // --------------------------------------------------------
-                EventLogger.Info(
-                    $"[CHARGE][{createType}][CREATE] enqueue charge job request: " +
-                    $"workerId={worker.id}, workerName={worker.name}, group={worker.group}, battery={worker.batteryPercent}, " +
-                    $"chargerPositionId={chargerPosition.id}, chargerName={chargerPosition.name}, mapId={chargerPosition.mapId}"
-                );
+            _Queue.Create_Job(worker.group, null, nameof(JobType.CHARGE), nameof(JobSubType.CHARGE), null, 0, null,
+                             null, null, null, chargerPosition.id, chargerPosition.name, chargerPosition.linkedFacility
+                             , worker.id);
 
-                return true;
-            }
-            catch (Exception ex)
-            {
-                // --------------------------------------------------------
-                // 4) Queue 등록 중 예외 발생
-                // --------------------------------------------------------
-                EventLogger.Error(
-                    $"[CHARGE][{createType}][CREATE][ERROR] exception while enqueue charge job: " +
-                    $"workerId={worker.id}, workerName={worker.name}, chargerPositionId={chargerPosition.id}, " +
-                    $"chargerName={chargerPosition.name}, error={ex.Message}"
-                );
-                return false;
-            }
+            // --------------------------------------------------------
+            // 3) 생성 요청 성공 로그
+            // --------------------------------------------------------
+            EventLogger.Info(
+                $"[CHARGE][{createType}][CREATE] enqueue charge job request: " +
+                $"workerId={worker.id}, workerName={worker.name}, group={worker.group}, battery={worker.batteryPercent}, " +
+                $"chargerPositionId={chargerPosition.id}, chargerName={chargerPosition.name}, mapId={chargerPosition.mapId}"
+            );
+
+            return true;
         }
 
         /// <summary>
@@ -736,8 +746,6 @@ namespace JOB.Services
             EventLogger.Info($"[CHARGE][CROSS] no switch executed → finish");
         }
 
-
-
         /// <summary>
         /// 스위칭(교차 충전) 없이 "충전 완료" 처리
         /// - 충전 중인 Worker가 chargeEnd 이상이면 충전을 종료하고 WAIT 위치로 이동시킨다.
@@ -876,7 +884,6 @@ namespace JOB.Services
 
             EventLogger.Info($"[CHARGE][COMPLETE] finish");
         }
-
 
         /// <summary>
         /// 해당 Worker가 현재 충전(CHARGE) 중인 JobGuid를 찾는다.

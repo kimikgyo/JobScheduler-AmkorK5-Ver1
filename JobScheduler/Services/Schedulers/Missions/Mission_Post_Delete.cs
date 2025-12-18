@@ -96,12 +96,15 @@ namespace JOB.Services
                             if (postmission.statusCode >= 200 && postmission.statusCode < 300)
                             {
                                 EventLogger.Info($"[PostMission][WORKER][Success], Message = {postmission.statusText}, MissionName = {mission.name}, MissionSubType = {mission.subType}" +
-                                                 $", MissionId = {mission.guid}, AssignedWorkerId = {mission.assignedWorkerId}");
+                                                 $", MissionId = {mission.guid}, AssignedWorkerId = {mission.assignedWorkerId}, AssignedWorkerName = {mission.assignedWorkerName}");
                                 CommandRequst = true;
                             }
                             else EventLogger.Warn($"[PostMission][WORKER][Failed], Message = {postmission.message}, MissionName = {mission.name}, MissionSubType = {mission.subType}" +
-                                                  $", MissionId = {mission.guid}, AssignedWorkerId = {mission.assignedWorkerId}");
+                                                  $", MissionId = {mission.guid}, AssignedWorkerId = {mission.assignedWorkerId}, AssignedWorkerName = {mission.assignedWorkerName}");
                         }
+                        else EventLogger.Warn($"[PostMission][WORKER][APIResponseIsNull] MissionName = {mission.name}, MissionSubType = {mission.subType}" +
+                                                 $", MissionId = {mission.guid}, AssignedWorkerId = {mission.assignedWorkerId}, AssignedWorkerName = {mission.assignedWorkerName}");
+
                     }
                 }
             }
@@ -127,12 +130,14 @@ namespace JOB.Services
                         if (postmission.statusCode >= 200 && postmission.statusCode < 300)
                         {
                             EventLogger.Info($"[PostMission][ELEVATOR][Success], Message = {postmission.statusText}, MissionName = {mission.name}, MissionSubType = {mission.subType}" +
-                                             $", MissionId = {mission.guid}, AssignedWorkerId = {mission.assignedWorkerId}");
+                                             $", MissionId = {mission.guid}, AssignedWorkerId = {mission.assignedWorkerId}, AssignedWorkerName = {mission.assignedWorkerName}");
                             CommandRequst = true;
                         }
                         else EventLogger.Warn($"[PostMission][ELEVATOR][Failed], Message = {postmission.message}, MissionName = {mission.name}, MissionSubType = {mission.subType}" +
-                                             $", MissionId = {mission.guid}, AssignedWorkerId = {mission.assignedWorkerId}");
+                                             $", MissionId = {mission.guid}, AssignedWorkerId = {mission.assignedWorkerId}, AssignedWorkerName = {mission.assignedWorkerName}");
                     }
+                    else EventLogger.Warn($"[PostMission][ELEVATOR][APIResponseIsNull] MissionName = {mission.name}, MissionSubType = {mission.subType}" +
+                                              $", MissionId = {mission.guid}, AssignedWorkerId = {mission.assignedWorkerId}, AssignedWorkerName = {mission.assignedWorkerName}");
                 }
             }
             return CommandRequst;
@@ -156,12 +161,14 @@ namespace JOB.Services
                         if (postmission.statusCode >= 200 && postmission.statusCode < 300)
                         {
                             EventLogger.Info($"[PostMission][TRAFFIC][Success], Message = {postmission.statusText}, MissionName = {mission.name}, MissionSubType = {mission.subType}" +
-                                             $", MissionId = {mission.guid}, AssignedWorkerId = {mission.assignedWorkerId}");
+                                             $", MissionId = {mission.guid}, AssignedWorkerId = {mission.assignedWorkerId}, AssignedWorkerName = {mission.assignedWorkerName}");
                             CommandRequst = true;
                         }
                         else EventLogger.Warn($"[PostMission][TRAFFIC][Failed], Message = {postmission.message}, MissionName = {mission.name}, MissionSubType = {mission.subType}" +
-                                              $", MissionId = {mission.guid}, AssignedWorkerId = {mission.assignedWorkerId}");
+                                              $", MissionId = {mission.guid}, AssignedWorkerId = {mission.assignedWorkerId}, AssignedWorkerName = {mission.assignedWorkerName}");
                     }
+                    else EventLogger.Warn($"[PostMission][TRAFFIC][APIResponseIsNull] MissionName = {mission.name}, MissionSubType = {mission.subType}" +
+                                            $", MissionId = {mission.guid}, AssignedWorkerId = {mission.assignedWorkerId}, AssignedWorkerName = {mission.assignedWorkerName}");
                 }
             }
             return CommandRequst;
@@ -182,12 +189,15 @@ namespace JOB.Services
                         if (postmission.statusCode >= 200 && postmission.statusCode < 300)
                         {
                             EventLogger.Info($"[PostMission][MIDDLEWARE][Success], Message = {postmission.statusText}, MissionName = {mission.name}, MissionSubType = {mission.subType}" +
-                                             $", MissionId = {mission.guid}, AssignedWorkerId = {mission.assignedWorkerId}");
+                                             $", MissionId = {mission.guid}, AssignedWorkerId = {mission.assignedWorkerId}, AssignedWorkerName = {mission.assignedWorkerName}");
                             CommandRequst = true;
                         }
                         else EventLogger.Warn($"[PostMission][MIDDLEWARE][Failed], Message = {postmission.message}, MissionName = {mission.name}, MissionSubType = {mission.subType}" +
-                                             $", MissionId = {mission.guid}, AssignedWorkerId = {mission.assignedWorkerId}");
+                                             $", MissionId = {mission.guid}, AssignedWorkerId = {mission.assignedWorkerId}, AssignedWorkerName = {mission.assignedWorkerName}");
                     }
+                    else EventLogger.Warn($"[PostMission][MIDDLEWARE][APIResponseIsNull] MissionName = {mission.name}, MissionSubType = {mission.subType}" +
+                                               $", MissionId = {mission.guid}, AssignedWorkerId = {mission.assignedWorkerId}, AssignedWorkerName = {mission.assignedWorkerName}");
+
                 }
             }
             return CommandRequst;
@@ -206,12 +216,14 @@ namespace JOB.Services
                     if (postmission.statusCode >= 200 && postmission.statusCode < 300)
                     {
                         EventLogger.Info($"[DeleteMission][WORKER][Success], Message = {postmission.statusText}, MissionName = {mission.name}, MissionSubType = {mission.subType}" +
-                                             $", MissionId = {mission.guid}, AssignedWorkerId = {mission.assignedWorkerId}");
+                                             $", MissionId = {mission.guid}, AssignedWorkerId = {mission.assignedWorkerId}, AssignedWorkerName = {mission.assignedWorkerName}");
                         CommandRequst = true;
                     }
                     else EventLogger.Warn($"[DeleteMission][WORKER][Failed], Message = {postmission.message}, MissionName = {mission.name}, MissionSubType = {mission.subType}" +
-                                             $", MissionId = {mission.guid}, AssignedWorkerId = {mission.assignedWorkerId}");
+                                             $", MissionId = {mission.guid}, AssignedWorkerId = {mission.assignedWorkerId}, AssignedWorkerName = {mission.assignedWorkerName}");
                 }
+                else EventLogger.Warn($"[DeleteMission][WORKER][APIResponseIsNull] MissionName = {mission.name}, MissionSubType = {mission.subType}" +
+                                      $", MissionId = {mission.guid}, AssignedWorkerId = {mission.assignedWorkerId}, AssignedWorkerName = {mission.assignedWorkerName}");
             }
             return CommandRequst;
         }
@@ -234,12 +246,14 @@ namespace JOB.Services
                         if (postmission.statusCode >= 200 && postmission.statusCode < 300)
                         {
                             EventLogger.Info($"[DeleteMission][ELEVATOR][Success], Message = {postmission.statusText}, MissionName = {mission.name}, MissionSubType = {mission.subType}" +
-                                             $", MissionId = {mission.guid}, AssignedWorkerId = {mission.assignedWorkerId}");
+                                             $", MissionId = {mission.guid}, AssignedWorkerId = {mission.assignedWorkerId}, AssignedWorkerName = {mission.assignedWorkerName}");
                             CommandRequst = true;
                         }
                         else EventLogger.Warn($"[DeleteMission][ELEVATOR][Failed], Message = {postmission.message}, MissionName = {mission.name}, MissionSubType = {mission.subType}" +
-                                             $", MissionId = {mission.guid}, AssignedWorkerId = {mission.assignedWorkerId}");
+                                             $", MissionId = {mission.guid}, AssignedWorkerId = {mission.assignedWorkerId}, AssignedWorkerName = {mission.assignedWorkerName}");
                     }
+                    else EventLogger.Warn($"[DeleteMission][ELEVATOR][APIResponseIsNull] MissionName = {mission.name}, MissionSubType = {mission.subType}" +
+                                         $", MissionId = {mission.guid}, AssignedWorkerId = {mission.assignedWorkerId}, AssignedWorkerName = {mission.assignedWorkerName}");
                 }
             }
             return CommandRequst;
@@ -263,12 +277,14 @@ namespace JOB.Services
                         if (postmission.statusCode >= 200 && postmission.statusCode < 300)
                         {
                             EventLogger.Info($"[DeleteMission][TRAFFIC][Success], Message = {postmission.statusText}, MissionName = {mission.name}, MissionSubType = {mission.subType}" +
-                                             $", MissionId = {mission.guid}, AssignedWorkerId = {mission.assignedWorkerId}");
+                                             $", MissionId = {mission.guid}, AssignedWorkerId = {mission.assignedWorkerId}, AssignedWorkerName = {mission.assignedWorkerName}");
                             CommandRequst = true;
                         }
                         else EventLogger.Warn($"[DeleteMission][TRAFFIC][Failed], Message = {postmission.message}, MissionName = {mission.name}, MissionSubType = {mission.subType}" +
-                                             $", MissionId = {mission.guid}, AssignedWorkerId = {mission.assignedWorkerId}");
+                                             $", MissionId = {mission.guid}, AssignedWorkerId = {mission.assignedWorkerId}, AssignedWorkerName = {mission.assignedWorkerName}");
                     }
+                    else EventLogger.Warn($"[DeleteMission][TRAFFIC][APIResponseIsNull] MissionName = {mission.name}, MissionSubType = {mission.subType}" +
+                                         $", MissionId = {mission.guid}, AssignedWorkerId = {mission.assignedWorkerId}, AssignedWorkerName = {mission.assignedWorkerName}");
                 }
             }
             return CommandRequst;

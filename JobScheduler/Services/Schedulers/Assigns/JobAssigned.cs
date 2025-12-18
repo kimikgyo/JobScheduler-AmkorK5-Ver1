@@ -148,7 +148,7 @@ namespace JOB.Services
                     continue;
 
                 // 7) 기존 WAIT 미션 정리 (필요시)
-                ChangeWaitDeleteMission(worker);
+                ChangeWaitDeleteJob(worker);
 
                 // 8) 최종 Job 할당 및 미션 생성
                 if (Create_Mission(job, worker))
@@ -250,7 +250,7 @@ namespace JOB.Services
                         continue;
 
                     // 기존 WAIT 미션 정리 (필요 시)
-                    ChangeWaitDeleteMission(worker);
+                    ChangeWaitDeleteJob(worker);
                     //{
                     //    EventLogger.Warn($"[ASSIGN][NORMAL][DISTANCE][SPECIFIED][ABORT], ChangeWaitDeleteMission failed. workerId={worker.id}, workerName={worker.name}");
                     //    continue;
@@ -303,7 +303,7 @@ namespace JOB.Services
                         continue;
 
                     // 기존 WAIT 미션 정리
-                    ChangeWaitDeleteMission(worker);
+                    ChangeWaitDeleteJob(worker);
                     //{
                     //    EventLogger.Warn($"[ASSIGN][NORMAL][DISTANCE][UNSPECIFIED][ABORT], ChangeWaitDeleteMission failed. workerId={worker.id}, workerName={worker.name}");
                     //    continue;
@@ -320,7 +320,7 @@ namespace JOB.Services
         }
 
         //충전이나 대기위치 진행중인 미션을 삭제한다.
-        private void ChangeWaitDeleteMission(Worker worker)
+        private void ChangeWaitDeleteJob(Worker worker)
         {
             var runjob = _repository.Jobs.GetByWorkerId(worker.id).FirstOrDefault(r => r.state == nameof(JobState.INPROGRESS));
             if (runjob != null)
@@ -527,7 +527,7 @@ namespace JOB.Services
                 return null;
             }
 
-            EventLogger.Info($"[ASSIGN][NEAREST-JOB][NEAREST-POSITION] workerName={worker.name}, workerId={worker.id}, positionName={nearestPosition.name}, positionId={nearestPosition.id}");
+            //EventLogger.Info($"[ASSIGN][NEAREST-JOB][NEAREST-POSITION] workerName={worker.name}, workerId={worker.id}, positionName={nearestPosition.name}, positionId={nearestPosition.id}");
 
             // ------------------------------------------------------------
             // [3] "가장 가까운 Position" 과 연결된 Job 찾기

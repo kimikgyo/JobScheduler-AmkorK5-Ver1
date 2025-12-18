@@ -48,7 +48,8 @@ namespace Data.Repositorys.Jobs
                             [isLocked]            int             NULL,
                             [state]              NVARCHAR(64)     NULL,
                             [specifiedWorkerId]   NVARCHAR(64)     NULL,
-                            [assignedWorkerId]   NVARCHAR(64)     NULL,
+                            [assignedWorkerId]   NVARCHAR(64)     NULL,                            
+                            [assignedWorkerName]   NVARCHAR(64)     NULL,
                             [createdAt]           datetime        NULL,
                             [updatedAt]           datetime        NULL,
                             [finishedAt]          datetime        NULL,
@@ -110,7 +111,8 @@ namespace Data.Repositorys.Jobs
                                     ,[isLocked]
                                     ,[state]
                                     ,[specifiedWorkerId]
-                                    ,[assignedWorkerId]
+                                    ,[assignedWorkerId]                                    
+                                    ,[assignedWorkerName]
                                     ,[createdAt]
                                     ,[updatedAt]
                                     ,[finishedAt]
@@ -140,7 +142,8 @@ namespace Data.Repositorys.Jobs
                                     ,@isLocked
                                     ,@state
                                     ,@specifiedWorkerId
-                                    ,@assignedWorkerId
+                                    ,@assignedWorkerId                                    
+                                    ,@assignedWorkerName
                                     ,@createdAt
                                     ,@updatedAt
                                     ,@finishedAt
@@ -185,7 +188,8 @@ namespace Data.Repositorys.Jobs
                                     ,[isLocked]                 = @isLocked
                                     ,[state]                    = @state
                                     ,[specifiedWorkerId]        = @specifiedWorkerId
-                                    ,[assignedWorkerId]         = @assignedWorkerId
+                                    ,[assignedWorkerId]         = @assignedWorkerId                                    
+                                    ,[assignedWorkerName]       = @assignedWorkerName
                                     ,[createdAt]                = @createdAt
                                     ,[updatedAt]                = @updatedAt
                                     ,[finishedAt]               = @finishedAt

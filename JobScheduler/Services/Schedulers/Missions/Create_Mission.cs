@@ -83,6 +83,7 @@ namespace JOB.Services
             {
                 // 4) Job / Order 상태 업데이트 (기존 로직 유지)
                 job.assignedWorkerId = worker.id;
+                job.assignedWorkerName = worker.name;
                 updateStateJob(job, nameof(JobState.WORKERASSIGNED), job.terminateState, job.terminationType, job.terminator, true);
 
                 if (job.orderId != null)
@@ -103,14 +104,22 @@ namespace JOB.Services
         //    - (나중에 재할당 시에는 별도 인자나 WorkerState에서 현재 위치를 가져오도록 확장 가능)
         private Position GetWorkerStartPosition(Worker worker)
         {
+            Position nearest = null;
             if (worker == null) return null;
-
             // 해당 워커가 있는 맵의 모든 포지션 가져오기
-            var positions = _repository.Positions.MiR_GetByMapId(worker.mapId).Where(r => r.nodeType != nameof(NodeType.WORK) && r.nodeType != nameof(NodeType.ELEVATOR)).ToList();
+            var positions = _repository.Positions.MiR_GetByMapId(worker.mapId)
+                            .Where(r => r.nodeType != nameof(NodeType.WORK) && r.nodeType != nameof(NodeType.ELEVATOR) && r.nodeType != nameof(NodeType.CHARGER)).ToList();
             if (positions == null || positions.Count == 0) return null;
 
-            // 워커 기준 가장 가까운 포지션 선택
-            var nearest = _repository.Positions.FindNearestWayPoint(worker, positions).Where(P => P.isOccupied == false).FirstOrDefault();
+            if (!IsInvalid(worker.PositionId))
+            {
+                nearest = _repository.Positions.GetById(worker.PositionId);
+            }
+            else
+            {
+                // 워커 기준 가장 가까운 포지션 선택
+                nearest = _repository.Positions.FindNearestWayPoint(worker, positions).Where(P => P.isOccupied == false).FirstOrDefault();
+            }
             return nearest;
         }
 
@@ -303,8 +312,18 @@ namespace JOB.Services
                 // 2) 목적지 → DESTINATIONMOVE
                 else if (node.positionId == jobDestination.positionId)
                 {
-                    seq = create_SingleMission(job, position, worker, seq, nameof(MissionTemplateType.MOVE), nameof(MissionTemplateSubType.DESTINATIONMOVE));
+                    //충전일 경우
+                    if (jobDestination.nodeType == nameof(NodeType.CHARGER))
+                    {
+                        seq = create_SingleMission(job, position, worker, seq, nameof(MissionTemplateType.MOVE), nameof(MissionTemplateSubType.CHARGERMOVE));
+
+                    }
+                    else
+                    {
+                        seq = create_SingleMission(job, position, worker, seq, nameof(MissionTemplateType.MOVE), nameof(MissionTemplateSubType.DESTINATIONMOVE));
+                    }
                 }
+                
                 // 3) ELEVATOR 그룹 (한 번만)
                 else if (node.nodeType.ToUpper() == nameof(NodeType.ELEVATOR))
                 {

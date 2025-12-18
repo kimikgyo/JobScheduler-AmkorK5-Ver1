@@ -24,7 +24,7 @@ namespace Data.Repositorys.Historys
                 BEGIN
                     CREATE TABLE dbo.[JobHistory]
                     (
-                             [orderId]             NVARCHAR(64)     NULL,
+                            [orderId]             NVARCHAR(64)     NULL,
                             [guid]                NVARCHAR(64)     NULL,
                             [group]               NVARCHAR(64)     NULL,
                             [name]                NVARCHAR(64)     NULL,
@@ -42,7 +42,8 @@ namespace Data.Repositorys.Historys
                             [isLocked]            int             NULL,
                             [state]              NVARCHAR(64)     NULL,
                             [specifiedWorkerId]   NVARCHAR(64)     NULL,
-                            [assignedWorkerId]   NVARCHAR(64)     NULL,
+                            [assignedWorkerId]   NVARCHAR(64)     NULL,                            
+                            [assignedWorkerName]   NVARCHAR(64)     NULL,
                             [createdAt]           datetime        NULL,
                             [updatedAt]           datetime        NULL,
                             [finishedAt]          datetime        NULL,
@@ -91,7 +92,8 @@ namespace Data.Repositorys.Historys
                                     ,[isLocked]
                                     ,[state]
                                     ,[specifiedWorkerId]
-                                    ,[assignedWorkerId]
+                                    ,[assignedWorkerId]                                    
+                                    ,[assignedWorkerName]
                                     ,[createdAt]
                                     ,[updatedAt]
                                     ,[finishedAt]
@@ -121,7 +123,8 @@ namespace Data.Repositorys.Historys
                                     ,@isLocked
                                     ,@state
                                     ,@specifiedWorkerId
-                                    ,@assignedWorkerId
+                                    ,@assignedWorkerId                                    
+                                    ,@assignedWorkerName
                                     ,@createdAt
                                     ,@updatedAt
                                     ,@finishedAt
@@ -129,7 +132,7 @@ namespace Data.Repositorys.Historys
                                     ,@terminateState
                                     ,@terminator
                                     ,@terminatingAt
-                                    ,@terminatedAt        
+                                    ,@terminatedAt
                                   );";
                     con.Execute(INSERT_SQL, param: add);
                 }

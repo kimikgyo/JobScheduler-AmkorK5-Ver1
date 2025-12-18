@@ -80,7 +80,7 @@ namespace JOB.Services
                 // --------------------------------------------------------
                 // 3) 생성 요청 성공 로그
                 // --------------------------------------------------------
-                EventLogger.Info($"[Job][CREATE] enqueue Soucre is Null job request: Group = {destination.group}, OrderId = {order.id}");
+                EventLogger.Info($"[Job][CREATE] enqueue job request: source name = IsNull, destName = {destination.name}, specifiedWorkerId = {order.specifiedWorkerId}, OrderId = {order.id}");
 
                 return true;
             }
@@ -95,7 +95,8 @@ namespace JOB.Services
                 // --------------------------------------------------------
                 // 3) 생성 요청 성공 로그
                 // --------------------------------------------------------
-                EventLogger.Info($"[Job][CREATE] enqueue Soucre is Null job request: Group = {destination.group}, OrderId = {order.id}");
+                EventLogger.Info($"[Job][CREATE] enqueue job request: source name = {source.name}, destName = {destination.name}, specifiedWorkerId = {order.specifiedWorkerId}, OrderId = {order.id}");
+
 
                 return true;
             }

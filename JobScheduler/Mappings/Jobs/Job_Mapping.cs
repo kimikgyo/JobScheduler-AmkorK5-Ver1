@@ -30,6 +30,7 @@ namespace JOB.Mappings.Jobs
                 state = model.state,
                 specifiedWorkerId = model.specifiedWorkerId,
                 assignedWorkerId = model.assignedWorkerId,
+                assignedWorkerName = model.assignedWorkerName,
                 createdAt = model.createdAt,
                 updatedAt = model.updatedAt,
                 finishedAt = model.finishedAt,
@@ -47,6 +48,7 @@ namespace JOB.Mappings.Jobs
         {
             var publish = new Publish_JobDto()
             {
+
                 guid = model.guid,
                 group = model.group,
                 name = model.name,
@@ -67,9 +69,15 @@ namespace JOB.Mappings.Jobs
                 state = model.state,
                 specifiedWorkerId = model.specifiedWorkerId,
                 assignedWorkerId = model.assignedWorkerId,
+                assignedWorkerName = model.assignedWorkerName,
+                createdAt = model.createdAt,
+                updatedAt = model.updatedAt,
+                finishedAt = model.finishedAt,
                 terminationType = model.terminationType,
                 terminateState = model.terminateState,
-                terminator = model.terminator
+                terminator = model.terminator,
+                terminatingAt = model.terminatingAt,
+                terminatedAt = model.terminatedAt
             };
             return publish;
         }

@@ -14,7 +14,7 @@ namespace Common.DTOs.Rests.Orders
         [JsonPropertyOrder(7)] public string orderedBy { get; set; }
         [JsonPropertyOrder(8)] public DateTime orderedAt { get; set; }
         [JsonPropertyOrder(9)] public int priority { get; set; }
-        [JsonPropertyOrder(10)] public string specifiedWorkerId { get; set; }
+        [JsonPropertyOrder(10)] public string? specifiedWorkerId { get; set; }
 
         public override string ToString()
         {

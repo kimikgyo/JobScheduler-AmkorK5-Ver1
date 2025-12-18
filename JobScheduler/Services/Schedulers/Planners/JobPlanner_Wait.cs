@@ -73,9 +73,8 @@ namespace JOB.Services
                 // 1-2) 기존 로직 유지:
                 //      "할당 안 된 Job"이 존재 + 배터리 충분 → WAIT 이동 불필요
                 // --------------------------------------------------------
-                var jobFindNotAssignedWorker =
-                    _repository.Jobs.GetAll()
-                        .FirstOrDefault(j => j.group == worker.group && IsInvalid(j.assignedWorkerId));
+                var jobFindNotAssignedWorker = _repository.Jobs.GetByWorkerId(worker.id).FirstOrDefault();
+                  
 
                 if (jobFindNotAssignedWorker != null)
                 {

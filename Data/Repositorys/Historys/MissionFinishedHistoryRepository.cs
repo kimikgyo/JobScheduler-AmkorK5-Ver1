@@ -28,7 +28,7 @@ namespace Data.Repositorys.Historys
                 BEGIN
                     CREATE TABLE dbo.[MissionFinishedHistory]
                     (
-                       [orderId]                  NVARCHAR(64)     NULL,
+                        [orderId]                  NVARCHAR(64)     NULL,
                         [jobId]                    NVARCHAR(64)     NULL,
                         [guid]                     NVARCHAR(64)     NULL,
                         [carrierId]                NVARCHAR(64)     NULL,
@@ -44,6 +44,7 @@ namespace Data.Repositorys.Historys
                         [state]                   NVARCHAR(64)     NULL,
                         [specifiedWorkerId]        NVARCHAR(64)     NULL,
                         [assignedWorkerId]         NVARCHAR(64)     NULL,
+                        [assignedWorkerName]       NVARCHAR(64)     NULL,
                         [createdAt]                datetime        NULL,
                         [updatedAt]                datetime        NULL,
                         [finishedAt]               datetime        NULL,
@@ -74,7 +75,7 @@ namespace Data.Repositorys.Historys
                     const string INSERT_SQL = @"
                             INSERT INTO [MissionFinishedHistory]
                                    (
-                                      [orderId]
+                                       [orderId]
                                       ,[jobId]
                                       ,[guid]
                                       ,[carrierId]
@@ -89,7 +90,8 @@ namespace Data.Repositorys.Historys
                                       ,[retryCount]
                                       ,[state]
                                       ,[specifiedWorkerId]
-                                      ,[assignedWorkerId]
+                                      ,[assignedWorkerId]                                      
+                                      ,[assignedWorkerName]
                                       ,[createdAt]
                                       ,[updatedAt]
                                       ,[finishedAt]
@@ -115,7 +117,8 @@ namespace Data.Repositorys.Historys
                                         ,@retryCount
                                         ,@state
                                         ,@specifiedWorkerId
-                                        ,@assignedWorkerId
+                                        ,@assignedWorkerId                                        
+                                        ,@assignedWorkerName
                                         ,@createdAt
                                         ,@updatedAt
                                         ,@finishedAt

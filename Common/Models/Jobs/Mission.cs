@@ -104,16 +104,17 @@ namespace Common.Models.Jobs
         [JsonPropertyOrder(14)] public string state { get; set; }
         [JsonPropertyOrder(15)] public string specifiedWorkerId { get; set; }            //order 지정된 Worker
         [JsonPropertyOrder(16)] public string assignedWorkerId { get; set; }             //할당된 Worker
-        [JsonPropertyOrder(17)] public DateTime createdAt { get; set; }                  // 생성 시각
-        [JsonPropertyOrder(18)] public DateTime? updatedAt { get; set; }
-        [JsonPropertyOrder(19)] public DateTime? finishedAt { get; set; }
-        [JsonPropertyOrder(20)] public DateTime? sequenceUpdatedAt { get; set; }  // 시퀀스가 마지막으로 변경된 시간 재정렬 발생 시 이 값이 갱신됨
-        [JsonPropertyOrder(21)] public string parametersJson { get; set; }        // DB 파라메타를 저장하기 위하여
-        [JsonPropertyOrder(22)] public List<Parameter> parameters { get; set; } = new List<Parameter>();          // 명령 실행 시 필요한 추가 옵션을 JSON 문자열로 저장  예: 속도, 방향, 특수 처리 조건 등
-        [JsonPropertyOrder(23)] public string preReportsJson { get; set; }        //Mission 전에 보내지는 Report
-        [JsonPropertyOrder(24)] public List<PreReport> preReports { get; set; } = new List<PreReport>();
-        [JsonPropertyOrder(25)] public string postReportsJson { get; set; }        //Mission 이후에 보내지는 Report
-        [JsonPropertyOrder(26)] public List<PostReport> postReports { get; set; } = new List<PostReport>();
+        [JsonPropertyOrder(17)] public string assignedWorkerName { get; set; }             //할당된 Worker
+        [JsonPropertyOrder(18)] public DateTime createdAt { get; set; }                  // 생성 시각
+        [JsonPropertyOrder(19)] public DateTime? updatedAt { get; set; }
+        [JsonPropertyOrder(20)] public DateTime? finishedAt { get; set; }
+        [JsonPropertyOrder(21)] public DateTime? sequenceUpdatedAt { get; set; }  // 시퀀스가 마지막으로 변경된 시간 재정렬 발생 시 이 값이 갱신됨
+        [JsonPropertyOrder(22)] public string parametersJson { get; set; }        // DB 파라메타를 저장하기 위하여
+        [JsonPropertyOrder(23)] public List<Parameter> parameters { get; set; } = new List<Parameter>();          // 명령 실행 시 필요한 추가 옵션을 JSON 문자열로 저장  예: 속도, 방향, 특수 처리 조건 등
+        [JsonPropertyOrder(24)] public string preReportsJson { get; set; }        //Mission 전에 보내지는 Report
+        [JsonPropertyOrder(25)] public List<PreReport> preReports { get; set; } = new List<PreReport>();
+        [JsonPropertyOrder(26)] public string postReportsJson { get; set; }        //Mission 이후에 보내지는 Report
+        [JsonPropertyOrder(27)] public List<PostReport> postReports { get; set; } = new List<PostReport>();
 
         // 사람용 요약 (디버거/로그에서 보기 좋게)
         public override string ToString()
@@ -181,6 +182,7 @@ namespace Common.Models.Jobs
                 $",state = {state,-5}" +
                 $",specifiedWorkerId = {specifiedWorkerId,-5}" +
                 $",assignedWorkerId = {assignedWorkerId,-5}" +
+                $",assignedWorkerName = {assignedWorkerName,-5}" +
                 $",createdAt = {createdAt,-5}" +
                 $",updatedAt = {updatedAt,-5}" +
                 $",finishedAt = {finishedAt,-5}" +

@@ -29,38 +29,44 @@ namespace JOB.Services
         {
             if (jobs == null || jobs.Count == 0)
             {
-                //EventLogger.Warn($"[TERM][EXECUTING][SKIP] jobs is null or empty");
+                //EventLogger.Warn($"[TerminateState][EXECUTING][SKIP] jobs is null or empty");
                 return;
             }
 
             var executingJobs = jobs.Where(j => j.terminateState == nameof(TerminateState.EXECUTING)).ToList();
             if (executingJobs == null || executingJobs.Count == 0)
             {
-                //EventLogger.Info($"[TERM][EXECUTING][SKIP] no jobs in EXECUTING");
+                //EventLogger.Info($"[TerminateState][EXECUTING][SKIP] no jobs in EXECUTING");
                 return;
             }
 
-            //EventLogger.Info($"[TERM][EXECUTING][START] jobs={executingJobs.Count}");
+            //EventLogger.Info($"[TerminateState][EXECUTING][START] jobs={executingJobs.Count}");
 
             foreach (var job in executingJobs)
             {
                 if (job == null)
                 {
-                    EventLogger.Error($"[TERM][EXECUTING][ERROR] job is null in list");
+                    EventLogger.Error($"[TerminateState][EXECUTING][ERROR] job is null in list");
                     continue;
+                }
+
+                string workerName = "";
+                if (job.assignedWorkerName != null)
+                {
+                    workerName = job.assignedWorkerName;
                 }
 
                 var ordered = GetOrderedMissions(job.guid);
                 if (ordered.Count == 0)
                 {
-                    EventLogger.Warn($"[TERM][EXECUTING][SKIP] no missions: jobGuid={job.guid}");
+                    EventLogger.Warn($"[TerminateState][EXECUTING][SKIP] no missions: jobGuid={job.guid}, jobName={job.name}, assignedWorkerName={workerName}");
                     continue;
                 }
 
                 var current = FindCurrentActiveMission(ordered);
                 if (current == null)
                 {
-                    EventLogger.Info($"[TERM][EXECUTING][NONE] no active mission: jobGuid={job.guid}");
+                    EventLogger.Info($"[TerminateState][EXECUTING][NONE] no active mission: jobGuid={job.guid}, jobName={job.name}, assignedWorkerName={workerName}");
                     continue;
                 }
 
@@ -69,12 +75,13 @@ namespace JOB.Services
                 // 관리자면 locked 상관없이 delete 가능
                 if (isAdmin)
                 {
-                    EventLogger.Info($"[TERM][EXECUTING][ADMIN][DELETE_TRY] jobGuid={job.guid}, seq={current.sequence}, isLocked={current.isLocked}");
+                    EventLogger.Info($"[TerminateState][EXECUTING][ADMIN][DELETE_TRY] jobGuid={job.guid}, jobName={job.name}, assignedWorkerName={workerName}, seq={current.sequence}" +
+                                     $", isLocked={current.isLocked}");
 
                     bool deleted = deleteMission(current);
 
-                    if (deleted) EventLogger.Info($"[TERM][EXECUTING][ADMIN][DELETE_OK] jobGuid={job.guid}, seq={current.sequence}");
-                    else EventLogger.Warn($"[TERM][EXECUTING][ADMIN][DELETE_FAIL] jobGuid={job.guid}, seq={current.sequence}");
+                    if (deleted) EventLogger.Info($"[TerminateState][EXECUTING][ADMIN][DELETE_OK] jobGuid={job.guid}, jobName={job.name}, assignedWorkerName={workerName}, seq={current.sequence}");
+                    else EventLogger.Warn($"[TerminateState][EXECUTING][ADMIN][DELETE_FAIL] jobGuid={job.guid}, jobName={job.name}, assignedWorkerName={workerName}, seq={current.sequence}");
 
                     continue;
                 }
@@ -82,20 +89,21 @@ namespace JOB.Services
                 // 비관리자는 unlocked(false)일 때만 delete 가능
                 if (current.isLocked == false)
                 {
-                    EventLogger.Info($"[TERM][EXECUTING][USER][DELETE_TRY] jobGuid={job.guid}, seq={current.sequence}");
+                    EventLogger.Info($"[TerminateState][EXECUTING][USER][DELETE_TRY] jobGuid={job.guid}, jobName={job.name}, assignedWorkerName={workerName}, seq={current.sequence}");
 
                     bool deleted = deleteMission(current);
 
-                    if (deleted) EventLogger.Info($"[TERM][EXECUTING][USER][DELETE_OK] jobGuid={job.guid}, seq={current.sequence}");
-                    else EventLogger.Warn($"[TERM][EXECUTING][USER][DELETE_FAIL] jobGuid={job.guid}, seq={current.sequence}");
+                    if (deleted) EventLogger.Info($"[TerminateState][EXECUTING][USER][DELETE_OK] jobGuid={job.guid}, jobName={job.name}, assignedWorkerName={workerName}, seq={current.sequence}");
+                    else EventLogger.Warn($"[TerminateState][EXECUTING][USER][DELETE_FAIL] jobGuid={job.guid}, jobName={job.name}, assignedWorkerName={workerName}, seq={current.sequence}");
                 }
                 else
                 {
-                    EventLogger.Info($"[TERM][EXECUTING][USER][SKIP_LOCKED] locked mission cannot be deleted: jobGuid={job.guid}, seq={current.sequence}");
+                    EventLogger.Info($"[TerminateState][EXECUTING][USER][SKIP_LOCKED] locked mission cannot be deleted: jobGuid={job.guid}, jobName={job.name}, assignedWorkerName={workerName}" +
+                                     $", seq={current.sequence}");
                 }
             }
 
-            EventLogger.Info($"[TERM][EXECUTING][END]");
+            EventLogger.Info($"[TerminateState][EXECUTING][END]");
         }
 
         /// <summary>
@@ -136,24 +144,31 @@ namespace JOB.Services
                     continue;
                 }
 
+                string workerName = "";
+                if (job.assignedWorkerName != null)
+                {
+                    workerName = job.assignedWorkerName;
+                }
+
                 var missions = _repository.Missions.GetByJobId(job.guid);
 
                 if (missions == null || missions.Count == 0)
                 {
-                    //EventLogger.Warn($"[TerminateState][NULL][SKIP] no missions: jobGuid={job.guid}");
+                    //EventLogger.Warn($"[TerminateState][NULL][SKIP] no missions: jobGuid={job.guid}, jobName={job.name}, assignedWorkerName={workerName}");
                     continue;
                 }
 
                 var canceledMission = missions.FirstOrDefault(r => r != null && r.state == nameof(MissionState.CANCELED));
                 if (canceledMission == null)
                 {
-                    //EventLogger.Info($"[TerminateState][NULL][SKIP] no canceled mission: jobGuid={job.guid}");
+                    //EventLogger.Info($"[TerminateState][NULL][SKIP] no canceled mission: jobGuid={job.guid}, jobName={job.name}, assignedWorkerName={workerName}");
                     continue;
                 }
 
                 updateStateJob(job, job.state, nameof(TerminateState.INITED), nameof(TerminateType.CANCEL), "JobScheduler", true);
 
-                EventLogger.Info($"[TerminateState][NULL][FIXED] jobGuid={job.guid}, set terminateState=INITED, terminationType=CANCEL, canceledMissionSeq={canceledMission.sequence}");
+                EventLogger.Info($"[TerminateState][NULL][FIXED] jobGuid={job.guid}, jobName={job.name}, assignedWorkerName={workerName}" +
+                                 $", set terminateState=INITED, terminationType=CANCEL, canceledMissionSeq={canceledMission.sequence}");
             }
 
             //EventLogger.Info($"[TerminateState][NULL][END]");
@@ -213,18 +228,23 @@ namespace JOB.Services
                     EventLogger.Error($"[TerminateState][INITED][ERROR] job is null in list");
                     continue;
                 }
+                string workerName = "";
+                if (job.assignedWorkerName != null)
+                {
+                    workerName = job.assignedWorkerName;
+                }
 
                 var ordered = GetOrderedMissions(job.guid);
                 if (ordered.Count == 0)
                 {
-                    EventLogger.Warn($"[TerminateState][INITED][SKIP] no missions: jobGuid={job.guid}");
+                    EventLogger.Warn($"[TerminateState][INITED][SKIP] no missions: jobGuid={job.guid}, jobName={job.name}, assignedWorkerName={workerName}");
                     continue;
                 }
 
                 bool isAdmin = IsAdminCancel(job);
                 var current = FindCurrentActiveMission(ordered);
 
-                EventLogger.Info($"[TerminateState][INITED][JOB] jobGuid={job.guid}, orderId={job.orderId}, isAdmin={isAdmin}");
+                EventLogger.Info($"[TerminateState][INITED][JOB] orderId={job.orderId}, jobGuid={job.guid}, jobName={job.name}, assignedWorkerName={workerName}, isAdmin={isAdmin}");
 
                 // ------------------------------------------------------------
                 // 1) 관리자: COMPLETED 제외 전부 CANCELED + EXECUTING으로 전환
@@ -239,7 +259,7 @@ namespace JOB.Services
 
                     updateStateJob(job, job.state, nameof(TerminateState.EXECUTING), job.terminationType, job.terminator, true);
 
-                    EventLogger.Info($"[TerminateState][INITED][ADMIN] job updated: jobGuid={job.guid}, terminateState=EXECUTING");
+                    EventLogger.Info($"[TerminateState][INITED][ADMIN] job updated: jobGuid={job.guid}, jobName={job.name}, assignedWorkerName={workerName}, terminateState=EXECUTING");
 
                     UpdateOrderTerminating(job, "ADMIN");
                     continue;
@@ -276,7 +296,8 @@ namespace JOB.Services
 
                     CancelMissions(cancelAfter, "USER_UNLOCKED_CANCEL_AFTER_ALL", job.guid);
 
-                    job.terminateState = nameof(TerminateState.EXECUTING);   // ✅ delete는 Executing에서만
+                    updateStateJob(job, job.state, nameof(TerminateState.EXECUTING), job.terminationType, job.terminator, true);
+
                     TouchJobTerminatingAt(job, "USER_UNLOCKED_SET_EXECUTING");
                     UpdateOrderTerminating(job, "USER_UNLOCKED");
                     continue;
@@ -307,7 +328,8 @@ namespace JOB.Services
                 {
                     // 뒤에 unlocked(false)가 없다 => 끝까지 locked만 존재
                     // => 취소할 대상이 없고, locked는 계속 처리되어야 함
-                    EventLogger.Info($"[TerminateState][INITED][USER][LOCKED_CHAIN][NO_UNLOCKED_AFTER] jobGuid={job.guid}, currentSeq={current.sequence}");
+                    EventLogger.Info($"[TerminateState][INITED][USER][LOCKED_CHAIN][NO_UNLOCKED_AFTER] jobGuid={job.guid}, jobName={job.name}, assignedWorkerName={workerName}" +
+                                     $", currentSeq={current.sequence}");
 
                     TouchJobTerminatingAt(job, "USER_LOCKED_CHAIN_NO_UNLOCKED_AFTER");
                     UpdateOrderTerminating(job, "USER_LOCKED_CHAIN_NO_UNLOCKED_AFTER");
@@ -316,7 +338,8 @@ namespace JOB.Services
 
                 int fromSeq = firstUnlockedAfterLockedChain.sequence;
 
-                EventLogger.Info($"[TerminateState][INITED][USER][LOCKED_CHAIN][CANCEL_FROM_FIRST_UNLOCKED] jobGuid={job.guid}, currentSeq={current.sequence}, fromSeq={fromSeq}");
+                EventLogger.Info($"[TerminateState][INITED][USER][LOCKED_CHAIN][CANCEL_FROM_FIRST_UNLOCKED] jobGuid={job.guid}, jobName={job.name}, assignedWorkerName={workerName}" +
+                                 $", currentSeq={current.sequence}, fromSeq={fromSeq}");
 
                 var cancelFromFirstUnlocked = ordered.Where(m => m.sequence >= fromSeq && m.state != nameof(MissionState.COMPLETED)).ToList();
 
@@ -376,11 +399,11 @@ namespace JOB.Services
         {
             if (targets == null || targets.Count == 0)
             {
-                EventLogger.Info($"[TERM][CANCEL][SKIP] no targets: reason={reasonTag}, jobGuid={jobGuid}");
+                EventLogger.Info($"[TerminateState][CANCEL][SKIP] no targets: reason={reasonTag}, jobGuid={jobGuid}");
                 return;
             }
 
-            EventLogger.Info($"[TERM][CANCEL][START] targets={targets.Count}: reason={reasonTag}, jobGuid={jobGuid}");
+            EventLogger.Info($"[TerminateState][CANCEL][START] targets={targets.Count}: reason={reasonTag}, jobGuid={jobGuid}");
 
             foreach (var m in targets)
             {
@@ -393,7 +416,7 @@ namespace JOB.Services
                 updateStateMission(m, nameof(MissionState.CANCELED));
             }
 
-            EventLogger.Info($"[TERM][CANCEL][END] reason={reasonTag}, jobGuid={jobGuid}");
+            EventLogger.Info($"[TerminateState][CANCEL][END] reason={reasonTag}, jobGuid={jobGuid}");
         }
 
         /// <summary>
@@ -406,7 +429,12 @@ namespace JOB.Services
             job.terminatingAt = DateTime.Now;
             updateStateJob(job, job.state, job.terminateState, job.terminationType, job.terminator, true);
 
-                EventLogger.Info($"[TERM][JOB][TOUCH] tag={tag}, jobGuid={job.guid}, terminatingAt={job.terminatingAt:O}");
+            string workerName = "";
+            if (job.assignedWorkerName != null)
+            {
+                workerName = job.assignedWorkerName;
+            }
+            EventLogger.Info($"[TerminateState][JOB][TOUCH] tag={tag}, jobGuid={job.guid}, jobName={job.name} ,assignedWorkerName = {workerName}, terminatingAt={job.terminatingAt:O}");
         }
 
         /// <summary>
@@ -416,28 +444,35 @@ namespace JOB.Services
         {
             if (job == null) return;
 
+            string workerName = "";
+            if (job.assignedWorkerName != null)
+            {
+                workerName = job.assignedWorkerName;
+            }
+
             var order = _repository.Orders.GetByid(job.orderId);
             if (order == null)
             {
-                EventLogger.Warn($"[TERM][ORDER][SKIP] order not found: tag={tag}, orderId={job.orderId}, jobGuid={job.guid}");
+                EventLogger.Warn($"[TerminateState][ORDER][SKIP] order not found: tag={tag}, orderId={job.orderId}, jobGuid={job.guid}, jobName={job.name}, assignedWorkerName = {workerName}");
                 return;
             }
 
             if (job.terminationType == nameof(TerminateType.CANCEL))
             {
                 updateStateOrder(order, OrderState.Canceling, true);
-                EventLogger.Info($"[TERM][ORDER][UPDATE] tag={tag}, orderId={job.orderId}, state=Canceling, jobGuid={job.guid}");
+                EventLogger.Info($"[TerminateState][ORDER][UPDATE] tag={tag}, orderId={job.orderId}, state=Canceling, jobGuid={job.guid}, jobName={job.name}, assignedWorkerName = {workerName}");
                 return;
             }
 
             if (job.terminationType == nameof(TerminateType.ABORT))
             {
                 updateStateOrder(order, OrderState.Aborting, true);
-                EventLogger.Info($"[TERM][ORDER][UPDATE] tag={tag}, orderId={job.orderId}, state=Aborting, jobGuid={job.guid}");
+                EventLogger.Info($"[TerminateState][ORDER][UPDATE] tag={tag}, orderId={job.orderId}, state=Aborting, jobGuid={job.guid}, jobName={job.name}, assignedWorkerName = {workerName}");
                 return;
             }
 
-            EventLogger.Warn($"[TERM][ORDER][UNKNOWN_TYPE] tag={tag}, terminationType={job.terminationType}, orderId={job.orderId}, jobGuid={job.guid}");
+            EventLogger.Warn($"[TerminateState][ORDER][UNKNOWN_TYPE] tag={tag}, terminationType={job.terminationType}, orderId={job.orderId}, jobGuid={job.guid}" +
+                             $", jobName={job.name}, assignedWorkerName = {workerName}");
         }
 
         /// <summary>

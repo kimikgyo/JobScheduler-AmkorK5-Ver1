@@ -84,14 +84,15 @@ namespace Common.Models.Jobs
         [JsonPropertyOrder(18)] public string state { get; set; }                       // 상태: 대기, 실행중, 완료 등
         [JsonPropertyOrder(19)] public string specifiedWorkerId { get; set; }            //order 지정된 Worker
         [JsonPropertyOrder(20)] public string assignedWorkerId { get; set; }             //할당된 Worker
-        [JsonPropertyOrder(21)] public DateTime createdAt { get; set; }                  // 생성 시각
-        [JsonPropertyOrder(22)] public DateTime? updatedAt { get; set; }
-        [JsonPropertyOrder(23)] public DateTime? finishedAt { get; set; }
-        [JsonPropertyOrder(24)] public string terminationType { get; set; }     //초기데이터 null
-        [JsonPropertyOrder(25)] public string terminateState { get; set; }      //초기데이터 null
-        [JsonPropertyOrder(26)] public string terminator { get; set; }          //초기데이터 null
-        [JsonPropertyOrder(27)] public DateTime? terminatingAt { get; set; }    //초기데이터 null
-        [JsonPropertyOrder(28)] public DateTime? terminatedAt { get; set; }     //초기데이터 null
+        [JsonPropertyOrder(21)] public string assignedWorkerName { get; set; }             //할당된 Worker
+        [JsonPropertyOrder(22)] public DateTime createdAt { get; set; }                  // 생성 시각
+        [JsonPropertyOrder(23)] public DateTime? updatedAt { get; set; }
+        [JsonPropertyOrder(24)] public DateTime? finishedAt { get; set; }
+        [JsonPropertyOrder(25)] public string terminationType { get; set; }     //초기데이터 null
+        [JsonPropertyOrder(26)] public string terminateState { get; set; }      //초기데이터 null
+        [JsonPropertyOrder(27)] public string terminator { get; set; }          //초기데이터 null
+        [JsonPropertyOrder(28)] public DateTime? terminatingAt { get; set; }    //초기데이터 null
+        [JsonPropertyOrder(29)] public DateTime? terminatedAt { get; set; }     //초기데이터 null
 
         // 사람용 요약 (디버거/로그에서 보기 좋게)
         public override string ToString()
@@ -117,6 +118,7 @@ namespace Common.Models.Jobs
                 $",state = {state,-5}" +
                 $",specifiedWorkerId = {specifiedWorkerId,-5}" +
                 $",assignedWorkerId = {assignedWorkerId,-5}" +
+                $",assignedWorkerName = {assignedWorkerName,-5}" +
                 $",createdAt = {createdAt,-5}" +
                 $",updatedAt = {updatedAt,-5}" +
                 $",finishedAt = {finishedAt,-5}" +

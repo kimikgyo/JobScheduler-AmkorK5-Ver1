@@ -292,14 +292,10 @@ namespace JobScheduler.Controllers.Jobs
                     else if (IsInvalid(RequestDto.carrierId)) massage = $"Check Order carrierId ";
                     else if (RequestDto.subType == nameof(JobSubType.PICKONLY) || RequestDto.subType == nameof(JobSubType.DROPONLY))
                     {
-                        //워커를 지정하여 보내지 않는경우
-                        if (IsInvalid(RequestDto.specifiedWorkerId)) massage = $"Check Order SpecifiedWorkerId ";
-                        else
-                        {
+                   
                             //워커를 지정 하였지만 worker가 List에 없는경우
                             var worker = _repository.Workers.MiR_GetById(RequestDto.specifiedWorkerId);
                             if (worker == null) massage = $"Check Order SpecifiedWorkerId ";
-                        }
                     }
                     else if (RequestDto.subType == nameof(JobSubType.PICKDROP))
                     {

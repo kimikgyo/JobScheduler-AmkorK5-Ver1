@@ -215,16 +215,20 @@ namespace JOB.Services
                 if (sourceMission != null && sourcePosition != null)
                 {
                     mapSwitchPosition = positions.FirstOrDefault(r => r.mapId == sourcePosition.mapId);
+
                 }
                 else
                 {
                     //도착지층 과 다를경우
                     destPosition = _repository.Positions.MiR_GetById(job.destinationId);
-                    var destMission = missions.Where(r => r.subType == nameof(MissionSubType.DESTINATIONMOVE) && r.state == nameof(MissionState.WAITING)).FirstOrDefault();
+                    var destMission = missions.Where(r => r.state == nameof(MissionState.WAITING) 
+                                                 && (r.subType == nameof(MissionSubType.DESTINATIONMOVE)|| r.subType == nameof(MissionSubType.CHARGERMOVE))).FirstOrDefault();
+                    
                     if (destMission != null && destPosition != null)
                     {
                         mapSwitchPosition = positions.FirstOrDefault(r => r.mapId == destPosition.mapId);
                     }
+
                 }
 
                 if (mapSwitchPosition != null)

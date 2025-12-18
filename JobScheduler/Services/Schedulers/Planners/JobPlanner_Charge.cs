@@ -39,25 +39,13 @@ namespace JOB.Services
             // 충전용 포지션
             // 실제 충전기 존재
             // 사용 가능 상태
-            var chargerPositions = _repository.Positions.GetAll().Where(r => r.subType == nameof(PositionSubType.CHARGE) && r.nodeType == nameof(NodeType.CHARGER) && r.isEnabled == true).ToList();
+            var chargerPositions = _repository.Positions.GetAll().Where(r => r.subType == nameof(PositionSubType.CHARGE) && r.nodeType == nameof(NodeType.CHARGER) 
+                                                                     && r.isEnabled == true).ToList();
 
             // 2-3) 충전기가 하나도 없으면 이번 사이클은 아무 일도 하지 않고 종료
             if (chargerPositions == null || chargerPositions.Count == 0)
             {
                 //EventLogger.Info("[CHARGE][BUILD] no available chargers (subType=CHARGE) → exit");
-                return;
-            }
-
-            // ------------------------------------------------------------
-            // 3-1) IDLE 상태 Worker 목록 만들기
-            //      - Worker.state == WorkerState.IDLE 인 로봇만 선별
-            //      - 실제로 새 충전 Job을 받을 수 있는 후보들
-            // ------------------------------------------------------------
-            var idleWorkers = _repository.Workers.MiR_GetByActive().Where(r => r.state == nameof(WorkerState.IDLE)).ToList();
-
-            if (idleWorkers == null || idleWorkers.Count == 0)
-            {
-                //EventLogger.Info("[CHARGE][BUILD] no active workers → exit");
                 return;
             }
 
@@ -69,23 +57,28 @@ namespace JOB.Services
             //        3) Job.state == JobState.INPROGRESS
             //      - 위 조건을 만족하는 Job 이 하나라도 있으면 "현재 충전 중"으로 판단
             // ------------------------------------------------------------
+            var workers = _repository.Workers.MiR_GetByActive();
             List<Worker> chargingWorkers = new List<Worker>();
 
-            foreach (var idleWorker in idleWorkers)
+            foreach (var worker in workers)
             {
-                if (idleWorker == null)
+                if (worker == null)
                 {
                     continue;
                 }
 
-                bool isCharging = IsWorkerCharging(idleWorker.id);
+                bool isCharging = IsWorkerCharging(worker.id);
                 if (isCharging)
                 {
-                    chargingWorkers.Add(idleWorker);
+                    chargingWorkers.Add(worker);
                 }
             }
-
-            EventLogger.Info($"[CHARGE][BUILD][STATUS] idleCount= {idleWorkers.Count}, chargingCount= {chargingWorkers.Count}, chargerCount= {chargerPositions.Count}");
+            // ------------------------------------------------------------
+            // 3-1) IDLE 상태 Worker 목록 만들기
+            //      - Worker.state == WorkerState.IDLE 인 로봇만 선별
+            //      - 실제로 새 충전 Job을 받을 수 있는 후보들
+            // ------------------------------------------------------------
+            var idleWorkers = workers.Where(r => r.state == nameof(WorkerState.IDLE)).ToList();
 
             // ------------------------------------------------------------
             // 4) 이번 사이클에서 이미 Job 계획된 Worker / 충전기를 추적하기 위한 Set
@@ -98,7 +91,6 @@ namespace JOB.Services
             // 5) 세부 단계 처리 (아직 내부 로직은 미구현 상태)
             //    - 아래 함수들 안에서 실제 Job 생성( JobType.CHARGE / JobType.WAIT )을 진행할 예정
             // ------------------------------------------------------------
-
             // 5-1) 전용 충전기(linkedRobotId) 처리
             HandleReservedChargerChargeStart(idleWorkers, chargingWorkers, chargerPositions, chargeStart, workerPlanned, chargerPlanned);
 
@@ -111,7 +103,7 @@ namespace JOB.Services
             // 5-4) 스위칭 없이 단순 충전 완료 처리
             HandleChargeCompleteWithoutCross(chargingWorkers, chargerPositions, chargeEnd, workerPlanned);
 
-            EventLogger.Info("[CHARGE][BUILD] finish charge decision cycle");
+            //EventLogger.Info("[CHARGE][BUILD] finish charge decision cycle");
         }
 
         /// <summary>
@@ -179,9 +171,10 @@ namespace JOB.Services
                                                         , double chargeStart, List<string> workerPlanned, List<string> chargerPlanned)
         {
             // 방어 코드: 입력 컬렉션이 null 인 경우 빈 리스트로 간주
-            if (idleWorkers == null)
+            if (idleWorkers == null || idleWorkers.Count == 0)
             {
-                idleWorkers = new List<Worker>();
+                //EventLogger.Info("[CHARGE][BUILD] no active workers → exit");
+                return;
             }
 
             if (chargerPositions == null)
@@ -253,8 +246,8 @@ namespace JOB.Services
                 if (targetWorker == null)
                 {
                     // 전용 충전기에 매칭되는 IDLE Worker 가 없으면 스킵
-                    EventLogger.Warn($"[CHARGE][RESERVED][SKIP] no idle worker for reserved charger: chargerPOSName={chargerPosition.name}, chargerId={chargerPosition.id}" +
-                                     $", linkedWorkerId={chargerPosition.linkedRobotId}");
+                    //EventLogger.Warn($"[CHARGE][RESERVED][SKIP] no idle worker for reserved charger: chargerPOSName={chargerPosition.name}, chargerId={chargerPosition.id}" +
+                    //                 $", linkedWorkerId={chargerPosition.linkedRobotId}");
                     continue;
                 }
 
@@ -270,8 +263,8 @@ namespace JOB.Services
                 //      - 전용 충전기는 "충전 시작 기준 배터리 이하"일 때만 충전 Job 생성
                 if (targetWorker.batteryPercent > chargeStart)
                 {
-                    EventLogger.Warn($"[CHARGE][RESERVED][SKIP] battery higher than chargeStart: workerId={targetWorker.id}, workerName={targetWorker.name}" +
-                                     $", battery={targetWorker.batteryPercent}, chargeStart={chargeStart}%");
+                    //EventLogger.Warn($"[CHARGE][RESERVED][SKIP] battery higher than chargeStart: workerId={targetWorker.id}, workerName={targetWorker.name}" +
+                    //                 $", battery={targetWorker.batteryPercent}, chargeStart={chargeStart}%");
                     continue;
                 }
 
@@ -334,9 +327,10 @@ namespace JOB.Services
                                                   , double minimum, double chargeStart, List<string> workerPlanned, List<string> chargerPlanned)
         {
             // 방어 코드: null 이면 빈 리스트로 대체
-            if (idleWorkers == null)
+            if (idleWorkers == null || idleWorkers.Count == 0)
             {
-                idleWorkers = new List<Worker>();
+                //EventLogger.Info("[CHARGE][BUILD] no active workers → exit");
+                return;
             }
 
             if (chargerPositions == null)
@@ -407,7 +401,7 @@ namespace JOB.Services
                 // 2-2) 충전기 점유 상태 확인
                 if (charger.isOccupied)
                 {
-                    EventLogger.Warn($"[CHARGE][NORMAL][SKIP] charger occupied: chargerId={charger.id}, chargerPOSName={charger.name}");
+                    //EventLogger.Warn($"[CHARGE][NORMAL][SKIP] charger occupied: chargerId={charger.id}, chargerPOSName={charger.name}");
                     continue;
                 }
 
@@ -422,10 +416,10 @@ namespace JOB.Services
 
                 if (candidateWorkers.Count == 0)
                 {
-                    EventLogger.Info(
-                        $"[CHARGE][NORMAL][SKIP] no idle worker matched: chargerPOSId={charger.id}, chargerPOSName={charger.name}, " +
-                        $"group={charger.group}, mapId={charger.mapId}, chargeStart={chargeStart}%"
-                    );
+                    //EventLogger.Info(
+                    //    $"[CHARGE][NORMAL][SKIP] no idle worker matched: chargerPOSId={charger.id}, chargerPOSName={charger.name}, " +
+                    //    $"group={charger.group}, mapId={charger.mapId}, chargeStart={chargeStart}%"
+                    //);
                     continue;
                 }
 
@@ -541,9 +535,10 @@ namespace JOB.Services
             // ------------------------------------------------------------
             // 0) 방어 코드
             // ------------------------------------------------------------
-            if (idleWorkers == null)
+            if (idleWorkers == null || idleWorkers.Count == 0)
             {
-                idleWorkers = new List<Worker>();
+                //EventLogger.Info("[CHARGE][BUILD] no active workers → exit");
+                return;
             }
 
             if (chargingWorkers == null)
@@ -568,13 +563,13 @@ namespace JOB.Services
 
             if (chargingWorkers.Count == 0)
             {
-                EventLogger.Info($"[CHARGE][CROSS] no charging workers → skip");
+                //EventLogger.Info($"[CHARGE][CROSS] no charging workers → skip");
                 return;
             }
 
             if (idleWorkers.Count == 0)
             {
-                EventLogger.Info($"[CHARGE][CROSS] no idle workers → skip");
+                //EventLogger.Info($"[CHARGE][CROSS] no idle workers → skip");
                 return;
             }
 
@@ -588,7 +583,7 @@ namespace JOB.Services
 
             if (lowBatteryIdleWorkers == null || lowBatteryIdleWorkers.Count == 0)
             {
-                EventLogger.Info($"[CHARGE][CROSS] no idle workers under crossCharge={crossCharge}% → skip");
+                //EventLogger.Info($"[CHARGE][CROSS] no idle workers under crossCharge={crossCharge}% → skip");
                 return;
             }
 
@@ -686,13 +681,14 @@ namespace JOB.Services
                 // --------------------------------------------------------
 
                 // 3) 교차 충전 실행 직전 (가장 먼저 충전 미션 삭제)
-                bool deleted = DeleteChargingMissionOrStop(chargingWorker.id, "CHARGE][CROSS");
-                if (!deleted)
-                {
-                    // 삭제 실패면 이후 로직 진행 금지
-                    EventLogger.Error($"[CHARGE][CROSS][STOP] cannot proceed because mission delete failed: workerId={chargingWorker.id}, workerName={chargingWorker.name}");
-                    continue;
-                }
+                //bool deleted = DeleteChargingMissionOrStop(chargingWorker.id, "CHARGE][CROSS");
+                //if (!deleted)
+                //{
+                //    // 삭제 실패면 이후 로직 진행 금지
+                //    EventLogger.Error($"[CHARGE][CROSS][STOP] cannot proceed because mission delete failed: workerId={chargingWorker.id}, workerName={chargingWorker.name}");
+                //    continue;
+                //}
+                ChangeWaitDeleteJob(chargingWorker);
 
                 bool waitCreated = CreateWaitJob(chargingWorker, waitPosition);
 
@@ -743,7 +739,7 @@ namespace JOB.Services
                 return;
             }
 
-            EventLogger.Info($"[CHARGE][CROSS] no switch executed → finish");
+            //EventLogger.Info($"[CHARGE][CROSS] no switch executed → finish");
         }
 
         /// <summary>
@@ -780,7 +776,7 @@ namespace JOB.Services
 
             if (chargingWorkers.Count == 0)
             {
-                EventLogger.Info($"[CHARGE][COMPLETE] no charging workers → skip");
+                //EventLogger.Info($"[CHARGE][COMPLETE] no charging workers → skip");
                 return;
             }
 
@@ -811,33 +807,33 @@ namespace JOB.Services
                 // 2) 이 Worker가 실제로 점유 중인 충전기(CHARGE 포지션) 찾기
                 //    - Worker.PositionId == chargerPosition.id
                 // --------------------------------------------------------
-                Position usingCharger = null;
+                //Position usingCharger = null;
 
-                if (!string.IsNullOrEmpty(chargingWorker.PositionId))
-                {
-                    usingCharger = chargerPositions.FirstOrDefault(p => p != null && p.id == chargingWorker.PositionId && p.subType == nameof(PositionSubType.CHARGE)
-                                                                && p.hasCharger == true && p.isEnabled == true);
-                }
+                //if (!string.IsNullOrEmpty(chargingWorker.PositionId))
+                //{
+                //    usingCharger = chargerPositions.FirstOrDefault(p => p != null && p.id == chargingWorker.PositionId && p.subType == nameof(PositionSubType.CHARGE)
+                //                                               && p.isEnabled == true);
+                //}
 
-                if (usingCharger == null)
-                {
-                    // 충전 중이라고 판단했지만 포지션 매칭이 안 되는 경우
-                    EventLogger.Warn(
-                        $"[CHARGE][COMPLETE][SKIP] cannot find using charger by worker position: workerId={chargingWorker.id}, workerName={chargingWorker.name}, workerPosId={chargingWorker.PositionId}"
-                    );
-                    continue;
-                }
+                //if (usingCharger == null)
+                //{
+                //    // 충전 중이라고 판단했지만 포지션 매칭이 안 되는 경우
+                //    EventLogger.Warn(
+                //        $"[CHARGE][COMPLETE][SKIP] cannot find using charger by worker position: workerId={chargingWorker.id}, workerName={chargingWorker.name}, workerPosId={chargingWorker.PositionId}"
+                //    );
+                //    continue;
+                //}
 
                 // --------------------------------------------------------
                 // 3) WAIT 포지션 선택 (지정 WAIT 우선, 없으면 가까운 WAIT)
                 //    - 같은 그룹/같은 층(mapId)에서만 찾는다.
                 // --------------------------------------------------------
-                Position waitPosition = FindWaitPositionForWorker(chargingWorker, usingCharger.group, usingCharger.mapId);
+                Position waitPosition = FindWaitPositionForWorker(chargingWorker, chargingWorker.group, chargingWorker.mapId);
 
                 if (waitPosition == null)
                 {
                     EventLogger.Warn(
-                        $"[CHARGE][COMPLETE][SKIP] no available wait position: workerId={chargingWorker.id}, workerName={chargingWorker.name}, group={usingCharger.group}, mapId={usingCharger.mapId}"
+                        $"[CHARGE][COMPLETE][SKIP] no available wait position: workerId={chargingWorker.id}, workerName={chargingWorker.name}, group={chargingWorker.group}, mapId={chargingWorker.mapId}"
                     );
                     continue;
                 }
@@ -846,12 +842,7 @@ namespace JOB.Services
                 // 4) WAIT Job 생성 요청
                 // --------------------------------------------------------
                 // 4) WAIT Job 생성 전에 충전 미션 삭제 (필수)
-                bool deleted = DeleteChargingMissionOrStop(chargingWorker.id, "CHARGE][COMPLETE");
-                if (!deleted)
-                {
-                    EventLogger.Error($"[CHARGE][COMPLETE][STOP] cannot proceed because mission delete failed: workerId={chargingWorker.id}, workerName={chargingWorker.name}");
-                    continue;
-                }
+                ChangeWaitDeleteJob(chargingWorker);
 
                 bool waitCreated = CreateWaitJob(chargingWorker, waitPosition);
 
@@ -876,13 +867,13 @@ namespace JOB.Services
                 // --------------------------------------------------------
                 EventLogger.Info(
                     $"[CHARGE][COMPLETE][MOVE_WAIT] workerId={chargingWorker.id}, workerName={chargingWorker.name}, battery={chargingWorker.batteryPercent}, chargeEnd={chargeEnd}%" +
-                    $", fromChargerPOSId={usingCharger.id}, fromChargerPOSName={usingCharger.name}" +
-                    $", toWaitPOSId={waitPosition.id}, toWaitPOSName={waitPosition.name}" +
-                    $", group={usingCharger.group}, mapId={usingCharger.mapId}"
+                    //$", fromChargerPOSId={usingCharger.id}, fromChargerPOSName={usingCharger.name}" +
+                    $", toWaitPOSId={waitPosition.id}, toWaitPOSName={waitPosition.name}"
+                //$", group={usingCharger.group}, mapId={usingCharger.mapId}"
                 );
             }
 
-            EventLogger.Info($"[CHARGE][COMPLETE] finish");
+            //EventLogger.Info($"[CHARGE][COMPLETE] finish");
         }
 
         /// <summary>
@@ -913,55 +904,6 @@ namespace JOB.Services
             }
 
             return chargeJob.guid;
-        }
-
-        /// <summary>
-        /// 현재 충전 중인 미션을 삭제한다.
-        /// - workerId로 충전 중 JobGuid를 찾고
-        /// - JobGuid로 Mission을 찾고
-        /// - deleteMission(mission) 호출
-        ///
-        /// 삭제 실패 시 false 반환 (이후 로직 진행 금지)
-        /// </summary>
-        private bool DeleteChargingMissionOrStop(string workerId, string reasonTag)
-        {
-            if (string.IsNullOrEmpty(workerId))
-            {
-                EventLogger.Error($"[{reasonTag}][MISSION][DELETE][ERROR] workerId is empty");
-                return false;
-            }
-
-            string jobGuid = GetActiveChargeJobGuid(workerId);
-            if (string.IsNullOrEmpty(jobGuid))
-            {
-                EventLogger.Warn($"[{reasonTag}][MISSION][DELETE][SKIP] active charge job not found: workerId={workerId}");
-                return false; // 정책상 "충전중 미션 삭제가 필수"면 false로 막는 게 안전
-            }
-
-            // ------------------------------------------------------------
-            // ⚠️ 이 부분은 너 repository에 맞게 구현된 검색 함수로 교체
-            // 예) _repository.Missions.GetByJobGuid(jobGuid)
-            // ------------------------------------------------------------
-
-            var missions = _repository.Missions.GetByJobId(jobGuid);
-            Mission mission = _repository.Missions.GetByRunMissions(missions).FirstOrDefault();
-
-            if (mission == null)
-            {
-                EventLogger.Error($"[{reasonTag}][MISSION][DELETE][ERROR] mission not found by jobGuid: workerId={workerId}, jobGuid={jobGuid}");
-                return false;
-            }
-
-            bool deleted = deleteMission(mission);
-
-            if (!deleted)
-            {
-                EventLogger.Error($"[{reasonTag}][MISSION][DELETE][ERROR] deleteMission failed: workerId={workerId}, jobGuid={jobGuid}, missionId={mission.guid}");
-                return false;
-            }
-
-            EventLogger.Info($"[{reasonTag}][MISSION][DELETE] deleted charging mission: workerId={workerId}, jobGuid={jobGuid}, missionId={mission.guid}");
-            return true;
         }
     }
 }

@@ -30,6 +30,7 @@ namespace JOB.JobQueues.Process
                     state = nameof(MissionState.WAITING),
                     specifiedWorkerId = cmd.job.specifiedWorkerId,
                     assignedWorkerId = cmd.worker.id,
+                    assignedWorkerName = cmd.worker.name,
                     createdAt = DateTime.Now,
                     updatedAt = null,
                     finishedAt = null,

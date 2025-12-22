@@ -1,6 +1,7 @@
 ﻿using Common.Models.Bases;
 using Common.Models.Jobs;
 using Common.Models.Settings;
+using Microsoft.SqlServer.Server;
 
 namespace JOB.Services
 {
@@ -148,7 +149,7 @@ namespace JOB.Services
                     continue;
 
                 // 7) 기존 WAIT 미션 정리 (필요시)
-                ChangeWaitDeleteJob(worker);
+                ChangeWaitDeleteJob(worker, "[ASSIGN][NORMAL][FIRSTJOB][ASSIGNED]");
 
                 // 8) 최종 Job 할당 및 미션 생성
                 if (Create_Mission(job, worker))
@@ -250,7 +251,7 @@ namespace JOB.Services
                         continue;
 
                     // 기존 WAIT 미션 정리 (필요 시)
-                    ChangeWaitDeleteJob(worker);
+                    ChangeWaitDeleteJob(worker, "[ASSIGN][NORMAL][DISTANCE][SPECIFIED][ASSIGNED]");
                     //{
                     //    EventLogger.Warn($"[ASSIGN][NORMAL][DISTANCE][SPECIFIED][ABORT], ChangeWaitDeleteMission failed. workerId={worker.id}, workerName={worker.name}");
                     //    continue;
@@ -303,7 +304,7 @@ namespace JOB.Services
                         continue;
 
                     // 기존 WAIT 미션 정리
-                    ChangeWaitDeleteJob(worker);
+                    ChangeWaitDeleteJob(worker, "[ASSIGN][NORMAL][DISTANCE][UNSPECIFIED][ASSIGNED]");
                     //{
                     //    EventLogger.Warn($"[ASSIGN][NORMAL][DISTANCE][UNSPECIFIED][ABORT], ChangeWaitDeleteMission failed. workerId={worker.id}, workerName={worker.name}");
                     //    continue;
@@ -320,20 +321,25 @@ namespace JOB.Services
         }
 
         //충전이나 대기위치 진행중인 미션을 삭제한다.
-        private void ChangeWaitDeleteJob(Worker worker)
+        private bool ChangeWaitDeleteJob(Worker worker, string massage)
         {
-            var runjob = _repository.Jobs.GetByWorkerId(worker.id).FirstOrDefault(r => r.state == nameof(JobState.INPROGRESS));
+            bool reValue = false;
+            var runjob = _repository.Jobs.GetByWorkerId(worker.id).FirstOrDefault(r => r.terminateState == null 
+                                                                           && (r.state == nameof(JobState.WORKERASSIGNED) || r.state == nameof(JobState.INPROGRESS))
+                                                                           && (r.type == nameof(JobType.WAIT) || r.type == nameof(JobType.CHARGE)));
+
             if (runjob != null)
             {
-                if ((runjob.type == nameof(JobType.WAIT)) || (runjob.type == nameof(JobType.CHARGE)))
-                {
-                    runjob.terminateState = nameof(TerminateState.INITED);
-                    runjob.terminator = "JobScheduler";
-                    runjob.terminationType = "CANCEL";
-                    runjob.terminatedAt = DateTime.Now;
-                    _repository.Jobs.Update(runjob);
-                }
+                runjob.terminateState = nameof(TerminateState.INITED);
+                runjob.terminator = "JobScheduler";
+                runjob.terminationType = "CANCEL";
+                runjob.terminatedAt = DateTime.Now;
+                _repository.Jobs.Update(runjob);
+                EventLogger.Info($"{massage} JobInit Cancel Update, jobId={runjob.guid}, jobState={runjob.state}, jobName={runjob.name},assignedWorkerId={runjob.assignedWorkerId}" +
+                                 $",assignedWorkerName={runjob.assignedWorkerName}");
+                reValue = true;
             }
+            return reValue;
         }
 
         /// <summary>

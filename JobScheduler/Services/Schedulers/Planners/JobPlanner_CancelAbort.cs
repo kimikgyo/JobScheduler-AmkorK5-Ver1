@@ -89,7 +89,8 @@ namespace JOB.Services
                 // 비관리자는 unlocked(false)일 때만 delete 가능
                 if (current.isLocked == false)
                 {
-                    EventLogger.Info($"[TerminateState][EXECUTING][USER][DELETE_TRY] jobGuid={job.guid}, jobName={job.name}, assignedWorkerName={workerName}, seq={current.sequence}");
+                    EventLogger.Info($"[TerminateState][EXECUTING][USER][DELETE_TRY] jobGuid={job.guid}, jobName={job.name}, assignedWorkerName={workerName}, seq={current.sequence}" +
+                                     $", isLocked={current.isLocked}");
 
                     bool deleted = deleteMission(current);
 

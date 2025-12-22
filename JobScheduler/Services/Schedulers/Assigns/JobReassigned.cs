@@ -47,8 +47,25 @@ namespace JOB.Services
                     continue;
                 }
 
+                // =======================================================
+                // (2-2) Worker Full 여부
+                // =======================================================
+                //if (worker.isFull)
+                //{
+                //    EventLogger.Info($"[ASSIGN][REASSIGN][SKIP][FULL], workerName={worker.name}, workerId={worker.id}, missionId={mission.guid}, jobId={mission.jobId}");
+                //    continue;
+                //}
+
+                // =======================================================
+                // (2-3) Mission Lock 여부
+                // =======================================================
+                if (mission.isLocked)
+                {
+                    EventLogger.Info($"[ASSIGN][REASSIGN][SKIP][LOCKED], workerName={worker.name}, workerId={worker.id}, missionId={mission.guid}, jobId={mission.jobId}");
+                    continue;
+                }
                 // --------------------------------------------------------
-                // 2-2) 이 Worker가 가지고 있는 Mission 목록 조회
+                // 2-4) 이 Worker가 가지고 있는 Mission 목록 조회
                 // --------------------------------------------------------
                 var workerMissions = _repository.Missions.GetByAssignedWorkerId(worker.id).ToList();
 
@@ -103,23 +120,7 @@ namespace JOB.Services
                     continue;
                 }
 
-                // =======================================================
-                // (C) Worker Full 여부
-                // =======================================================
-                //if (worker.isFull)
-                //{
-                //    EventLogger.Info($"[ASSIGN][REASSIGN][SKIP][FULL], workerName={worker.name}, workerId={worker.id}, missionId={mission.guid}, jobId={mission.jobId}");
-                //    continue;
-                //}
-
-                // =======================================================
-                // (D) Mission Lock 여부
-                // =======================================================
-                if (mission.isLocked)
-                {
-                    EventLogger.Info($"[ASSIGN][REASSIGN][SKIP][LOCKED], workerName={worker.name}, workerId={worker.id}, missionId={mission.guid}, jobId={mission.jobId}");
-                    continue;
-                }
+             
 
                 // =======================================================
                 // 재할당 트리거 조건 충족 → 수행
@@ -297,7 +298,7 @@ namespace JOB.Services
             // [7] 기존 WAIT 미션 정리 (정책에 따라)
             //      - 재구성 후에도 Worker 에 WAIT 미션이 필요 없다면 삭제
             // ------------------------------------------------------------
-            ChangeWaitDeleteJob(worker);
+            ChangeWaitDeleteJob(worker, "[ASSIGN][REASSIGN][AFTER]");
             //if (!waitCleaned)
             //{
             //    // WAIT 삭제 실패했다고 해서 재구성 자체를 롤백하지는 않음(정책에 따라 조정 가능)

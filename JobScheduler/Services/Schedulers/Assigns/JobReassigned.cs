@@ -722,7 +722,7 @@ namespace JOB.Services
         ///   1) workerNearestPosition → secondSourcePosition 까지 MOVE / TRAFFIC / ELEVATOR
         ///   2) secondSourcePosition 에서 PICK 그룹 생성
         ///
-        /// ※ 이 함수는 실제 Mission 엔티티를 생성( create_SingleMission / create_GroupMission )
+        /// ※ 이 함수는 실제 Mission 엔티티를 생성( template_SingleMission / template_GroupMission )
         ///   한 뒤, DB에서 다시 조회해서 List<Mission> 으로 반환한다.
         /// </summary>
         private List<Mission> BuildSecondPreMissions(Job jobSecond, Worker worker, ServiceApi resource, Position workerNearestPosition, Position secondSourcePosition)
@@ -778,7 +778,7 @@ namespace JOB.Services
                                  $", posId={secondSourcePosition.positionId}");
 
                 // 바로 PICK 그룹만 생성
-                seqFrom = create_GroupMission(jobSecond, secondSourcePosition, worker, seqFrom, nameof(MissionsTemplateGroup.PICK));
+                seqFrom = template_GroupMission(jobSecond, secondSourcePosition, worker, seqFrom, nameof(MissionsTemplateGroup.PICK));
 
                 // 여기까지 미션 생성은 DB에 반영되었으므로, 다시 조회해서 result 채움
                 result = _repository.Missions.GetByJobId(jobSecond.guid).Where(m => m.assignedWorkerId == worker.id).OrderBy(m => m.sequence).ToList();
@@ -848,7 +848,7 @@ namespace JOB.Services
                         EventLogger.Info($"[ASSIGN][REASSIGN][BUILD-PRE][PICK-GROUP] workerName={worker.name}, workerId={worker.id}" +
                                          $", jobSecondId={jobSecond.guid}, pickPosId={position.positionId}, seqStart={seq}");
 
-                        seq = create_GroupMission(jobSecond, position, worker, seq, nameof(MissionsTemplateGroup.PICK));
+                        seq = template_GroupMission(jobSecond, position, worker, seq, nameof(MissionsTemplateGroup.PICK));
                     }
 
                     // 여기서 break 를 걸면, PICK 이후의 노드는 없다고 보는 정책(현재 설계상 OK)
@@ -862,13 +862,13 @@ namespace JOB.Services
                     if (ElevatorSource == null)
                     {
                         ElevatorSource = position;
-                        seq = create_GroupMission(jobSecond, ElevatorSource, worker, seq, nameof(MissionsTemplateGroup.ELEVATORSOURCE));
+                        seq = template_GroupMission(jobSecond, ElevatorSource, worker, seq, nameof(MissionsTemplateGroup.ELEVATORSOURCE));
                         EventLogger.Info($"[ASSIGN][REASSIGN][BUILD-PRE][ELEVATOR-GROUP][ELEVATORSOURCE] workerName={worker.name}, workerId={worker.id}, jobSecondId={jobSecond.guid}, seq={seq}");
                     }
                     else if (ElevatorSource != null)
                     {
                         Elevatordest = position;
-                        seq = create_GroupMission(jobSecond, Elevatordest, worker, seq, nameof(MissionsTemplateGroup.ELEVATORDEST));
+                        seq = template_GroupMission(jobSecond, Elevatordest, worker, seq, nameof(MissionsTemplateGroup.ELEVATORDEST));
                         EventLogger.Info($"[ASSIGN][REASSIGN][BUILD-PRE][ELEVATOR-GROUP][ELEVATORDEST] workerName={worker.name}, workerId={worker.id}, jobSecondId={jobSecond.guid}, seq={seq}");
                     }
                 }
@@ -881,7 +881,7 @@ namespace JOB.Services
                     {
                         EventLogger.Info($"[ASSIGN][REASSIGN][BUILD-PRE][TRAFFIC-GROUP] workerName={worker.name}, workerId={worker.id}, jobSecondId={jobSecond.guid}, posId={position.positionId}, seq={seq}");
 
-                        seq = create_GroupMission(jobSecond, position, worker, seq, nameof(MissionsTemplateGroup.TRAFFIC));
+                        seq = template_GroupMission(jobSecond, position, worker, seq, nameof(MissionsTemplateGroup.TRAFFIC));
                     }
                 }
                 // --------------------------------------------------------
@@ -891,7 +891,7 @@ namespace JOB.Services
                 {
                     if (position != null)
                     {
-                        seq = create_SingleMission(jobSecond, position, worker, seq, nameof(MissionTemplateType.MOVE), nameof(MissionTemplateSubType.STOPOVERMOVE));
+                        seq = template_SingleMission(jobSecond, position, worker, seq, nameof(MissionTemplateType.MOVE), nameof(MissionTemplateSubType.STOPOVERMOVE));
 
                         // 로깅은 너무 많아질 수 있으니 필요하면만
                         // EventLogger.Info($"[ASSIGN][REASSIGN][BUILD-PRE][MOVE] workerName={worker.name}, workerId={worker.id}, jobSecondId={jobSecond.guid}, posId={position.positionId}, seq={seq - 1}");
@@ -982,7 +982,7 @@ namespace JOB.Services
                                  $", posId={secondDestinationPosition.positionId}");
 
                 // 같은 위치라면 바로 DROP 그룹 생성
-                seqFrom = create_GroupMission(jobSecond, secondDestinationPosition, worker, seqFrom, nameof(MissionsTemplateGroup.DROP));
+                seqFrom = template_GroupMission(jobSecond, secondDestinationPosition, worker, seqFrom, nameof(MissionsTemplateGroup.DROP));
 
                 // 생성된 미션들을 DB에서 다시 조회하여 result 에 채운다.
                 result = _repository.Missions.GetByJobId(jobSecond.guid).Where(m => m.assignedWorkerId == worker.id).OrderBy(m => m.sequence).ToList();
@@ -1052,7 +1052,7 @@ namespace JOB.Services
                                          $", dropPosId={position.positionId}, seqStart={seq}");
 
                         // B 의 최종 목적지에서 DROP 그룹 생성
-                        seq = create_GroupMission(jobSecond, position, worker, seq, nameof(MissionsTemplateGroup.DROP));
+                        seq = template_GroupMission(jobSecond, position, worker, seq, nameof(MissionsTemplateGroup.DROP));
                     }
 
                     // DROP 까지 생성했으므로 이후 노드는 없다고 가정하고 종료 가능
@@ -1066,13 +1066,13 @@ namespace JOB.Services
                     if (ElevatorSource == null)
                     {
                         ElevatorSource = position;
-                        seq = create_GroupMission(jobSecond, ElevatorSource, worker, seq, nameof(MissionsTemplateGroup.ELEVATORSOURCE));
+                        seq = template_GroupMission(jobSecond, ElevatorSource, worker, seq, nameof(MissionsTemplateGroup.ELEVATORSOURCE));
                         EventLogger.Info($"[ASSIGN][REASSIGN][BUILD-PRE][ELEVATOR-GROUP][ELEVATORSOURCE] workerName={worker.name}, workerId={worker.id}, jobSecondId={jobSecond.guid}, seq={seq}");
                     }
                     else if (ElevatorSource != null)
                     {
                         Elevatordest = position;
-                        seq = create_GroupMission(jobSecond, Elevatordest, worker, seq, nameof(MissionsTemplateGroup.ELEVATORDEST));
+                        seq = template_GroupMission(jobSecond, Elevatordest, worker, seq, nameof(MissionsTemplateGroup.ELEVATORDEST));
                         EventLogger.Info($"[ASSIGN][REASSIGN][BUILD-PRE][ELEVATOR-GROUP][ELEVATORDEST] workerName={worker.name}, workerId={worker.id}, jobSecondId={jobSecond.guid}, seq={seq}");
                     }
                 }
@@ -1086,7 +1086,7 @@ namespace JOB.Services
                         EventLogger.Info($"[ASSIGN][REASSIGN][BUILD-FINAL][TRAFFIC-GROUP] workerName={worker.name}, workerId={worker.id}, jobSecondId={jobSecond.guid}" +
                                          $", posId={position.positionId}, seq={seq}");
 
-                        seq = create_GroupMission(jobSecond, position, worker, seq, nameof(MissionsTemplateGroup.TRAFFIC));
+                        seq = template_GroupMission(jobSecond, position, worker, seq, nameof(MissionsTemplateGroup.TRAFFIC));
                     }
                 }
                 // --------------------------------------------------------
@@ -1096,7 +1096,7 @@ namespace JOB.Services
                 {
                     if (position != null)
                     {
-                        seq = create_SingleMission(jobSecond, position, worker, seq, nameof(MissionTemplateType.MOVE), nameof(MissionTemplateSubType.STOPOVERMOVE));
+                        seq = template_SingleMission(jobSecond, position, worker, seq, nameof(MissionTemplateType.MOVE), nameof(MissionTemplateSubType.STOPOVERMOVE));
 
                         // 너무 로그가 많아질 수 있어서 필요시만 활성화
                         // EventLogger.Info(

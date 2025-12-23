@@ -181,6 +181,12 @@ namespace JobScheduler.Services
             };
             mqttTopicSubscribes.Add(elevatorMissionTopic);
 
+            var trafficMissionTopic = new MqttTopicSubscribe
+            {
+                topic = "acs/traffic/controller/mission"
+            };
+            mqttTopicSubscribes.Add(trafficMissionTopic);
+
             var elevatorRequestTopic = new MqttTopicSubscribe
             {
                 topic = "acs/ui/elevator/request"

@@ -642,7 +642,7 @@ namespace JOB.Services
             return Condition;
         }
 
-        private int create_SingleMission(Job job, Position position, Worker worker, int seq, string type, string subtype)
+        private int template_SingleMission(Job job, Position position, Worker worker, int seq, string type, string subtype)
         {
             lock (_lock)
             {
@@ -657,7 +657,7 @@ namespace JOB.Services
             return seq;
         }
 
-        private int create_GroupMission(Job job, Position position, Worker worker, int seq, string templateGroup)
+        private int template_GroupMission(Job job, Position position, Worker worker, int seq, string templateGroup)
         {
             lock (_lock)
             {

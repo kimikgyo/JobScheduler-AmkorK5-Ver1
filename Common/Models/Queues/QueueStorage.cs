@@ -86,6 +86,7 @@ namespace Common.Models.Queues
         private static readonly ConcurrentQueue<MqttSubscribeMessageDto> mqttSubscribeMiddleware = new ConcurrentQueue<MqttSubscribeMessageDto>();
         private static readonly ConcurrentQueue<MqttSubscribeMessageDto> mqttSubscribeCarrier = new ConcurrentQueue<MqttSubscribeMessageDto>();
         private static readonly ConcurrentQueue<MqttSubscribeMessageDto> mqttSubscribeElevator = new ConcurrentQueue<MqttSubscribeMessageDto>();
+        private static readonly ConcurrentQueue<MqttSubscribeMessageDto> mqttSubscribeTraffic = new ConcurrentQueue<MqttSubscribeMessageDto>();
 
         public static void MqttEnqueuePublishOrder(MqttPublishMessageDto item)
         {
@@ -181,6 +182,18 @@ namespace Common.Models.Queues
         {
             //실행하면 순차적으로 하나씩 Return한다
             return mqttSubscribeElevator.TryDequeue(out item);
+        }
+
+        public static void MqttEnqueueSubscribeTraffic(MqttSubscribeMessageDto item)
+        {
+            //미션 및 Queue 를 실행한부분을 순차적으로 추가시킨다
+            mqttSubscribeTraffic.Enqueue(item);
+        }
+
+        public static bool MqttTryDequeueSubscribeTraffic(out MqttSubscribeMessageDto item)
+        {
+            //실행하면 순차적으로 하나씩 Return한다
+            return mqttSubscribeTraffic.TryDequeue(out item);
         }
 
         public static void MqttEnqueueSubscribe(MqttSubscribeMessageDto item)

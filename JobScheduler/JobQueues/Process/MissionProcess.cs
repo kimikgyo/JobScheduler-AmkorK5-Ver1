@@ -150,6 +150,25 @@ namespace JOB.JobQueues.Process
                         }
                         break;
 
+                    case "linkedZone":
+                        if (position != null)
+                        {
+                            param = new Parameter
+                            {
+                                key = parameta.key,
+                                value = position.linkedZone
+                            };
+                        }
+                        else
+                        {
+                            param = new Parameter
+                            {
+                                key = parameta.key,
+                                value = parameta.value,
+                            };
+                        }
+                        break;
+
                     case "drumKeyCode":
                         param = new Parameter
                         {

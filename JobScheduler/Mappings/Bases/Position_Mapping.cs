@@ -25,9 +25,10 @@ namespace JOB.Mappings.Bases
                 isDisplayed = model.isDisplayed,
                 isEnabled = model.isEnabled,
                 isOccupied = model.isOccupied,
+                linkedArea = model.linkedArea,
+                linkedZone = model.linkedZone,
                 linkedFacility = model.linkedFacility,
                 linkedRobotId = model.linkedRobotId,
-                linkedArea = model.linkedArea,
                 hasCharger = model.hasCharger,
             };
             return response;
@@ -50,6 +51,8 @@ namespace JOB.Mappings.Bases
                 isDisplayed = model.isDisplayed,
                 isEnabled = model.isEnabled,
                 isOccupied = model.isOccupied,
+                linkedArea = model.linkedArea,
+                linkedZone = model.linkedZone,
                 linkedFacility = model.linkedFacility,
                 linkedRobotId = model.linkedRobotId,
                 hasCharger = model.hasCharger,

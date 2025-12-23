@@ -10,7 +10,8 @@
         position,
         carrier,
         elevator,
-        ui
+        ui,
+        traffic
     }
 
     public enum TopicSubType

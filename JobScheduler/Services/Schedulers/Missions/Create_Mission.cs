@@ -156,18 +156,24 @@ namespace JOB.Services
         {
             bool reValue = false;
             // A) Segment A: WorkerStart → JobSource
-            if (workerStart.positionId != jobSource.positionId)
+            bool workerGotoJobSource = false;
+            if (workerStart.source.ToUpper() == "ANT" && workerStart.positionId != jobSource.positionId) workerGotoJobSource = true;
+            else if (workerStart.source.ToUpper() == "MIR") workerGotoJobSource = true;
+
+            if (workerGotoJobSource)
             {
                 var routesA = resource.Api.Post_Routes_Plan_Async(_mapping.RoutesPlanas.Request(workerStart.positionId, jobSource.positionId)).Result;
 
                 if (routesA == null)
                 {
-                    EventLogger.Warn($"[ROUTE_A][PLAN][NO_ROUTE] response is null (path not found?) jobId={job?.guid} from={jobSource?.positionId} to={jobDestination?.positionId}");
+                    EventLogger.Warn($"[ROUTE_A][PLAN][NO_ROUTE] response is null (path not found?), jobId={job?.guid}, from={jobSource?.positionId}, to={jobDestination?.positionId}" +
+                                     $",WorkerId={worker?.id}, WorkerName={worker.name}");
                     return reValue;
                 }
                 if (routesA.nodes == null)
                 {
-                    EventLogger.Warn($"[ROUTE_A][PLAN][NO_ROUTE] nodes is null/empty (path not found) jobId={job?.guid} from={jobSource?.positionId} to={jobDestination?.positionId}");
+                    EventLogger.Warn($"[ROUTE_A][PLAN][NO_ROUTE] nodes is null/empty (path not found) jobId={job?.guid} from={jobSource?.positionId} to={jobDestination?.positionId}" +
+                                     $",WorkerId={worker?.id}, WorkerName={worker.name}");
                     return reValue;
                 }
                 Position Segment_A_ElevatorSource = null;
@@ -178,32 +184,31 @@ namespace JOB.Services
                     var position = _repository.Positions.GetByPositionId(node.positionId);
                     if (position == null) continue;
                     if (position.id == jobSource.id) continue;
-                    // 3) ELEVATOR 노드 → Elevator 그룹 (한 번만)
-                    if (node.nodeType.ToUpper() == nameof(NodeType.ELEVATOR))
+
+                    seq = template_SingleMission(job, position, worker, seq, nameof(MissionTemplateType.MOVE), nameof(MissionTemplateSubType.STOPOVERMOVE));
+
+                    switch (node.nodeType.ToUpper())
                     {
-                        if (Segment_A_ElevatorSource == null)
-                        {
-                            Segment_A_ElevatorSource = position;
-                            seq = create_GroupMission(job, Segment_A_ElevatorSource, worker, seq, nameof(MissionsTemplateGroup.ELEVATORSOURCE));
-                            //EventLogger.Info($"[ASSIGN][ASSIGN][ELEVATOR-GROUP][ELEVATORSOURCE] workerName={worker.name}, workerId={worker.id}, jobSecondId={job.guid}, seq={seq}");
-                        }
-                        else if (Segment_A_ElevatorSource != null)
-                        {
-                            Segment_A_Elevatordest = position;
-                            seq = create_GroupMission(job, Segment_A_Elevatordest, worker, seq, nameof(MissionsTemplateGroup.ELEVATORDEST));
-                            //EventLogger.Info($"[ASSIGN][ASSIGN][ELEVATOR-GROUP][ELEVATORDEST] workerName={worker.name}, workerId={worker.id}, jobSecondId={job.guid}, seq={seq}");
-                        }
+                        case nameof(NodeType.TRAFFIC):
+                            seq = template_GroupMission(job, position, worker, seq, nameof(MissionsTemplateGroup.TRAFFIC));
+                            break;
+
+                        case nameof(NodeType.ELEVATOR):
+                            if (Segment_A_ElevatorSource == null)
+                            {
+                                Segment_A_ElevatorSource = position;
+                                seq = template_GroupMission(job, Segment_A_ElevatorSource, worker, seq, nameof(MissionsTemplateGroup.ELEVATORSOURCE));
+                                //EventLogger.Info($"[ASSIGN][ASSIGN][ELEVATOR-GROUP][ELEVATORSOURCE] workerName={worker.name}, workerId={worker.id}, jobSecondId={job.guid}, seq={seq}");
+                            }
+                            else if (Segment_A_ElevatorSource != null)
+                            {
+                                Segment_A_Elevatordest = position;
+                                seq = template_GroupMission(job, Segment_A_Elevatordest, worker, seq, nameof(MissionsTemplateGroup.ELEVATORDEST));
+                                //EventLogger.Info($"[ASSIGN][ASSIGN][ELEVATOR-GROUP][ELEVATORDEST] workerName={worker.name}, workerId={worker.id}, jobSecondId={job.guid}, seq={seq}");
+                            }
+                            break;
                     }
-                    // 4) TRAFFIC → TRAFFIC 그룹
-                    else if (node.nodeType.ToUpper() == nameof(NodeType.TRAFFIC))
-                    {
-                        seq = create_GroupMission(job, position, worker, seq, nameof(MissionsTemplateGroup.TRAFFIC));
-                    }
-                    else
-                    {
-                        // 순수 이동 구간이므로 MOVE(STOPOVERMOVE)만 생성
-                        seq = create_SingleMission(job, position, worker, seq, nameof(MissionTemplateType.MOVE), nameof(MissionTemplateSubType.STOPOVERMOVE));
-                    }
+
                     reValue = true;
                 }
             }
@@ -213,12 +218,14 @@ namespace JOB.Services
 
             if (routesB == null)
             {
-                EventLogger.Warn($"[ROUTE_B][PLAN][NO_ROUTE] response is null (path not found?) jobId={job?.guid} from={jobSource?.positionId} to={jobDestination?.positionId}");
+                EventLogger.Warn($"[ROUTE_B][PLAN][NO_ROUTE] response is null (path not found?) jobId={job?.guid}, from={jobSource?.positionId}, to={jobDestination?.positionId}" +
+                                     $",WorkerId={worker?.id}, WorkerName={worker.name}");
                 return reValue;
             }
             if (routesB.nodes == null)
             {
-                EventLogger.Warn($"[ROUTE_B][PLAN][NO_ROUTE] nodes is null/empty (path not found) jobId={job?.guid} from={jobSource?.positionId} to={jobDestination?.positionId}");
+                EventLogger.Warn($"[ROUTE_B][PLAN][NO_ROUTE] nodes is null/empty (path not found) jobId={job?.guid}, from={jobSource?.positionId}, to={jobDestination?.positionId}" +
+                                     $",WorkerId={worker?.id}, WorkerName={worker.name}");
                 return reValue;
             }
 
@@ -235,40 +242,44 @@ namespace JOB.Services
                 // 1) 출발지 → PICK 그룹
                 if (node.positionId == jobSource.positionId)
                 {
-                    seq = create_GroupMission(job, position, worker, seq, nameof(MissionsTemplateGroup.PICK));
+                    seq = template_GroupMission(job, position, worker, seq, nameof(MissionsTemplateGroup.PICK));
                 }
+
                 // 2) 목적지 → DROP 그룹
                 else if (node.positionId == jobDestination.positionId)
                 {
-                    seq = create_GroupMission(job, position, worker, seq, nameof(MissionsTemplateGroup.DROP));
-                }
-
-                // 3) ELEVATOR 노드 → Elevator 그룹 (한 번만)
-                else if (node.nodeType.ToUpper() == nameof(NodeType.ELEVATOR))
-                {
-                    if (Segment_B_ElevatorSource == null)
-                    {
-                        Segment_B_ElevatorSource = position;
-                        seq = create_GroupMission(job, Segment_B_ElevatorSource, worker, seq, nameof(MissionsTemplateGroup.ELEVATORSOURCE));
-                        //EventLogger.Info($"[ASSIGN][ASSIGN][ELEVATOR-GROUP][ELEVATORSOURCE] workerName={worker.name}, workerId={worker.id}, jobSecondId={job.guid}, seq={seq}");
-                    }
-                    else if (Segment_B_ElevatorSource != null)
-                    {
-                        Segment_B_Elevatordest = position;
-                        seq = create_GroupMission(job, Segment_B_Elevatordest, worker, seq, nameof(MissionsTemplateGroup.ELEVATORDEST));
-                        //EventLogger.Info($"[ASSIGN][ASSIGN][ELEVATOR-GROUP][ELEVATORDEST] workerName={worker.name}, workerId={worker.id}, jobSecondId={job.guid}, seq={seq}");
-                    }
-                }
-                // 4) TRAFFIC → TRAFFIC 그룹
-                else if (node.nodeType.ToUpper() == nameof(NodeType.TRAFFIC))
-                {
-                    seq = create_GroupMission(job, position, worker, seq, nameof(MissionsTemplateGroup.TRAFFIC));
+                    seq = template_GroupMission(job, position, worker, seq, nameof(MissionsTemplateGroup.DROP));
                 }
                 // 5) 나머지 → MOVE(STOPOVERMOVE)
                 else
                 {
-                    seq = create_SingleMission(job, position, worker, seq, nameof(MissionTemplateType.MOVE), nameof(MissionTemplateSubType.STOPOVERMOVE));
+                    seq = template_SingleMission(job, position, worker, seq, nameof(MissionTemplateType.MOVE), nameof(MissionTemplateSubType.STOPOVERMOVE));
                 }
+
+                switch (node.nodeType.ToUpper())
+                {
+                    case nameof(NodeType.ELEVATOR):
+                        // 3) ELEVATOR 노드 → Elevator 그룹 (한 번만)
+                        if (Segment_B_ElevatorSource == null)
+                        {
+                            Segment_B_ElevatorSource = position;
+                            seq = template_GroupMission(job, Segment_B_ElevatorSource, worker, seq, nameof(MissionsTemplateGroup.ELEVATORSOURCE));
+                            //EventLogger.Info($"[ASSIGN][ASSIGN][ELEVATOR-GROUP][ELEVATORSOURCE] workerName={worker.name}, workerId={worker.id}, jobSecondId={job.guid}, seq={seq}");
+                        }
+                        else if (Segment_B_ElevatorSource != null)
+                        {
+                            Segment_B_Elevatordest = position;
+                            seq = template_GroupMission(job, Segment_B_Elevatordest, worker, seq, nameof(MissionsTemplateGroup.ELEVATORDEST));
+                            //EventLogger.Info($"[ASSIGN][ASSIGN][ELEVATOR-GROUP][ELEVATORDEST] workerName={worker.name}, workerId={worker.id}, jobSecondId={job.guid}, seq={seq}");
+                        }
+                        break;
+
+                    case nameof(NodeType.TRAFFIC):
+                        seq = template_SingleMission(job, position, worker, seq, nameof(MissionTemplateType.ACTION), nameof(MissionTemplateSubType.TRAFFIC));
+
+                        break;
+                }
+
                 reValue = true;
             }
             return reValue;
@@ -284,13 +295,15 @@ namespace JOB.Services
 
             if (routes == null)
             {
-                EventLogger.Warn($"[ChargeWait][PLAN][NO_ROUTE] response is null (path not found?) jobId={job.guid} from={workerStart.positionId} to={jobDestination?.positionId}");
+                EventLogger.Warn($"[ChargeWait][PLAN][NO_ROUTE] response is null (path not found?) jobId={job?.guid}, from={workerStart?.positionId}, to={jobDestination?.positionId}" +
+                                 $",WorkerId={worker?.id}, WorkerName={worker.name}");
                 return reValue;
             }
 
             if (routes.nodes == null)
             {
-                EventLogger.Warn($"[ChargeWait][PLAN][NO_ROUTE] nodes is null/empty (path not found) jobId={job.guid} from={workerStart.positionId} to={jobDestination?.positionId}");
+                EventLogger.Warn($"[ChargeWait][PLAN][NO_ROUTE] nodes is null/empty (path not found) jobId={job?.guid}, from={workerStart?.positionId}, to={jobDestination?.positionId}" +
+                                 $",WorkerId={worker?.id}, WorkerName={worker.name}");
 
                 return reValue;
             }
@@ -307,47 +320,43 @@ namespace JOB.Services
                 // 1) 시작 위치 → SOURCEMOVE
                 if (node.positionId == workerStart.positionId)
                 {
-                    seq = create_SingleMission(job, position, worker, seq, nameof(MissionTemplateType.MOVE), nameof(MissionTemplateSubType.SOURCEMOVE));
+                    seq = template_SingleMission(job, position, worker, seq, nameof(MissionTemplateType.MOVE), nameof(MissionTemplateSubType.SOURCEMOVE));
                 }
-                // 2) 목적지 → DESTINATIONMOVE
-                else if (node.positionId == jobDestination.positionId)
+                else if (node.positionId == jobDestination.positionId && jobDestination.nodeType != nameof(NodeType.CHARGER))
                 {
-                    //충전일 경우
-                    if (jobDestination.nodeType == nameof(NodeType.CHARGER))
-                    {
-                        seq = create_SingleMission(job, position, worker, seq, nameof(MissionTemplateType.MOVE), nameof(MissionTemplateSubType.CHARGERMOVE));
-
-                    }
-                    else
-                    {
-                        seq = create_SingleMission(job, position, worker, seq, nameof(MissionTemplateType.MOVE), nameof(MissionTemplateSubType.DESTINATIONMOVE));
-                    }
-                }
-                
-                // 3) ELEVATOR 그룹 (한 번만)
-                else if (node.nodeType.ToUpper() == nameof(NodeType.ELEVATOR))
-                {
-                    if (ElevatorSource == null)
-                    {
-                        ElevatorSource = position;
-                        seq = create_GroupMission(job, ElevatorSource, worker, seq, nameof(MissionsTemplateGroup.ELEVATORSOURCE));
-                    }
-                    else if (ElevatorSource != null)
-                    {
-                        Elevatordest = position;
-                        seq = create_GroupMission(job, Elevatordest, worker, seq, nameof(MissionsTemplateGroup.ELEVATORDEST));
-                    }
-                }
-                // 4) TRAFFIC → TRAFFIC 그룹
-                else if (node.nodeType.ToUpper() == nameof(NodeType.TRAFFIC))
-                {
-                    seq = create_GroupMission(job, position, worker, seq, nameof(MissionsTemplateGroup.TRAFFIC));
+                    seq = template_SingleMission(job, position, worker, seq, nameof(MissionTemplateType.MOVE), nameof(MissionTemplateSubType.DESTINATIONMOVE));
                 }
                 // 5) 나머지 → STOPOVERMOVE
                 else
                 {
-                    seq = create_SingleMission(job, position, worker, seq, nameof(MissionTemplateType.MOVE), nameof(MissionTemplateSubType.STOPOVERMOVE));
+                    seq = template_SingleMission(job, position, worker, seq, nameof(MissionTemplateType.MOVE), nameof(MissionTemplateSubType.STOPOVERMOVE));
                 }
+
+                switch (node.nodeType.ToUpper())
+                {
+                    case nameof(NodeType.TRAFFIC):
+                        seq = template_GroupMission(job, position, worker, seq, nameof(MissionsTemplateGroup.TRAFFIC));
+                        break;
+
+                    case nameof(NodeType.ELEVATOR):
+                        if (ElevatorSource == null)
+                        {
+                            ElevatorSource = position;
+                            seq = template_GroupMission(job, ElevatorSource, worker, seq, nameof(MissionsTemplateGroup.ELEVATORSOURCE));
+                        }
+                        else if (ElevatorSource != null)
+                        {
+                            Elevatordest = position;
+                            seq = template_GroupMission(job, Elevatordest, worker, seq, nameof(MissionsTemplateGroup.ELEVATORDEST));
+                        }
+                        break;
+
+                    case nameof(NodeType.CHARGER):
+                        seq = template_SingleMission(job, position, worker, seq, nameof(MissionTemplateType.MOVE), nameof(MissionTemplateSubType.CHARGERMOVE));
+
+                        break;
+                }
+
                 reValue = true;
             }
             return reValue;

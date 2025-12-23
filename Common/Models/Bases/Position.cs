@@ -41,10 +41,11 @@ namespace Common.Models.Jobs
         [JsonPropertyOrder(13)] public bool isEnabled { get; set; }             //사용유무
         [JsonPropertyOrder(14)] public bool isOccupied { get; set; }            //점유 상태
         [JsonPropertyOrder(15)] public string linkedArea { get; set; }          //포지션 관련 Area
-        [JsonPropertyOrder(16)] public string linkedFacility { get; set; }      //포지션 관련 장비
-        [JsonPropertyOrder(17)] public string linkedRobotId { get; set; }       //포지션 지정 Robot
-        [JsonPropertyOrder(18)] public bool hasCharger { get; set; }            //충전기에 대한 포지션인지
-        [JsonPropertyOrder(19)] public string nodeType { get; set; }            //포지션 로드타입
+        [JsonPropertyOrder(16)] public string linkedZone { get; set; }          //포지션 관련 Area
+        [JsonPropertyOrder(17)] public string linkedFacility { get; set; }      //포지션 관련 장비
+        [JsonPropertyOrder(18)] public string linkedRobotId { get; set; }       //포지션 지정 Robot
+        [JsonPropertyOrder(19)] public bool hasCharger { get; set; }            //충전기에 대한 포지션인지
+        [JsonPropertyOrder(20)] public string nodeType { get; set; }            //포지션 로드타입
 
         public override string ToString()
         {
@@ -64,6 +65,7 @@ namespace Common.Models.Jobs
                 $",isEnabled = {isEnabled,-5}" +
                 $",isOccupied = {isOccupied,-5}" +
                 $",linkedArea = {linkedArea,-5}" +
+                $",linkedZone = {linkedZone,-5}" +
                 $",linkedFacility = {linkedFacility,-5}" +
                 $",linkedRobotId = {linkedRobotId,-5}" +
                 $",hasCharger = {hasCharger,-5}" +

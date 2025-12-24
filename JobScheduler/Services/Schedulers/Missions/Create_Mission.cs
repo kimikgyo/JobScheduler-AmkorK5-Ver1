@@ -156,11 +156,8 @@ namespace JOB.Services
         {
             bool reValue = false;
             // A) Segment A: WorkerStart → JobSource
-            bool workerGotoJobSource = false;
-            if (workerStart.source.ToUpper() == "ANT" && workerStart.positionId != jobSource.positionId) workerGotoJobSource = true;
-            else if (workerStart.source.ToUpper() == "MIR") workerGotoJobSource = true;
 
-            if (workerGotoJobSource)
+            if (workerStart.positionId != jobSource.positionId)
             {
                 var routesA = resource.Api.Post_Routes_Plan_Async(_mapping.RoutesPlanas.Request(workerStart.positionId, jobSource.positionId)).Result;
 
@@ -185,12 +182,39 @@ namespace JOB.Services
                     if (position == null) continue;
                     if (position.id == jobSource.id) continue;
 
-                    seq = template_SingleMission(job, position, worker, seq, nameof(MissionTemplateType.MOVE), nameof(MissionTemplateSubType.STOPOVERMOVE));
-
                     switch (node.nodeType.ToUpper())
                     {
+                        case nameof(NodeType.WAYPOINT):
+                            if (node.positionId == jobSource.positionId)
+                            {
+                                seq = template_GroupMission(job, position, worker, seq, nameof(MissionsTemplateGroup.PICK));
+                            }
+                            else if (node.positionId == jobDestination.positionId)
+                            {
+                                seq = template_GroupMission(job, position, worker, seq, nameof(MissionsTemplateGroup.DROP));
+                            }
+                            else
+                            {
+                                seq = template_SingleMission(job, position, worker, seq, nameof(MissionTemplateType.MOVE), nameof(MissionTemplateSubType.STOPOVERMOVE));
+                            }
+                            break;
+
                         case nameof(NodeType.TRAFFIC):
-                            seq = template_GroupMission(job, position, worker, seq, nameof(MissionsTemplateGroup.TRAFFIC));
+                            if (node.positionId == jobSource.positionId)
+                            {
+                                seq = template_GroupMission(job, position, worker, seq, nameof(MissionsTemplateGroup.PICK));
+                                seq = template_SingleMission(job, position, worker, seq, nameof(MissionTemplateType.ACTION), nameof(MissionTemplateSubType.TRAFFIC));
+                            }
+                            else if (node.positionId == jobDestination.positionId)
+                            {
+                                seq = template_GroupMission(job, position, worker, seq, nameof(MissionsTemplateGroup.DROP));
+                            }
+                            else
+                            {
+                                seq = template_SingleMission(job, position, worker, seq, nameof(MissionTemplateType.MOVE), nameof(MissionTemplateSubType.STOPOVERMOVE));
+                                seq = template_SingleMission(job, position, worker, seq, nameof(MissionTemplateType.ACTION), nameof(MissionTemplateSubType.TRAFFIC));
+                            }
+
                             break;
 
                         case nameof(NodeType.ELEVATOR):
@@ -206,6 +230,12 @@ namespace JOB.Services
                                 seq = template_GroupMission(job, Segment_A_Elevatordest, worker, seq, nameof(MissionsTemplateGroup.ELEVATORDEST));
                                 //EventLogger.Info($"[ASSIGN][ASSIGN][ELEVATOR-GROUP][ELEVATORDEST] workerName={worker.name}, workerId={worker.id}, jobSecondId={job.guid}, seq={seq}");
                             }
+                            break;
+
+                        case nameof(NodeType.CHARGER):
+
+                            seq = template_SingleMission(job, position, worker, seq, nameof(MissionTemplateType.MOVE), nameof(MissionTemplateSubType.CHARGERMOVE));
+
                             break;
                     }
 
@@ -239,25 +269,41 @@ namespace JOB.Services
                 // ELEVATOR 는 position 없이 처리할 수 있으므로 예외
                 if (position == null && node.nodeType.ToUpper() != nameof(NodeType.ELEVATOR)) continue;
 
-                // 1) 출발지 → PICK 그룹
-                if (node.positionId == jobSource.positionId)
-                {
-                    seq = template_GroupMission(job, position, worker, seq, nameof(MissionsTemplateGroup.PICK));
-                }
-
-                // 2) 목적지 → DROP 그룹
-                else if (node.positionId == jobDestination.positionId)
-                {
-                    seq = template_GroupMission(job, position, worker, seq, nameof(MissionsTemplateGroup.DROP));
-                }
-                // 5) 나머지 → MOVE(STOPOVERMOVE)
-                else
-                {
-                    seq = template_SingleMission(job, position, worker, seq, nameof(MissionTemplateType.MOVE), nameof(MissionTemplateSubType.STOPOVERMOVE));
-                }
-
                 switch (node.nodeType.ToUpper())
                 {
+                    case nameof(NodeType.WAYPOINT):
+                        if (node.positionId == jobSource.positionId)
+                        {
+                            seq = template_GroupMission(job, position, worker, seq, nameof(MissionsTemplateGroup.PICK));
+                        }
+                        else if (node.positionId == jobDestination.positionId)
+                        {
+                            seq = template_GroupMission(job, position, worker, seq, nameof(MissionsTemplateGroup.DROP));
+                        }
+                        else
+                        {
+                            seq = template_SingleMission(job, position, worker, seq, nameof(MissionTemplateType.MOVE), nameof(MissionTemplateSubType.STOPOVERMOVE));
+                        }
+                        break;
+
+                    case nameof(NodeType.TRAFFIC):
+                        if (node.positionId == jobSource.positionId)
+                        {
+                            seq = template_GroupMission(job, position, worker, seq, nameof(MissionsTemplateGroup.PICK));
+                            seq = template_SingleMission(job, position, worker, seq, nameof(MissionTemplateType.ACTION), nameof(MissionTemplateSubType.TRAFFIC));
+                        }
+                        else if (node.positionId == jobDestination.positionId)
+                        {
+                            seq = template_GroupMission(job, position, worker, seq, nameof(MissionsTemplateGroup.DROP));
+                        }
+                        else
+                        {
+                            seq = template_SingleMission(job, position, worker, seq, nameof(MissionTemplateType.MOVE), nameof(MissionTemplateSubType.STOPOVERMOVE));
+                            seq = template_SingleMission(job, position, worker, seq, nameof(MissionTemplateType.ACTION), nameof(MissionTemplateSubType.TRAFFIC));
+                        }
+
+                        break;
+
                     case nameof(NodeType.ELEVATOR):
                         // 3) ELEVATOR 노드 → Elevator 그룹 (한 번만)
                         if (Segment_B_ElevatorSource == null)
@@ -274,8 +320,9 @@ namespace JOB.Services
                         }
                         break;
 
-                    case nameof(NodeType.TRAFFIC):
-                        seq = template_SingleMission(job, position, worker, seq, nameof(MissionTemplateType.ACTION), nameof(MissionTemplateSubType.TRAFFIC));
+                    case nameof(NodeType.CHARGER):
+
+                        seq = template_SingleMission(job, position, worker, seq, nameof(MissionTemplateType.MOVE), nameof(MissionTemplateSubType.CHARGERMOVE));
 
                         break;
                 }
@@ -317,25 +364,39 @@ namespace JOB.Services
 
                 if (position == null && node.nodeType.ToUpper() != nameof(NodeType.ELEVATOR)) continue;
 
-                // 1) 시작 위치 → SOURCEMOVE
-                if (node.positionId == workerStart.positionId)
-                {
-                    seq = template_SingleMission(job, position, worker, seq, nameof(MissionTemplateType.MOVE), nameof(MissionTemplateSubType.SOURCEMOVE));
-                }
-                else if (node.positionId == jobDestination.positionId && jobDestination.nodeType != nameof(NodeType.CHARGER))
-                {
-                    seq = template_SingleMission(job, position, worker, seq, nameof(MissionTemplateType.MOVE), nameof(MissionTemplateSubType.DESTINATIONMOVE));
-                }
-                // 5) 나머지 → STOPOVERMOVE
-                else
-                {
-                    seq = template_SingleMission(job, position, worker, seq, nameof(MissionTemplateType.MOVE), nameof(MissionTemplateSubType.STOPOVERMOVE));
-                }
-
                 switch (node.nodeType.ToUpper())
                 {
+                    case nameof(NodeType.WAYPOINT):
+                        if (node.positionId == workerStart.positionId)
+                        {
+                            seq = template_SingleMission(job, position, worker, seq, nameof(MissionTemplateType.MOVE), nameof(MissionTemplateSubType.SOURCEMOVE));
+                        }
+                        else if (node.positionId == jobDestination.positionId)
+                        {
+                            seq = template_SingleMission(job, position, worker, seq, nameof(MissionTemplateType.MOVE), nameof(MissionTemplateSubType.DESTINATIONMOVE));
+                        }
+                        else
+                        {
+                            seq = template_SingleMission(job, position, worker, seq, nameof(MissionTemplateType.MOVE), nameof(MissionTemplateSubType.STOPOVERMOVE));
+                        }
+                        break;
+
                     case nameof(NodeType.TRAFFIC):
-                        seq = template_GroupMission(job, position, worker, seq, nameof(MissionsTemplateGroup.TRAFFIC));
+                        if (node.positionId == workerStart.positionId)
+                        {
+                            seq = template_SingleMission(job, position, worker, seq, nameof(MissionTemplateType.MOVE), nameof(MissionTemplateSubType.SOURCEMOVE));
+                            seq = template_SingleMission(job, position, worker, seq, nameof(MissionTemplateType.ACTION), nameof(MissionTemplateSubType.TRAFFIC));
+                        }
+                        else if (node.positionId == jobDestination.positionId)
+                        {
+                            seq = template_SingleMission(job, position, worker, seq, nameof(MissionTemplateType.MOVE), nameof(MissionTemplateSubType.DESTINATIONMOVE));
+                        }
+                        else
+                        {
+                            seq = template_SingleMission(job, position, worker, seq, nameof(MissionTemplateType.MOVE), nameof(MissionTemplateSubType.STOPOVERMOVE));
+                            seq = template_SingleMission(job, position, worker, seq, nameof(MissionTemplateType.ACTION), nameof(MissionTemplateSubType.TRAFFIC));
+                        }
+
                         break;
 
                     case nameof(NodeType.ELEVATOR):
@@ -352,6 +413,7 @@ namespace JOB.Services
                         break;
 
                     case nameof(NodeType.CHARGER):
+
                         seq = template_SingleMission(job, position, worker, seq, nameof(MissionTemplateType.MOVE), nameof(MissionTemplateSubType.CHARGERMOVE));
 
                         break;

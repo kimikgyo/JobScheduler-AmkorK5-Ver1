@@ -27,7 +27,7 @@ namespace JOB.Services
                 Parameter ChargeEquest = null;
 
                 //[조회] 현재 Worker에게 할당된 Mission
-                var missions = _repository.Missions.GetByAssignedWorkerId(worker.id).OrderBy(r=>r.sequence).ToList();
+                var missions = _repository.Missions.GetByAssignedWorkerId(worker.id).OrderBy(r => r.sequence).ToList();
                 if (missions == null || missions.Count == 0) continue;
 
                 //[조회] Middlewares 정보
@@ -35,7 +35,6 @@ namespace JOB.Services
 
                 //[조회] 현재 진행중인 Mission
                 var runmission = _repository.Missions.GetByRunMissions(missions).FirstOrDefault();
-
 
                 bool c1 = worker.isMiddleware == true;
 
@@ -149,7 +148,7 @@ namespace JOB.Services
                     completed = elevatorParameterMapping(enterPositions, mission, assignedWorker);
                     if (completed)
                     {
-                        completed = switchingMapParameterMapping(enterPositions, mission);
+                        completed = switchingMapParameterMapping(enterPositions, mission, assignedWorker);
                     }
                     break;
 
@@ -196,13 +195,17 @@ namespace JOB.Services
             return completed;
         }
 
-        private bool switchingMapParameterMapping(List<Position> positions, Mission mission)
+        private bool switchingMapParameterMapping(List<Position> positions, Mission mission, Worker worker)
         {
             bool completed = false;
 
             Position sourcePosition = null;
             Position destPosition = null;
             Position mapSwitchPosition = null;
+
+            positions = positions.Where(r => r != null && r.mapId != worker.mapId).ToList();
+            if (positions == null || positions.Count() == 0) return completed;
+
             //Map스위칭 포지션 적용
             var job = _repository.Jobs.GetByid(mission.jobId);
             if (job != null)
@@ -215,20 +218,18 @@ namespace JOB.Services
                 if (sourceMission != null && sourcePosition != null)
                 {
                     mapSwitchPosition = positions.FirstOrDefault(r => r.mapId == sourcePosition.mapId);
-
                 }
                 else
                 {
                     //도착지층 과 다를경우
                     destPosition = _repository.Positions.MiR_GetById(job.destinationId);
-                    var destMission = missions.Where(r => r.state == nameof(MissionState.WAITING) 
-                                                 && (r.subType == nameof(MissionSubType.DESTINATIONMOVE)|| r.subType == nameof(MissionSubType.CHARGERMOVE))).FirstOrDefault();
-                    
+                    var destMission = missions.Where(r => r.state == nameof(MissionState.WAITING)
+                                                 && (r.subType == nameof(MissionSubType.DESTINATIONMOVE) || r.subType == nameof(MissionSubType.CHARGERMOVE))).FirstOrDefault();
+
                     if (destMission != null && destPosition != null)
                     {
                         mapSwitchPosition = positions.FirstOrDefault(r => r.mapId == destPosition.mapId);
                     }
-
                 }
 
                 if (mapSwitchPosition != null)
@@ -249,8 +250,6 @@ namespace JOB.Services
 
             return completed;
         }
-
-  
 
         private void ElevatorModeChange()
         {

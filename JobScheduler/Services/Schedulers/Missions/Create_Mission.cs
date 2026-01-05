@@ -159,15 +159,16 @@ namespace JOB.Services
 
             if (workerStart.positionId != jobSource.positionId)
             {
-                var routesA = resource.Api.Post_Routes_Plan_Async(_mapping.RoutesPlanas.Request(workerStart.positionId, jobSource.positionId)).Result;
+                var routesPlanRequest_A = _mapping.RoutesPlanas.Request(workerStart.positionId, jobSource.positionId);
+                var routesPlanResponse_A = resource.Api.Post_Routes_Plan_Async(routesPlanRequest_A).Result;
 
-                if (routesA == null)
+                if (routesPlanResponse_A == null)
                 {
                     EventLogger.Warn($"[ROUTE_A][PLAN][NO_ROUTE] response is null (path not found?), jobId={job?.guid}, from={jobSource?.positionId}, to={jobDestination?.positionId}" +
                                      $",WorkerId={worker?.id}, WorkerName={worker.name}");
                     return reValue;
                 }
-                if (routesA.nodes == null)
+                if (routesPlanResponse_A.nodes == null)
                 {
                     EventLogger.Warn($"[ROUTE_A][PLAN][NO_ROUTE] nodes is null/empty (path not found) jobId={job?.guid} from={jobSource?.positionId} to={jobDestination?.positionId}" +
                                      $",WorkerId={worker?.id}, WorkerName={worker.name}");
@@ -176,7 +177,7 @@ namespace JOB.Services
                 Position Segment_A_ElevatorSource = null;
                 Position Segment_A_Elevatordest = null;
 
-                foreach (var node in routesA.nodes)
+                foreach (var node in routesPlanResponse_A.nodes)
                 {
                     var position = _repository.Positions.GetByPositionId(node.positionId);
                     if (position == null) continue;
@@ -244,15 +245,16 @@ namespace JOB.Services
             }
 
             // B) Segment B: JobSource → JobDestination
-            var routesB = resource.Api.Post_Routes_Plan_Async(_mapping.RoutesPlanas.Request(jobSource.positionId, jobDestination.positionId)).Result;
+            var routesPlanRequest_B = _mapping.RoutesPlanas.Request(jobSource.positionId, jobDestination.positionId);
+            var routesPlanResponse_B = resource.Api.Post_Routes_Plan_Async(routesPlanRequest_B).Result;
 
-            if (routesB == null)
+            if (routesPlanResponse_B == null)
             {
                 EventLogger.Warn($"[ROUTE_B][PLAN][NO_ROUTE] response is null (path not found?) jobId={job?.guid}, from={jobSource?.positionId}, to={jobDestination?.positionId}" +
                                      $",WorkerId={worker?.id}, WorkerName={worker.name}");
                 return reValue;
             }
-            if (routesB.nodes == null)
+            if (routesPlanResponse_B.nodes == null)
             {
                 EventLogger.Warn($"[ROUTE_B][PLAN][NO_ROUTE] nodes is null/empty (path not found) jobId={job?.guid}, from={jobSource?.positionId}, to={jobDestination?.positionId}" +
                                      $",WorkerId={worker?.id}, WorkerName={worker.name}");
@@ -262,7 +264,7 @@ namespace JOB.Services
             Position Segment_B_ElevatorSource = null;
             Position Segment_B_Elevatordest = null;
 
-            foreach (var node in routesB.nodes)
+            foreach (var node in routesPlanResponse_B.nodes)
             {
                 var position = _repository.Positions.GetByPositionId(node.positionId);
 
@@ -338,16 +340,17 @@ namespace JOB.Services
                                             , int seq)
         {
             bool reValue = false;
-            var routes = resource.Api.Post_Routes_Plan_Async(_mapping.RoutesPlanas.Request(workerStart.positionId, jobDestination.positionId)).Result;
+            var routesPlanRequest = _mapping.RoutesPlanas.Request(workerStart.positionId, jobDestination.positionId);
+            var routesPlanResponse = resource.Api.Post_Routes_Plan_Async(routesPlanRequest).Result;
 
-            if (routes == null)
+            if (routesPlanResponse == null)
             {
                 EventLogger.Warn($"[ChargeWait][PLAN][NO_ROUTE] response is null (path not found?) jobId={job?.guid}, from={workerStart?.positionId}, to={jobDestination?.positionId}" +
                                  $",WorkerId={worker?.id}, WorkerName={worker.name}");
                 return reValue;
             }
 
-            if (routes.nodes == null)
+            if (routesPlanResponse.nodes == null)
             {
                 EventLogger.Warn($"[ChargeWait][PLAN][NO_ROUTE] nodes is null/empty (path not found) jobId={job?.guid}, from={workerStart?.positionId}, to={jobDestination?.positionId}" +
                                  $",WorkerId={worker?.id}, WorkerName={worker.name}");
@@ -358,7 +361,7 @@ namespace JOB.Services
             Position ElevatorSource = null;
             Position Elevatordest = null;
 
-            foreach (var node in routes.nodes)
+            foreach (var node in routesPlanResponse.nodes)
             {
                 var position = _repository.Positions.GetByPositionId(node.positionId);
 

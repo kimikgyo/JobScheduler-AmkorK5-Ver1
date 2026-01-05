@@ -190,7 +190,7 @@ namespace JOB.Services
             if (reservedChargers == null || reservedChargers.Count == 0)
             {
                 // 전용 충전기가 하나도 없으면 바로 리턴
-                EventLogger.Info("[CHARGE][RESERVED] no reserved chargers (linkedRobotId set) → skip");
+                //EventLogger.Info("[CHARGE][RESERVED] no reserved chargers (linkedRobotId set) → skip");
                 return;
             }
 

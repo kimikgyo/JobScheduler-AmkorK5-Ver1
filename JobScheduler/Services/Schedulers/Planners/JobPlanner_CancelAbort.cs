@@ -16,6 +16,22 @@ namespace JOB.Services
             terminateState_Executing(jobs);
         }
 
+        /// <summary>
+        /// Terminate_Init으로 상태 변경
+        /// </summary>
+        /// <param name="job"></param>
+        /// <param name="message"></param>
+        private void jobTerminateState_Change_Inited(Job job, string message)
+        {
+            job.terminateState = nameof(TerminateState.INITED);
+            job.terminator = "JobScheduler";
+            job.terminationType = "CANCEL";
+            job.terminatedAt = DateTime.Now;
+            _repository.Jobs.Update(job);
+            EventLogger.Info($"{message} JobInit Cancel Update, jobId={job.guid}, jobState={job.state}, jobName={job.name},specifiedWorkerId={job.specifiedWorkerId}, assignedWorkerId={job.assignedWorkerId}" +
+                             $",assignedWorkerName={job.assignedWorkerName}");
+        }
+
         // ============================================================
         // 3) EXECUTING 처리 (deleteMission은 “현재 1개만”)
         // ============================================================

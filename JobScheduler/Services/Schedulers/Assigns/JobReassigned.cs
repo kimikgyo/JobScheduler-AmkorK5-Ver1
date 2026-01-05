@@ -78,59 +78,44 @@ namespace JOB.Services
                 // =======================================================
                 // (A) 미완료 PICK 존재 여부
                 // =======================================================
-                bool hasUnfinishedPick = false;
 
-                foreach (var m2 in workerMissions)
-                {
-                    if (m2.type == nameof(MissionSubType.PICK) &&
-                        m2.state != nameof(MissionState.COMPLETED))
-                    {
-                        hasUnfinishedPick = true;
-                        break;
-                    }
-                }
+                var pickMissionCompleted = workerMissions.FirstOrDefault(m => m.type == nameof(MissionSubType.PICK) && m.state == nameof(MissionState.COMPLETED));
 
-                if (hasUnfinishedPick)
+                if (pickMissionCompleted == null)
                 {
-                    EventLogger.Info($"[ASSIGN][REASSIGN][SKIP][UNFINISHED-PICK], workerName={worker.name}, workerId={worker.id}, missionId={mission.guid}, jobId={mission.jobId}");
+                    EventLogger.Info($"[ASSIGN][REASSIGN][SKIP][UNFINISHED-PICK], workerName={worker.name}, workerId={worker.id}, missionId={mission.guid}, missionName={mission.name}" +
+                                     $", jobId={mission.jobId}");
                     continue;
                 }
 
                 // =======================================================
                 // (B) 엘리베이터 이동 중인지 여부
                 // =======================================================
-                bool hasExecutingElevator = false;
 
-                foreach (var m2 in workerMissions)
-                {
-                    if (m2.state == nameof(MissionState.EXECUTING) &&
-                        (m2.type == nameof(MissionSubType.ELEVATORENTERMOVE) ||
-                         m2.type == nameof(MissionSubType.ELEVATOREXITMOVE) ||
-                         m2.type == nameof(MissionSubType.ELEVATORSOURCEFLOOR) ||
-                         m2.type == nameof(MissionSubType.ELEVATORDESTINATIONFLOOR)))
-                    {
-                        hasExecutingElevator = true;
-                        break;
-                    }
-                }
+                var hasExecutingElevator = workerMissions.FirstOrDefault(m => m.state == nameof(MissionState.EXECUTING)
+                                                                       && (m.type == nameof(MissionSubType.ELEVATORENTERMOVE)
+                                                                       || m.type == nameof(MissionSubType.ELEVATOREXITMOVE)
+                                                                       || m.type == nameof(MissionSubType.ELEVATORSOURCEFLOOR)
+                                                                       || m.type == nameof(MissionSubType.ELEVATORDESTINATIONFLOOR)));
 
-                if (hasExecutingElevator)
+                if (hasExecutingElevator != null)
                 {
-                    EventLogger.Info($"[ASSIGN][REASSIGN][SKIP][ELEVATOR-EXECUTING], workerName={worker.name}, workerId={worker.id}, missionId={mission.guid}, jobId={mission.jobId}");
+                    EventLogger.Info($"[ASSIGN][REASSIGN][SKIP][ELEVATOR-EXECUTING], workerName={worker.name}, workerId={worker.id}, missionId={mission.guid}, missionName={mission.name}" +
+                                     $", jobId={mission.jobId}");
                     continue;
                 }
-
-             
 
                 // =======================================================
                 // 재할당 트리거 조건 충족 → 수행
                 // =======================================================
-                EventLogger.Info($"[ASSIGN][REASSIGN][TRIGGER] reassign start, workerName={worker.name}, workerId={worker.id}, missionId={mission.guid}, jobId={mission.jobId}");
+                EventLogger.Info($"[ASSIGN][REASSIGN][TRIGGER] reassign start, workerName={worker.name}, workerId={worker.id}, missionId={mission.guid}, missionName={mission.name}" +
+                                 $", jobId={mission.jobId}");
 
                 JobReassignAfter(worker, mission);
                 triggerCount++;
 
-                EventLogger.Info($"[ASSIGN][REASSIGN][TRIGGER][DONE], workerName={worker.name}, workerId={worker.id}, missionId={mission.guid}, jobId={mission.jobId}");
+                EventLogger.Info($"[ASSIGN][REASSIGN][TRIGGER][DONE], workerName={worker.name}, workerId={worker.id}, missionId={mission.guid}, missionName={mission.name}" +
+                                 $", jobId={mission.jobId}");
             }
 
             // ============================================================
@@ -215,17 +200,10 @@ namespace JOB.Services
             foreach (var job in unAssignedJobs)
             {
                 // group 이 다르면 스킵
-                if (job.group != worker.group)
-                {
-                    continue;
-                }
+                if (job.group != worker.group) continue;
 
                 // CHARGE / WAIT Job 은 재할당 대상에서 제외
-                if (job.type == nameof(JobType.CHARGE) ||
-                    job.type == nameof(JobType.WAIT))
-                {
-                    continue;
-                }
+                if (job.type == nameof(JobType.CHARGE) || job.type == nameof(JobType.WAIT)) continue;
 
                 // 지정 워커(Job.specifiedWorkerId) 체크
                 bool specifiedIsEmpty = IsInvalid(job.specifiedWorkerId);
@@ -235,11 +213,6 @@ namespace JOB.Services
                 if (specifiedIsEmpty || specifiedIsThisWorker)
                 {
                     candidateJobs.Add(job);
-                }
-                else
-                {
-                    // 다른 워커에게 지정된 Job → 이 워커 기준 후보에서 제외
-                    continue;
                 }
             }
 
@@ -263,7 +236,8 @@ namespace JOB.Services
                 return;
             }
 
-            EventLogger.Info($"[ASSIGN][REASSIGN][AFTER][SELECT] workerName={worker.name}, workerId={worker.id}, secondJobId={jobToReassign.guid}, jobType={jobToReassign.type}");
+            EventLogger.Info($"[ASSIGN][REASSIGN][AFTER][SELECT] workerName={worker.name}, workerId={worker.id}, secondJobId={jobToReassign.guid}, secondJobName={jobToReassign.name}" +
+                             $", jobType={jobToReassign.type}");
 
             // ------------------------------------------------------------
             // [5] WorkerCondition 검사 (배터리, 상태 등)
@@ -271,7 +245,7 @@ namespace JOB.Services
             bool canRun = WorkerCondition(jobToReassign, worker, batterySetting);
             if (!canRun)
             {
-                EventLogger.Info($"[ASSIGN][REASSIGN][AFTER][SKIP][WORKER-CONDITION] workerName={worker.name}, workerId={worker.id}, secondJobId={jobToReassign.guid}");
+                EventLogger.Info($"[ASSIGN][REASSIGN][AFTER][SKIP][WORKER-CONDITION] workerName={worker.name}, workerId={worker.id}, secondJobId={jobToReassign.guid}, secondJobName={jobToReassign.name}");
                 return;
             }
 
@@ -288,11 +262,11 @@ namespace JOB.Services
 
             if (!ok)
             {
-                EventLogger.Warn($"[ASSIGN][REASSIGN][AFTER][FAIL][REBUILD-MISSION] workerName={worker.name}, workerId={worker.id}, secondJobId={jobToReassign.guid}");
+                EventLogger.Warn($"[ASSIGN][REASSIGN][AFTER][FAIL][REBUILD-MISSION] workerName={worker.name}, workerId={worker.id}, secondJobId={jobToReassign.guid}, secondJobName={jobToReassign.name}");
                 return;
             }
 
-            EventLogger.Info($"[ASSIGN][REASSIGN][AFTER][REBUILD-MISSION][OK] workerName={worker.name}, workerId={worker.id}, secondJobId={jobToReassign.guid}");
+            EventLogger.Info($"[ASSIGN][REASSIGN][AFTER][REBUILD-MISSION][OK] workerName={worker.name}, workerId={worker.id}, secondJobId={jobToReassign.guid}, secondJobName={jobToReassign.name}");
 
             // ------------------------------------------------------------
             // [7] 기존 WAIT 미션 정리 (정책에 따라)
@@ -313,7 +287,7 @@ namespace JOB.Services
             jobToReassign.state = nameof(JobState.WORKERASSIGNED);
             _repository.Jobs.Update(jobToReassign);
 
-            EventLogger.Info($"[ASSIGN][REASSIGN][AFTER][DONE] workerName={worker.name}, workerId={worker.id}, secondJobId={jobToReassign.guid}, jobState={jobToReassign.state}");
+            EventLogger.Info($"[ASSIGN][REASSIGN][AFTER][DONE] workerName={worker.name}, workerId={worker.id}, secondJobId={jobToReassign.guid}, secondJobName={jobToReassign.name}, jobState={jobToReassign.state}");
         }
 
         /// <summary>
@@ -793,10 +767,7 @@ namespace JOB.Services
             // [2] Routes_Plan 호출:
             //     WorkerNearestPosition → secondSourcePosition
             // ------------------------------------------------------------
-            var routesPlanRequest = _mapping.RoutesPlanas.Request(
-                workerNearestPosition.positionId,
-                secondSourcePosition.positionId);
-
+            var routesPlanRequest = _mapping.RoutesPlanas.Request(workerNearestPosition.positionId, secondSourcePosition.positionId);
             var routesPlanResponse = resource.Api.Post_Routes_Plan_Async(routesPlanRequest).Result;
 
             if (routesPlanResponse == null)
@@ -999,7 +970,6 @@ namespace JOB.Services
             //     (현재 tail 의 목적지 → jobSecond 최종 목적지)
             // ------------------------------------------------------------
             var routesPlanRequest = _mapping.RoutesPlanas.Request(firstDestination.positionId, secondDestinationPosition.positionId);
-
             var routesPlanResponse = resource.Api.Post_Routes_Plan_Async(routesPlanRequest).Result;
 
             if (routesPlanResponse == null)

@@ -105,7 +105,7 @@ namespace JOB.Services
                 // 1-5) 이미 WAIT 포지션이면 스킵
                 // --------------------------------------------------------
                 var waitPositionOccupieds = _repository.Positions.MiR_GetIsOccupied(null, nameof(PositionSubType.WAIT));
-                if (waitPositionOccupieds == null)
+                if (waitPositionOccupieds == null || waitPositionOccupieds.Count == 0)
                 {
                     //EventLogger.Info($"[WAIT][CHECK][SKIP] waitPositionOccupieds at wait position: workerId={worker.id}, workerName={worker.name}, posId={worker.PositionId}");
                     continue;
@@ -119,7 +119,53 @@ namespace JOB.Services
                 }
 
                 // --------------------------------------------------------
-                // 1-6) WAIT 목적지 선택 (전용 → 공용)
+                // 1-6) 이미 출발지 포지션이면 스킵
+                // --------------------------------------------------------
+                var sourcePositionOccupieds = _repository.Positions.MiR_GetIsOccupied(null, nameof(PositionSubType.SOURCE));
+                if (sourcePositionOccupieds == null || sourcePositionOccupieds.Count == 0)
+                {
+                    //EventLogger.Info($"[WAIT][CHECK][SKIP] sourcePositionOccupieds at wait position: workerId={worker.id}, workerName={worker.name}, posId={worker.PositionId}");
+                    continue;
+                }
+                var nowAtSource = sourcePositionOccupieds.FirstOrDefault(w => w.id == worker.PositionId);
+                if (nowAtSource != null)
+                {
+                    //EventLogger.Info($"[WAIT][CHECK][SKIP] worker already at source position: workerId={worker.id}, workerName={worker.name}, posId={worker.PositionId}");
+                    continue;
+                }
+
+                // --------------------------------------------------------
+                // 1-7) 이미 목적지 포지션이면 스킵
+                // --------------------------------------------------------
+                var destinationPositionOccupieds = _repository.Positions.MiR_GetIsOccupied(null, nameof(PositionSubType.DESTINATION));
+                if (destinationPositionOccupieds == null || destinationPositionOccupieds.Count == 0)
+                {
+                    //EventLogger.Info($"[WAIT][CHECK][SKIP] destinationPositionOccupieds at wait position: workerId={worker.id}, workerName={worker.name}, posId={worker.PositionId}");
+                    continue;
+                }
+                var nowAtDestination = destinationPositionOccupieds.FirstOrDefault(w => w.id == worker.PositionId);
+                if (nowAtDestination != null)
+                {
+                    //EventLogger.Info($"[WAIT][CHECK][SKIP] worker already at destination position: workerId={worker.id}, workerName={worker.name}, posId={worker.PositionId}");
+                    continue;
+                }
+                // --------------------------------------------------------
+                // 1-8) 이미 공통 포지션이면 스킵
+                // --------------------------------------------------------
+                var allowallPositionOccupieds = _repository.Positions.MiR_GetIsOccupied(null, nameof(PositionSubType.ALLOWALL));
+                if (allowallPositionOccupieds == null || allowallPositionOccupieds.Count == 0)
+                {
+                    //EventLogger.Info($"[WAIT][CHECK][SKIP] destinationPositionOccupieds at wait position: workerId={worker.id}, workerName={worker.name}, posId={worker.PositionId}");
+                    continue;
+                }
+                var nowAtAllowall = allowallPositionOccupieds.FirstOrDefault(w => w.id == worker.PositionId);
+                if (nowAtAllowall != null)
+                {
+                    //EventLogger.Info($"[WAIT][CHECK][SKIP] worker already at allowall position: workerId={worker.id}, workerName={worker.name}, posId={worker.PositionId}");
+                    continue;
+                }
+                // --------------------------------------------------------
+                // 1-9) WAIT 목적지 선택 (전용 → 공용)
                 // --------------------------------------------------------
                 var destPosition = FindWaitPositionForWorker(worker);
                 if (destPosition == null)
@@ -129,7 +175,7 @@ namespace JOB.Services
                 }
 
                 // --------------------------------------------------------
-                // 1-7) WAIT Job 생성 요청 (Queue 등록)
+                // 1-10) WAIT Job 생성 요청 (Queue 등록)
                 // --------------------------------------------------------
                 bool created = CreateWaitJob(worker, destPosition);
 

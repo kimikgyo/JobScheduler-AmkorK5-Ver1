@@ -157,8 +157,8 @@ namespace JOB.Services
                 mission.parametersJson = JsonSerializer.Serialize(mission.parameters);
                 _repository.Missions.Update(mission);
 
-                EventLogger.Info($"[ELEV][PARAM][SET] target updated. missionguId={mission.guid} subType={mission.subType}, missionName={mission.name}" +
-                                 $", workerId={worker.id},WorkerName={worker.name}, mapId={worker.mapId}, oldTarget={old}, newTarget={selected.id}");
+                //EventLogger.Info($"[ELEV][PARAM][SET] target updated. missionguId={mission.guid} subType={mission.subType}, missionName={mission.name}" +
+                //                 $", workerId={worker.id},WorkerName={worker.name}, mapId={worker.mapId}, oldTarget={old}, newTarget={selected.id}");
             }
 
             completed = true;
@@ -166,8 +166,8 @@ namespace JOB.Services
             // 점유 업데이트(hold 포함)
             updateOccupied(selected, true, 0.5);
 
-            EventLogger.Info($"[ELEV][OCC][HOLD] occupied set.  missionguId={mission.guid} subType={mission.subType}, missionName={mission.name}" +
-                             $", workerId={worker.id},WorkerName={worker.name}, mapId={worker.mapId}, posId={selected.id}, posName={selected.name}, holdSec=0.5");
+            //EventLogger.Info($"[ELEV][OCC][HOLD] occupied set.  missionguId={mission.guid} subType={mission.subType}, missionName={mission.name}" +
+            //                 $", workerId={worker.id},WorkerName={worker.name}, mapId={worker.mapId}, posId={selected.id}, posName={selected.name}, holdSec=0.5");
 
             return (completed, selected);
         }

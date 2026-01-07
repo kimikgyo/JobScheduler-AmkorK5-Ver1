@@ -30,12 +30,7 @@ namespace JOB.Services
             // ※ "층이 다른 Job" 판정은 기존에 사용 중인 IsSameFloorJob(job)을 그대로 사용
             //    IsSameFloorJob(job) == false  => cross-floor
             var cancelTargets = allJobs
-                .Where(job =>
-                    job != null &&
-                    job.terminator == null &&
-                    job.state != nameof(JobState.INPROGRESS) &&
-                    IsSameFloorJob(job) == false)
-                .ToList();
+                .Where(job => job != null && job.terminator == null && job.state != nameof(JobState.INPROGRESS) && IsSameFloorJob(job) == false).ToList();
 
             if (cancelTargets.Count == 0)
                 return;
@@ -48,9 +43,7 @@ namespace JOB.Services
                 if (job == null) continue;
 
                 // Cancel 처리 (terminateState=INITED / terminator / terminationType / terminatedAt 업데이트)
-                jobTerminateState_Change_Inited(
-                    job,
-                    message: $"[ELEVATOR][{elevatorNo}][DOWN][CANCEL] Cross-floor job canceled because elevator is unavailable."
+                jobTerminateState_Change_Inited(job, message: $"[ELEVATOR][{elevatorNo}]"
                 );
             }
 

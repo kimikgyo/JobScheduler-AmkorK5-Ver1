@@ -9,7 +9,7 @@ namespace JOB.Services
         private void JobPlanner()
         {
             OrderJobs();
-            //ChargeJobs();
+            ChargeJobs();
             WaitJobs();
         }
 

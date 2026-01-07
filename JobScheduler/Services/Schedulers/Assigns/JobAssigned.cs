@@ -46,8 +46,8 @@ namespace JOB.Services
             // 3) 엘리베이터 상태 확인
             //    - 엘리베이터가 NOTAGVMODE 또는 PROTOCOLERROR 인 경우
             //      층간이송(WithEV) Job 은 필터링
-            var elevator = _repository.Elevator.GetById("NO1");
-            if (elevator == null || elevator.mode == "NOTAGVMODE" || elevator.state == "PROTOCOLERROR")
+            bool elevatorActive = _repository.Elevator.Active("NO1");
+            if (elevatorActive == false) 
             {
                 // 1) 층간 이동 Job 목록 추출
                 var crossFloorJobs = unAssignedWorkerJobs.Where(job => IsSameFloorJob(job) == false).ToList();
@@ -55,6 +55,7 @@ namespace JOB.Services
                 unAssignedWorkerJobs = unAssignedWorkerJobs.Where(job => IsSameFloorJob(job)).ToList();
                 EventLogger.Info($"[ASSIGN][FILTER] Elevator unavailable. Removed {crossFloorJobs.Count} cross-floor jobs. " + $"Remaining={unAssignedWorkerJobs.Count}");
             }
+           
 
             if (unAssignedWorkerJobs == null || unAssignedWorkerJobs.Count == 0)
             {

@@ -46,6 +46,7 @@ namespace Common.Models.Jobs
         [JsonPropertyOrder(18)] public string linkedRobotId { get; set; }       //포지션 지정 Robot
         [JsonPropertyOrder(19)] public bool hasCharger { get; set; }            //충전기에 대한 포지션인지
         [JsonPropertyOrder(20)] public string nodeType { get; set; }            //포지션 로드타입
+        [JsonPropertyOrder(21)] public DateTime occupiedHoldTime { get; set; }  //포지션 로드타입
 
         public override string ToString()
         {
@@ -69,7 +70,8 @@ namespace Common.Models.Jobs
                 $",linkedFacility = {linkedFacility,-5}" +
                 $",linkedRobotId = {linkedRobotId,-5}" +
                 $",hasCharger = {hasCharger,-5}" +
-                $",nodeType = {nodeType,-5}";
+                $",nodeType = {nodeType,-5}" +
+                $",occupiedHoldTime = {occupiedHoldTime,-5}";
         }
 
         //public string ToJson(bool indented = false)

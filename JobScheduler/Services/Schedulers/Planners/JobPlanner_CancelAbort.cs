@@ -16,6 +16,9 @@ namespace JOB.Services
             terminateState_Executing(jobs);
         }
 
+
+      
+
         /// <summary>
         /// Terminate_Init으로 상태 변경
         /// </summary>

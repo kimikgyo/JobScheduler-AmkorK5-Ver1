@@ -66,6 +66,7 @@ namespace JOB.Services
 
                 if (worker.batteryPercent < batterySetting.chargeStart)
                 {
+                    EventLogger.Warn($"[WAIT][CHECK][SKIP] Battery worker ChrgeStartBattery Low: workerId={worker.id}, workerName={worker.name}, state={worker.batteryPercent}, chargeStartbattery={batterySetting.chargeStart}");
                     continue;
                 }
 
@@ -74,7 +75,6 @@ namespace JOB.Services
                 //      "할당 안 된 Job"이 존재 + 배터리 충분 → WAIT 이동 불필요
                 // --------------------------------------------------------
                 var jobFindNotAssignedWorker = _repository.Jobs.GetByWorkerId(worker.id).FirstOrDefault();
-                  
 
                 if (jobFindNotAssignedWorker != null)
                 {
@@ -105,7 +105,12 @@ namespace JOB.Services
                 // 1-5) 이미 WAIT 포지션이면 스킵
                 // --------------------------------------------------------
                 var waitPositionOccupieds = _repository.Positions.MiR_GetIsOccupied(null, nameof(PositionSubType.WAIT));
-                var nowAtWait = waitPositionOccupieds?.FirstOrDefault(w => w.id == worker.PositionId);
+                if (waitPositionOccupieds == null)
+                {
+                    //EventLogger.Info($"[WAIT][CHECK][SKIP] waitPositionOccupieds at wait position: workerId={worker.id}, workerName={worker.name}, posId={worker.PositionId}");
+                    continue;
+                }
+                var nowAtWait = waitPositionOccupieds.FirstOrDefault(w => w.id == worker.PositionId);
 
                 if (nowAtWait != null)
                 {
@@ -116,7 +121,7 @@ namespace JOB.Services
                 // --------------------------------------------------------
                 // 1-6) WAIT 목적지 선택 (전용 → 공용)
                 // --------------------------------------------------------
-                var destPosition = FindWaitPositionForWorker(worker, worker.group, worker.mapId);
+                var destPosition = FindWaitPositionForWorker(worker);
                 if (destPosition == null)
                 {
                     EventLogger.Warn($"[WAIT][FIND][SKIP] no wait destination available: workerId={worker.id}, workerName={worker.name}");
@@ -160,7 +165,7 @@ namespace JOB.Services
         /// - group == group
         /// - mapId == mapId
         /// </summary>
-        private Position FindWaitPositionForWorker(Worker worker, string group, string mapId)
+        private Position FindWaitPositionForWorker(Worker worker)
         {
             // ------------------------------------------------------------
             // 0) 방어 코드
@@ -171,13 +176,13 @@ namespace JOB.Services
                 return null;
             }
 
-            if (string.IsNullOrEmpty(group))
+            if (worker.group == null)
             {
                 EventLogger.Warn($"[WAIT][FIND][SKIP] group is empty: workerId={worker.id}, workerName={worker.name}");
                 return null;
             }
 
-            if (string.IsNullOrEmpty(mapId))
+            if (string.IsNullOrEmpty(worker.mapId))
             {
                 EventLogger.Warn($"[WAIT][FIND][SKIP] mapId is empty: workerId={worker.id}, workerName={worker.name}");
                 return null;
@@ -198,11 +203,11 @@ namespace JOB.Services
             //    - 같은 그룹/같은 층(mapId) 범위에서만 찾는다.
             //    - 사용 가능(isEnabled) + 미점유(!isOccupied) 조건
             // ------------------------------------------------------------
-            var waitCandidates = allPositions.Where(p => p != null && p.subType == nameof(PositionSubType.WAIT) && p.isEnabled == true && p.isOccupied == false && p.group == group).ToList();
+            var waitCandidates = allPositions.Where(p => p != null && p.subType == nameof(PositionSubType.WAIT) && p.isEnabled == true && p.isOccupied == false && p.group == worker.group).ToList();
 
             if (waitCandidates == null || waitCandidates.Count == 0)
             {
-                EventLogger.Warn($"[WAIT][FIND][SKIP] no available wait positions: workerId={worker.id}, workerName={worker.name}, group={group}");
+                EventLogger.Warn($"[WAIT][FIND][SKIP] no available wait positions: workerId={worker.id}, workerName={worker.name}, group={worker.group}");
                 return null;
             }
 
@@ -224,7 +229,7 @@ namespace JOB.Services
             //    - linkedRobotId 가 worker.id 인 WAIT 포지션이 있으면 그걸 사용
             // ------------------------------------------------------------
 
-            var sameMapId = _repository.Positions.FindNearestWayPoint(worker, waitCandidates).FirstOrDefault(p => p.mapId == mapId);
+            var sameMapId = _repository.Positions.FindNearestWayPoint(worker, waitCandidates).FirstOrDefault(p => p.mapId == worker.mapId);
             if (sameMapId != null)
             {
                 EventLogger.Info($"[WAIT][FIND] sameMapId wait selected: workerId={worker.id}, workerName={worker.name}, waitPOSId={sameMapId.id}, waitPOSName={sameMapId.name}" +
@@ -236,10 +241,10 @@ namespace JOB.Services
             // ------------------------------------------------------------
             // 5) 가까운 WAIT 선택 다른층
             // ------------------------------------------------------------
-            var AnotherMapId = _repository.Positions.FindNearestWayPoint(worker, waitCandidates).FirstOrDefault(p => p.mapId != mapId);
+            var AnotherMapId = _repository.Positions.FindNearestWayPoint(worker, waitCandidates).FirstOrDefault(p => p.mapId != worker.mapId);
             if (AnotherMapId == null)
             {
-                EventLogger.Warn($"[WAIT][FIND][SKIP] AnotherMap wait list empty: workerId={worker.id}, workerName={worker.name}, group={group}, mapId={mapId}");
+                EventLogger.Warn($"[WAIT][FIND][SKIP] AnotherMap wait list empty: workerId={worker.id}, workerName={worker.name}, group={worker.group}, mapId={worker.mapId}");
                 return null;
             }
             else
@@ -281,6 +286,7 @@ namespace JOB.Services
                                  , null, null, null
                                  , waitPosition.id, waitPosition.name, waitPosition.linkedFacility
                                  , worker.id);
+                updateOccupied(waitPosition, true, 0.5);
                 // --------------------------------------------------------
                 // 3) 생성 요청 성공 로그
                 // --------------------------------------------------------

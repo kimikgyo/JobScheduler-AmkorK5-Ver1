@@ -1,5 +1,4 @@
 ﻿using Common.Models.Bases;
-using Common.Models.Jobs;
 using log4net;
 
 namespace Data.Repositorys.Elevators
@@ -8,7 +7,7 @@ namespace Data.Repositorys.Elevators
     {
         private static readonly ILog logger = LogManager.GetLogger("Elevator"); //Function 실행관련 Log
         private readonly string connectionString;
-        private readonly List<Elevator> _elevators= new List<Elevator>(); // cached data
+        private readonly List<Elevator> _elevators = new List<Elevator>(); // cached data
         private readonly object _lock = new object();
 
         public ElevatorRepository(string connectionString)
@@ -230,6 +229,18 @@ namespace Data.Repositorys.Elevators
             lock (_lock)
             {
                 return _elevators.FirstOrDefault(m => m.id == id);
+            }
+        }
+
+        public bool Active(string id)
+        {
+            bool active = false;
+            lock (_lock)
+            {
+                var elevator = _elevators.FirstOrDefault(m => m.id == id);
+
+                if (elevator != null && elevator.mode != "NOTAGVMODE" && elevator.state != "PROTOCOLERROR") return true;
+                else return false;
             }
         }
     }

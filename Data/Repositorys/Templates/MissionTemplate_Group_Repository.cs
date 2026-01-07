@@ -59,7 +59,7 @@ namespace Data.Repositorys.Templates
             }
         }
 
-        private void Load()
+        public void Load()
         {
             _missionTemplates.Clear();
             using (var con = new SqlConnection(connectionString))

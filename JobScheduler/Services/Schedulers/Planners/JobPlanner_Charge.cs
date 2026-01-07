@@ -477,6 +477,7 @@ namespace JOB.Services
             _Queue.Create_Job(worker.group, null, nameof(JobType.CHARGE), nameof(JobSubType.CHARGE), null, 0, null,
                              null, null, null, chargerPosition.id, chargerPosition.name, chargerPosition.linkedFacility
                              , worker.id);
+            updateOccupied(chargerPosition, true, 0.5);
 
             // --------------------------------------------------------
             // 3) 생성 요청 성공 로그
@@ -564,13 +565,22 @@ namespace JOB.Services
                 // 2-3) 충전 중 Worker가 점유한 충전기 포지션(CHARGE)을 찾는다.
                 //      - Worker.PositionId(현재 점유 포지션) == ChargerPosition.id
                 // --------------------------------------------------------
-                Position usingCharger = null;
 
-                if (!string.IsNullOrEmpty(chargingWorker.PositionId))
+                var chargingMissions = _repository.Missions.GetByAssignedWorkerId(chargingWorker.id)
+                                        .Where(r => r.subType == nameof(MissionSubType.CHARGERMOVE) || r.subType == nameof(MissionSubType.CHARGE)).ToList();
+                var runChargingMission = _repository.Missions.GetByRunMissions(chargingMissions);
+
+                if (runChargingMission == null)
                 {
-                    usingCharger = chargerPositions.FirstOrDefault(p => p != null && p.id == chargingWorker.PositionId && p.subType == nameof(PositionSubType.CHARGE)
-                        && p.hasCharger == true && p.isEnabled == true);
+                    continue;
                 }
+                var runChargingParameta = _repository.Missions.GetParametas(runChargingMission).Where(r => r.key == "target").Select(r => r.value).FirstOrDefault();
+                if (string.IsNullOrEmpty(runChargingParameta))
+                {
+                    continue;
+                }
+
+                var usingCharger = chargerPositions.FirstOrDefault(p => p.id == runChargingParameta);
 
                 if (usingCharger == null)
                 {

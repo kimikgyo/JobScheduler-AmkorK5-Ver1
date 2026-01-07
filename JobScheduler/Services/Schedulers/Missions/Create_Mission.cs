@@ -113,7 +113,15 @@ namespace JOB.Services
 
             if (!IsInvalid(worker.PositionId))
             {
-                nearest = _repository.Positions.GetById(worker.PositionId);
+                var workerPosition = _repository.Positions.GetById(worker.PositionId);
+                if (workerPosition.nodeType != nameof(NodeType.WORK) && workerPosition.nodeType != nameof(NodeType.ELEVATOR) && workerPosition.nodeType != nameof(NodeType.CHARGER))
+                {
+                    nearest = workerPosition;
+                }
+                else
+                {
+                    nearest = _repository.Positions.FindNearestWayPoint(worker, positions).Where(P => P.isOccupied == false).FirstOrDefault();
+                }
             }
             else
             {

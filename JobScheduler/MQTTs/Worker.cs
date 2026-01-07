@@ -67,7 +67,7 @@ namespace JOB.MQTTs
                     var position = _repository.Positions.GetById(worker.PositionId);
                     if (position != null)
                     {
-                        updateOccupied(position, false);
+                        updateOccupied(position, false, 0);
                     }
                     worker.PositionId = null;
                     worker.PositionName = null;
@@ -78,7 +78,7 @@ namespace JOB.MQTTs
             {
                 foreach (var position in positions)
                 {
-                    updateOccupied(position, true);
+                    updateOccupied(position, true, 0);
 
                     if (position.id != worker.PositionId)
                     {
@@ -90,11 +90,12 @@ namespace JOB.MQTTs
             }
         }
 
-        private void updateOccupied(Position position, bool flag)
+        private void updateOccupied(Position position, bool flag, double holdTime)
         {
             if (position.isOccupied != flag)
             {
                 position.isOccupied = flag;
+                position.occupiedHoldTime = DateTime.Now.AddSeconds(holdTime);
                 _repository.Positions.update(position);
             }
         }

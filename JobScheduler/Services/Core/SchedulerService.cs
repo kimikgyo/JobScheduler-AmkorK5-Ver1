@@ -106,9 +106,9 @@ namespace JOB.Services
                     {
                         JobPlanner();
                         WorkerAssined();
-                        Dispatcher();
+                        MissionPostScheduler();
                         cancelControl();
-
+                        ElevatorPolicy();
                         await Task.Delay(300);
                     }
                     catch (Exception ex)
@@ -247,13 +247,14 @@ namespace JOB.Services
             }
         }
 
-        public void updateOccupied(Position position, bool flag)
+        public void updateOccupied(Position position, bool flag, double holdTime)
         {
             lock (_positionLock)
             {
                 if (position.isOccupied != flag)
                 {
                     position.isOccupied = flag;
+                    position.occupiedHoldTime = DateTime.Now.AddSeconds(holdTime);
                     _repository.Positions.update(position);
                 }
             }

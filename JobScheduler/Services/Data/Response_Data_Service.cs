@@ -261,6 +261,8 @@ namespace JobScheduler.Services
                     if (Resource)
                     {
                         Complete = true;
+                        _repository.MissionTemplates_Group.Load();
+                        _repository.MissionTemplates_Single.Load();
                         ConfigData.SubscribeTopics = mqttTopicSubscribes;
                         _eventlog.Info($"GetData{nameof(Complete)}");
                     }

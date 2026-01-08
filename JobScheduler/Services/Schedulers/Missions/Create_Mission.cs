@@ -40,23 +40,30 @@ namespace JOB.Services
         private bool Create_Mission(Job job, Worker worker)
         {
             bool CreateMission = false;
+            // job 없음
             if (job == null) return CreateMission;
+            // worker 없음
             if (worker == null) return CreateMission;
-
+            // mission sequence 시작
             int seq = 1;
 
             // 1) 외부 Route API 핸들
             var resource = _repository.ServiceApis.GetAll().FirstOrDefault(s => s.type == "Resource");
+            // 외부 핸들 없음
             if (resource == null) return CreateMission;
 
             // 2) Worker 기준 시작 위치 + Job 출발/목적지 계산
             var workerStart = GetWorkerStartPosition(worker);
+            // 시작점 계산 실패
             if (workerStart == null) return CreateMission;
 
             var jobSource = GetJobSourcePosition(job, workerStart);
+            // 출발지 계산 실패
             if (jobSource == null) return CreateMission;
 
             var jobDestination = GetJobDestinationPosition(job);
+            // 목적지 계산 실패
+
             if (jobDestination == null) return CreateMission;
 
             // 3) Job 타입별로 미션 구성 위임

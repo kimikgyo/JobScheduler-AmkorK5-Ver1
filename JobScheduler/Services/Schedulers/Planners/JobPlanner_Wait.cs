@@ -105,7 +105,7 @@ namespace JOB.Services
                 // 1-5) 이미 WAIT 포지션이면 스킵
                 // --------------------------------------------------------
                 var waitPositionOccupieds = _repository.Positions.MiR_GetIsOccupied(null, nameof(PositionSubType.WAIT));
-                if (waitPositionOccupieds == null || waitPositionOccupieds.Count == 0)
+                if (waitPositionOccupieds == null)
                 {
                     //EventLogger.Info($"[WAIT][CHECK][SKIP] waitPositionOccupieds at wait position: workerId={worker.id}, workerName={worker.name}, posId={worker.PositionId}");
                     continue;
@@ -122,7 +122,7 @@ namespace JOB.Services
                 // 1-6) 이미 출발지 포지션이면 스킵
                 // --------------------------------------------------------
                 var sourcePositionOccupieds = _repository.Positions.MiR_GetIsOccupied(null, nameof(PositionSubType.SOURCE));
-                if (sourcePositionOccupieds == null || sourcePositionOccupieds.Count == 0)
+                if (sourcePositionOccupieds == null)
                 {
                     //EventLogger.Info($"[WAIT][CHECK][SKIP] sourcePositionOccupieds at wait position: workerId={worker.id}, workerName={worker.name}, posId={worker.PositionId}");
                     continue;
@@ -138,7 +138,7 @@ namespace JOB.Services
                 // 1-7) 이미 목적지 포지션이면 스킵
                 // --------------------------------------------------------
                 var destinationPositionOccupieds = _repository.Positions.MiR_GetIsOccupied(null, nameof(PositionSubType.DESTINATION));
-                if (destinationPositionOccupieds == null || destinationPositionOccupieds.Count == 0)
+                if (destinationPositionOccupieds == null)
                 {
                     //EventLogger.Info($"[WAIT][CHECK][SKIP] destinationPositionOccupieds at wait position: workerId={worker.id}, workerName={worker.name}, posId={worker.PositionId}");
                     continue;
@@ -153,7 +153,7 @@ namespace JOB.Services
                 // 1-8) 이미 공통 포지션이면 스킵
                 // --------------------------------------------------------
                 var allowallPositionOccupieds = _repository.Positions.MiR_GetIsOccupied(null, nameof(PositionSubType.ALLOWALL));
-                if (allowallPositionOccupieds == null || allowallPositionOccupieds.Count == 0)
+                if (allowallPositionOccupieds == null)
                 {
                     //EventLogger.Info($"[WAIT][CHECK][SKIP] destinationPositionOccupieds at wait position: workerId={worker.id}, workerName={worker.name}, posId={worker.PositionId}");
                     continue;

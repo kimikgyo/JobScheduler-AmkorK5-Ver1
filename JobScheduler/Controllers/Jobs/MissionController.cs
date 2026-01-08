@@ -7,6 +7,7 @@ using JOB.Mappings.Interfaces;
 using JOB.MQTTs.Interfaces;
 using log4net;
 using Microsoft.AspNetCore.Mvc;
+using System.Diagnostics;
 using System.Text.Json;
 
 // For more information on enabling Web API for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
@@ -36,87 +37,127 @@ namespace JOB.Controllers.Jobs
         [HttpGet]
         public ActionResult<List<Get_MissionDto>> GetAll()
         {
-            List<Get_MissionDto> _responseDtos = new List<Get_MissionDto>();
-
-            foreach (var model in _repository.Missions.GetAll())
+            try
             {
-                _responseDtos.Add(_mapping.Missions.Get(model));
-                logger.Info($"{this.ControllerLogPath()} Get = {model}");
+                List<Get_MissionDto> _responseDtos = new List<Get_MissionDto>();
+
+                foreach (var model in _repository.Missions.GetAll())
+                {
+                    _responseDtos.Add(_mapping.Missions.Get(model));
+                    logger.Info($"{this.ControllerLogPath()} Get = {model}");
+                }
+                return Ok(_responseDtos);
             }
-            return Ok(_responseDtos);
+            catch (Exception ex)
+            {
+                LogExceptionMessage(ex);
+                return NotFound();
+            }
         }
 
         //History
         [HttpGet("history")]
         public ActionResult<List<Get_MissionDto>> FindHistory(DateTime startDay, DateTime endDay)
         {
-            if (startDay != DateTime.MinValue && endDay != DateTime.MinValue)
+            try
             {
-                List<Get_MissionDto> _responseDtos = new List<Get_MissionDto>();
-
-                if (startDay == endDay) endDay = endDay.AddDays(1);
-                var histories = _repository.MissionHistorys.FindHistory(startDay, endDay);
-                foreach (var history in histories)
+                if (startDay != DateTime.MinValue && endDay != DateTime.MinValue)
                 {
-                    _responseDtos.Add(_mapping.Missions.Get(history));
-                    logger.Info($"{this.ControllerLogPath()} Get = {history}");
-                }
+                    List<Get_MissionDto> _responseDtos = new List<Get_MissionDto>();
 
-                return Ok(_responseDtos);
+                    if (startDay == endDay) endDay = endDay.AddDays(1);
+                    var histories = _repository.MissionHistorys.FindHistory(startDay, endDay);
+                    foreach (var history in histories)
+                    {
+                        _responseDtos.Add(_mapping.Missions.Get(history));
+                        logger.Info($"{this.ControllerLogPath()} Get = {history}");
+                    }
+
+                    return Ok(_responseDtos);
+                }
+                else
+                {
+                    return BadRequest("check startDay or endDay");
+                }
             }
-            else
+            catch (Exception ex)
             {
-                return BadRequest("check startDay or endDay");
+                LogExceptionMessage(ex);
+                return NotFound();
             }
         }
 
         [HttpGet("history/today")]
         public ActionResult<List<Get_MissionDto>> GetTodayHistory()
         {
-            List<Get_MissionDto> _responseDtos = new List<Get_MissionDto>();
-
-            DateTime today = DateTime.Today;
-            DateTime tomorrow = today.AddDays(1);
-            var histories = _repository.MissionHistorys.FindHistory(today, tomorrow);
-            foreach (var history in histories)
+            try
             {
-                _responseDtos.Add(_mapping.Missions.Get(history));
-                logger.Info($"{this.ControllerLogPath()} Get = {history}");
+                List<Get_MissionDto> _responseDtos = new List<Get_MissionDto>();
+
+                DateTime today = DateTime.Today;
+                DateTime tomorrow = today.AddDays(1);
+                var histories = _repository.MissionHistorys.FindHistory(today, tomorrow);
+                foreach (var history in histories)
+                {
+                    _responseDtos.Add(_mapping.Missions.Get(history));
+                    logger.Info($"{this.ControllerLogPath()} Get = {history}");
+                }
+                return Ok(_responseDtos);
             }
-            return Ok(_responseDtos);
+            catch (Exception ex)
+            {
+                LogExceptionMessage(ex);
+                return NotFound();
+            }
         }
 
         //finisth
         [HttpGet("finish/today")]
         public ActionResult<List<Get_MissionDto>> GetTodayFinisthHistory()
         {
-            List<Get_MissionDto> _responseDtos = new List<Get_MissionDto>();
-
-            DateTime today = DateTime.Today;
-            DateTime tomorrow = today.AddDays(1);
-            var histories = _repository.MissionFinishedHistorys.FindHistory(today, tomorrow);
-            foreach (var history in histories)
+            try
             {
-                _responseDtos.Add(_mapping.Missions.Get(history));
-                logger.Info($"{this.ControllerLogPath()} Get = {history}");
+                List<Get_MissionDto> _responseDtos = new List<Get_MissionDto>();
+
+                DateTime today = DateTime.Today;
+                DateTime tomorrow = today.AddDays(1);
+                var histories = _repository.MissionFinishedHistorys.FindHistory(today, tomorrow);
+                foreach (var history in histories)
+                {
+                    _responseDtos.Add(_mapping.Missions.Get(history));
+                    logger.Info($"{this.ControllerLogPath()} Get = {history}");
+                }
+                return Ok(_responseDtos);
             }
-            return Ok(_responseDtos);
+            catch (Exception ex)
+            {
+                LogExceptionMessage(ex);
+                return NotFound();
+            }
         }
 
         // GET api/<JobController>/5
         [HttpGet("{id}")]
         public ActionResult<Get_MissionDto> GetById(string id)
         {
-            Get_MissionDto responseDto = null;
-
-            var mission = _repository.Missions.GetById(id);
-
-            if (mission != null)
+            try
             {
-                responseDto = _mapping.Missions.Get(mission);
+                Get_MissionDto responseDto = null;
+
+                var mission = _repository.Missions.GetById(id);
+
+                if (mission != null)
+                {
+                    responseDto = _mapping.Missions.Get(mission);
+                }
+                logger.Info($"{this.ControllerLogPath(id)} Get = {responseDto}");
+                return responseDto;
             }
-            logger.Info($"{this.ControllerLogPath(id)} Get = {responseDto}");
-            return responseDto;
+            catch (Exception ex)
+            {
+                LogExceptionMessage(ex);
+                return NotFound();
+            }
         }
 
         // POST api/<MissionController>
@@ -218,6 +259,13 @@ namespace JOB.Controllers.Jobs
                 || value.ToUpper() == "NULL"
                 || value.ToUpper() == "STRING"
                 || value.ToUpper() == "";
+        }
+
+        private void LogExceptionMessage(Exception ex)
+        {
+            string message = ex.GetFullMessage() + Environment.NewLine + ex.StackTrace;
+            Debug.WriteLine(message);
+            logger.Error(message);
         }
 
         //// DELETE api/<MissionController>/5

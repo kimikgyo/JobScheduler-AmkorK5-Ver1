@@ -7,6 +7,7 @@ using JOB.Mappings.Interfaces;
 using JOB.MQTTs.Interfaces;
 using log4net;
 using Microsoft.AspNetCore.Mvc;
+using System.Diagnostics;
 
 // For more information on enabling Web API for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
 
@@ -31,36 +32,84 @@ namespace JOB.Controllers.Jobs
             _mqttQueue = mqttQueue;
         }
 
+      
+
         // GET: api/<JobController>
         [HttpGet]
         public ActionResult<List<Get_JobDto>> GetAll()
         {
-            List<Get_JobDto> _responseDtos = new List<Get_JobDto>();
-
-            foreach (var job in _repository.Jobs.GetAll())
+            try
             {
-                var responceJob = _mapping.Jobs.Get(job);
-                foreach (var mission in _repository.Missions.GetByJobId(responceJob.guid))
-                {
-                    responceJob.missions.Add(_mapping.Missions.Get(mission));
-                }
-                _responseDtos.Add(responceJob);
-                logger.Info($"{this.ControllerLogPath()} Get = {responceJob}");
-            }
+                List<Get_JobDto> _responseDtos = new List<Get_JobDto>();
 
-            return Ok(_responseDtos);
+                foreach (var job in _repository.Jobs.GetAll())
+                {
+                    var responceJob = _mapping.Jobs.Get(job);
+                    foreach (var mission in _repository.Missions.GetByJobId(responceJob.guid))
+                    {
+                        responceJob.missions.Add(_mapping.Missions.Get(mission));
+                    }
+                    _responseDtos.Add(responceJob);
+                    logger.Info($"{this.ControllerLogPath()} GetAll = {responceJob}");
+                }
+
+                return Ok(_responseDtos);
+            }
+            catch (Exception ex)
+            {
+                LogExceptionMessage(ex);
+                return NotFound();
+            }
         }
 
         //History
         [HttpGet("history")]
         public ActionResult<List<Get_JobDto>> FindHistory(DateTime startDay, DateTime endDay)
         {
-            if (startDay != DateTime.MinValue && endDay != DateTime.MinValue)
+            try
+            {
+                if (startDay != DateTime.MinValue && endDay != DateTime.MinValue)
+                {
+                    List<Get_JobDto> _responseDtos = new List<Get_JobDto>();
+
+                    if (startDay == endDay) endDay = endDay.AddDays(1);
+                    var histories = _repository.JobHistorys.FindHistory(startDay, endDay);
+
+                    foreach (var history in histories)
+                    {
+                        var responceJob = _mapping.Jobs.Get(history);
+                        foreach (var mission in _repository.MissionHistorys.FindHistoryJobId(history.guid))
+                        {
+                            responceJob.missions.Add(_mapping.Missions.Get(mission));
+                        }
+                        _responseDtos.Add(responceJob);
+                        logger.Info($"{this.ControllerLogPath()} FindHistory = {responceJob}");
+                    }
+
+                    return Ok(_responseDtos);
+                }
+                else
+                {
+                    return BadRequest("check startDay or endDay");
+                }
+            }
+            catch (Exception ex)
+            {
+                LogExceptionMessage(ex);
+                return NotFound();
+            }
+        }
+
+        [HttpGet("history/today")]
+        public ActionResult<List<Get_JobDto>> GetTodayHistory()
+        {
+            try
             {
                 List<Get_JobDto> _responseDtos = new List<Get_JobDto>();
 
-                if (startDay == endDay) endDay = endDay.AddDays(1);
-                var histories = _repository.JobHistorys.FindHistory(startDay, endDay);
+                DateTime today = DateTime.Today;
+                DateTime tomorrow = today.AddDays(1);
+                var histories = _repository.JobHistorys.FindHistory(today, tomorrow);
 
                 foreach (var history in histories)
                 {
@@ -70,81 +119,75 @@ namespace JOB.Controllers.Jobs
                         responceJob.missions.Add(_mapping.Missions.Get(mission));
                     }
                     _responseDtos.Add(responceJob);
-                    logger.Info($"{this.ControllerLogPath()} Get = {responceJob}");
+                    logger.Info($"{this.ControllerLogPath()} GetTodayHistory = {responceJob}");
                 }
 
                 return Ok(_responseDtos);
             }
-            else
+            catch (Exception ex)
             {
-                return BadRequest("check startDay or endDay");
+                LogExceptionMessage(ex);
+                return NotFound();
             }
-        }
-
-        [HttpGet("history/today")]
-        public ActionResult<List<Get_JobDto>> GetTodayHistory()
-        {
-            List<Get_JobDto> _responseDtos = new List<Get_JobDto>();
-
-            DateTime today = DateTime.Today;
-            DateTime tomorrow = today.AddDays(1);
-            var histories = _repository.JobHistorys.FindHistory(today, tomorrow);
-
-            foreach (var history in histories)
-            {
-                var responceJob = _mapping.Jobs.Get(history);
-                foreach (var mission in _repository.MissionHistorys.FindHistoryJobId(history.guid))
-                {
-                    responceJob.missions.Add(_mapping.Missions.Get(mission));
-                }
-                _responseDtos.Add(responceJob);
-                logger.Info($"{this.ControllerLogPath()} Get = {responceJob}");
-            }
-
-            return Ok(_responseDtos);
         }
 
         //finisth
         [HttpGet("finish/today")]
         public ActionResult<List<Get_JobDto>> GetTodayFinisthHistory()
         {
-            List<Get_JobDto> _responseDtos = new List<Get_JobDto>();
-
-            DateTime today = DateTime.Today;
-            DateTime tomorrow = today.AddDays(1);
-            var histories = _repository.JobFinishedHistorys.FindHistory(today, tomorrow);
-
-            foreach (var history in histories)
+            try
             {
-                var responceJob = _mapping.Jobs.Get(history);
-                foreach (var mission in _repository.MissionFinishedHistorys.FindHistoryJobId(history.guid))
+                List<Get_JobDto> _responseDtos = new List<Get_JobDto>();
+
+                DateTime today = DateTime.Today;
+                DateTime tomorrow = today.AddDays(1);
+                var histories = _repository.JobFinishedHistorys.FindHistory(today, tomorrow);
+
+                foreach (var history in histories)
                 {
-                    responceJob.missions.Add(_mapping.Missions.Get(mission));
+                    var responceJob = _mapping.Jobs.Get(history);
+                    foreach (var mission in _repository.MissionFinishedHistorys.FindHistoryJobId(history.guid))
+                    {
+                        responceJob.missions.Add(_mapping.Missions.Get(mission));
+                    }
+                    _responseDtos.Add(responceJob);
+                    logger.Info($"{this.ControllerLogPath()} GetTodayFinisthHistory = {responceJob}");
                 }
-                _responseDtos.Add(responceJob);
-                logger.Info($"{this.ControllerLogPath()} Get = {responceJob}");
+                return Ok(_responseDtos);
             }
-            return Ok(_responseDtos);
+            catch (Exception ex)
+            {
+                LogExceptionMessage(ex);
+                return NotFound();
+            }
         }
 
         // GET api/<JobController>/5
         [HttpGet("{id}")]
         public ActionResult<Get_JobDto> GetById(string id)
         {
-            Get_JobDto responseDto = null;
-
-            var job = _repository.Jobs.GetByid(id);
-            if (job != null)
+            try
             {
-                responseDto = _mapping.Jobs.Get(job);
+                Get_JobDto responseDto = null;
 
-                foreach (var mission in _repository.Missions.GetByJobId(job.guid))
+                var job = _repository.Jobs.GetByid(id);
+                if (job != null)
                 {
-                    responseDto.missions.Add(_mapping.Missions.Get(mission));
+                    responseDto = _mapping.Jobs.Get(job);
+
+                    foreach (var mission in _repository.Missions.GetByJobId(job.guid))
+                    {
+                        responseDto.missions.Add(_mapping.Missions.Get(mission));
+                    }
                 }
+                logger.Info($"{this.ControllerLogPath(id)} GetById = {responseDto}");
+                return Ok(responseDto);
             }
-            logger.Info($"{this.ControllerLogPath(id)} Get = {responseDto}");
-            return Ok(responseDto);
+            catch (Exception ex)
+            {
+                LogExceptionMessage(ex);
+                return NotFound();
+            }
         }
 
         // PUT api/<JobController>/5
@@ -202,6 +245,13 @@ namespace JOB.Controllers.Jobs
                 || value.ToUpper() == "";
         }
 
+
+        private void LogExceptionMessage(Exception ex)
+        {
+            string message = ex.GetFullMessage() + Environment.NewLine + ex.StackTrace;
+            Debug.WriteLine(message);
+            logger.Error(message);
+        }
         //// POST api/<JobController>
         //[HttpPost]
         //public void Request([FromBody] string value)

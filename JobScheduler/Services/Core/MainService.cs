@@ -198,7 +198,7 @@ namespace JobScheduler.Services
             //string message = ex.ToString();
             string message = ex.GetFullMessage() + Environment.NewLine + ex.StackTrace;
             Debug.WriteLine(message);
-            EventLogger.Info(message);
+            EventLogger.Error(message);
         }
     }
 }

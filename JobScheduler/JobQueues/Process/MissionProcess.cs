@@ -56,7 +56,7 @@ namespace JOB.JobQueues.Process
                 mission.postReportsJson = JsonSerializer.Serialize(mission.postReports);
                 _repository.Missions.Add(mission);
                 _repository.MissionHistorys.Add(mission);
-                _mqttQueue.MqttPublishMessage(TopicType.mission, TopicSubType.status, _mapping.Missions.Publish(mission));
+                _mqttQueue.MqttPublishMessage(TopicType.mission, mission.assignedWorkerId, _mapping.Missions.Publish(mission));
             }
         }
 

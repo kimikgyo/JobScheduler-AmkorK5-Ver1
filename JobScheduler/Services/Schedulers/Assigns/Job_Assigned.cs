@@ -221,7 +221,7 @@ namespace JOB.Services
 
             if (workers == null || workers.Count == 0)
             {
-                EventLogger.Info("[ASSIGN][NORMAL][DISTANCE], All workers are busy.");
+                //EventLogger.Info("[ASSIGN][NORMAL][DISTANCE], All workers are busy.");
                 return;
             }
 

@@ -100,7 +100,7 @@ namespace JOB.Services
                     break;
 
                 case nameof(MissionSubType.ELEVATOREXITMOVE):
-                    var exitNotOccupied = _repository.Positions.MiR_GetNotOccupied(null, nameof(PositionSubType.ELEVATOREXIT));
+                    var exitNotOccupied = _repository.Positions.MiR_GetBySubType(nameof(PositionSubType.ELEVATOREXIT));
                     if (exitNotOccupied == null || exitNotOccupied.Count == 0)
                     {
                         EventLogger.Warn($"[ELEV][EXIT][NO_CANDIDATE] all occupied or none. missionguId={mission.guid}, missionName={mission.name}, workerId={assignedWorker.id},WorkerName={assignedWorker.name}" +

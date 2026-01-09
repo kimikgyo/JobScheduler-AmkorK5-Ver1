@@ -44,7 +44,7 @@ namespace JOB.Controllers.Jobs
                 foreach (var model in _repository.Missions.GetAll())
                 {
                     _responseDtos.Add(_mapping.Missions.Get(model));
-                    logger.Info($"{this.ControllerLogPath()} Get = {model}");
+                    //logger.Info($"{this.ControllerLogPath()} Get = {model}");
                 }
                 return Ok(_responseDtos);
             }
@@ -70,7 +70,7 @@ namespace JOB.Controllers.Jobs
                     foreach (var history in histories)
                     {
                         _responseDtos.Add(_mapping.Missions.Get(history));
-                        logger.Info($"{this.ControllerLogPath()} Get = {history}");
+                        //logger.Info($"{this.ControllerLogPath()} Get = {history}");
                     }
 
                     return Ok(_responseDtos);
@@ -100,7 +100,7 @@ namespace JOB.Controllers.Jobs
                 foreach (var history in histories)
                 {
                     _responseDtos.Add(_mapping.Missions.Get(history));
-                    logger.Info($"{this.ControllerLogPath()} Get = {history}");
+                    //logger.Info($"{this.ControllerLogPath()} Get = {history}");
                 }
                 return Ok(_responseDtos);
             }
@@ -125,7 +125,7 @@ namespace JOB.Controllers.Jobs
                 foreach (var history in histories)
                 {
                     _responseDtos.Add(_mapping.Missions.Get(history));
-                    logger.Info($"{this.ControllerLogPath()} Get = {history}");
+                    //logger.Info($"{this.ControllerLogPath()} Get = {history}");
                 }
                 return Ok(_responseDtos);
             }
@@ -150,7 +150,7 @@ namespace JOB.Controllers.Jobs
                 {
                     responseDto = _mapping.Missions.Get(mission);
                 }
-                logger.Info($"{this.ControllerLogPath(id)} Get = {responseDto}");
+                //logger.Info($"{this.ControllerLogPath(id)} Get = {responseDto}");
                 return responseDto;
             }
             catch (Exception ex)
@@ -203,7 +203,7 @@ namespace JOB.Controllers.Jobs
                                     responseDto = _mapping.Missions.Get(mission);
                                     _repository.Missions.Update(mission);
                                     _repository.MissionHistorys.Add(mission);
-                                    _mqttQueue.MqttPublishMessage(TopicType.mission, TopicSubType.status, _mapping.Missions.Publish(mission));
+                                    _mqttQueue.MqttPublishMessage(TopicType.mission, mission.assignedWorkerId, _mapping.Missions.Publish(mission));
                                 }
                                 else
                                 {

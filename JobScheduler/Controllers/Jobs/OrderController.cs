@@ -74,7 +74,7 @@ namespace JobScheduler.Controllers.Jobs
                     }
 
                     _responseDtos.Add(responseDto);
-                    logger.Info($"{this.ControllerLogPath()} Get = {responseDto}");
+                    //logger.Info($"{this.ControllerLogPath()} Get = {responseDto}");
                 }
 
                 return Ok(_responseDtos);
@@ -228,7 +228,7 @@ namespace JobScheduler.Controllers.Jobs
                         responseDto.Job = jobresponse;
                     }
                 }
-                logger.Info($"{this.ControllerLogPath(id)} Get = {responseDto}");
+                //logger.Info($"{this.ControllerLogPath(id)} Get = {responseDto}");
                 return Ok(responseDto);
             }
             catch (Exception ex)
@@ -256,7 +256,7 @@ namespace JobScheduler.Controllers.Jobs
             }
             else
             {
-                logger.Info($"{this.ControllerLogPath()} Get = " +
+                logger.Warn($"{this.ControllerLogPath()} Get = " +
                                  $"Code = {NotFound(message).StatusCode}" +
                                  $",massage = {NotFound(message).Value}" +
                                  $",Date = {add}"

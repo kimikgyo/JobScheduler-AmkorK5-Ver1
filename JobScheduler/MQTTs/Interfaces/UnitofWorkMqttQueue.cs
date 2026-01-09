@@ -20,7 +20,7 @@ namespace JOB.MQTTs.Interfaces
             _mqttProcess = new MqttProcess(this, mqttWorker, repository, mapping);
         }
 
-        public void MqttPublishMessage(TopicType topicType, TopicSubType topicSubType, object value)
+        public void MqttPublishMessage(TopicType topicType, string topicSubType, object value)
         {
             lock (this)
             {

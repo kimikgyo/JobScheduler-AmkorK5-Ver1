@@ -64,12 +64,6 @@ namespace JOB.Services
                     continue;
                 }
 
-                if (worker.batteryPercent < batterySetting.chargeStart)
-                {
-                    EventLogger.Warn($"[WAIT][CHECK][SKIP] Battery worker ChrgeStartBattery Low: workerId={worker.id}, workerName={worker.name}, state={worker.batteryPercent}, chargeStartbattery={batterySetting.chargeStart}");
-                    continue;
-                }
-
                 // --------------------------------------------------------
                 // 1-2) 기존 로직 유지:
                 //      "할당 안 된 Job"이 존재 + 배터리 충분 → WAIT 이동 불필요
@@ -78,17 +72,13 @@ namespace JOB.Services
 
                 if (jobFindNotAssignedWorker != null)
                 {
-                    //EventLogger.Warn($"[WAIT][CHECK][SKIP] unassigned job exists and battery ok: workerId={worker.id}, workerName={worker.name}, battery={worker.batteryPercent}");
+                    //EventLogger.Warn($"[WAIT][CHECK][SKIP] unassigned job exists : workerId={worker.id}, workerName={worker.name}, battery={worker.batteryPercent}");
                     continue;
                 }
 
-                // --------------------------------------------------------
-                // 1-3) worker 진행중 Job 존재하면 스킵
-                // --------------------------------------------------------
-                var jobFindAssignedWorker = _repository.Jobs.GetByWorkerId(worker.id).FirstOrDefault();
-                if (jobFindAssignedWorker != null)
+                if (worker.batteryPercent < batterySetting.minimum)
                 {
-                    //EventLogger.Warn($"[WAIT][CHECK][SKIP] worker already has job: workerId={worker.id}, workerName={worker.name}, jobGuid={jobFindAssignedWorker.guid}");
+                    EventLogger.Warn($"[WAIT][CHECK][SKIP] worker Battery Low: workerId={worker.id}, workerName={worker.name}, state={worker.batteryPercent}, chargeStartbattery={batterySetting.chargeStart}");
                     continue;
                 }
 

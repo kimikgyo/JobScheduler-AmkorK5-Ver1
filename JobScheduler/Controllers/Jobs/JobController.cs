@@ -50,7 +50,7 @@ namespace JOB.Controllers.Jobs
                         responceJob.missions.Add(_mapping.Missions.Get(mission));
                     }
                     _responseDtos.Add(responceJob);
-                    logger.Info($"{this.ControllerLogPath()} GetAll = {responceJob}");
+                    //logger.Info($"{this.ControllerLogPath()} GetAll = {responceJob}");
                 }
 
                 return Ok(_responseDtos);
@@ -83,7 +83,7 @@ namespace JOB.Controllers.Jobs
                             responceJob.missions.Add(_mapping.Missions.Get(mission));
                         }
                         _responseDtos.Add(responceJob);
-                        logger.Info($"{this.ControllerLogPath()} FindHistory = {responceJob}");
+                        //logger.Info($"{this.ControllerLogPath()} FindHistory = {responceJob}");
                     }
 
                     return Ok(_responseDtos);
@@ -119,7 +119,7 @@ namespace JOB.Controllers.Jobs
                         responceJob.missions.Add(_mapping.Missions.Get(mission));
                     }
                     _responseDtos.Add(responceJob);
-                    logger.Info($"{this.ControllerLogPath()} GetTodayHistory = {responceJob}");
+                    //logger.Info($"{this.ControllerLogPath()} GetTodayHistory = {responceJob}");
                 }
 
                 return Ok(_responseDtos);
@@ -151,7 +151,7 @@ namespace JOB.Controllers.Jobs
                         responceJob.missions.Add(_mapping.Missions.Get(mission));
                     }
                     _responseDtos.Add(responceJob);
-                    logger.Info($"{this.ControllerLogPath()} GetTodayFinisthHistory = {responceJob}");
+                    //logger.Info($"{this.ControllerLogPath()} GetTodayFinisthHistory = {responceJob}");
                 }
                 return Ok(_responseDtos);
             }
@@ -180,7 +180,7 @@ namespace JOB.Controllers.Jobs
                         responseDto.missions.Add(_mapping.Missions.Get(mission));
                     }
                 }
-                logger.Info($"{this.ControllerLogPath(id)} GetById = {responseDto}");
+                //logger.Info($"{this.ControllerLogPath(id)} GetById = {responseDto}");
                 return Ok(responseDto);
             }
             catch (Exception ex)
@@ -213,7 +213,7 @@ namespace JOB.Controllers.Jobs
                     job.terminatingAt = update.terminatingAt;
                     _repository.Jobs.Update(job);
                     _repository.JobHistorys.Add(job);
-                    _mqttQueue.MqttPublishMessage(TopicType.job, TopicSubType.status, _mapping.Jobs.Publish(job));
+                    _mqttQueue.MqttPublishMessage(TopicType.job, nameof(TopicSubType.status), _mapping.Jobs.Publish(job));
                     return Ok(job);
                 }
             }

@@ -60,8 +60,28 @@ namespace JOB.MQTTs
             EventLogger.Info(message);
         }
 
+        public void worker_MissionId_MissionName_Update(Mission mission, bool flag)
+        {
+            var worker = _repository.Workers.GetById(mission.assignedWorkerId);
+            if (worker != null)
+            {
+                if (flag == true)
+                {
+                    worker.missionId = mission.guid;
+                    worker.missionName = mission.name;
+                }
+                else
+                {
+                    worker.missionId = "";
+                    worker.missionName = "";
+                }
+                _repository.Workers.Update(worker);
+            }
+        }
+
         public void updateStateMission(Mission mission, string state, bool historyAdd = false)
         {
+            bool worekerMissionIdUpdateFlag = true;
             if (mission.state != state)
             {
                 mission.state = state;
@@ -88,12 +108,14 @@ namespace JOB.MQTTs
                     case nameof(MissionState.CANCELED):
                     case nameof(MissionState.COMPLETED):
                         mission.finishedAt = DateTime.Now;
+                        worekerMissionIdUpdateFlag = false;
                         break;
                 }
 
                 _repository.Missions.Update(mission);
                 if (historyAdd) _repository.MissionHistorys.Add(mission);
-                _mqttQueue.MqttPublishMessage(TopicType.mission, TopicSubType.status, _mapping.Missions.Publish(mission));
+                _mqttQueue.MqttPublishMessage(TopicType.mission, mission.assignedWorkerId, _mapping.Missions.Publish(mission));
+                worker_MissionId_MissionName_Update(mission, worekerMissionIdUpdateFlag);
             }
         }
     }

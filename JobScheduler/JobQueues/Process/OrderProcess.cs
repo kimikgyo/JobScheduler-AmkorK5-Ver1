@@ -40,7 +40,7 @@ namespace JOB.JobQueues.Process
                 //{
                 _repository.Orders.Add(order);
                 _repository.OrderHistorys.Add(order);
-                _mqttQueue.MqttPublishMessage(TopicType.order, TopicSubType.status, _mapping.Orders.Publish(order));
+                _mqttQueue.MqttPublishMessage(TopicType.order, nameof(TopicSubType.status), _mapping.Orders.Publish(order));
                 //trxScope.Complete();
                 //}
             }

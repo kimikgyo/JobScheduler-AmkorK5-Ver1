@@ -73,7 +73,7 @@ namespace JOB.MQTTs
                                         requestid = requestDto.id,
                                         resultvalue = "OK"
                                     };
-                                    _mqttQueue.MqttPublishMessage(TopicType.ui, TopicSubType.response, message);
+                                    _mqttQueue.MqttPublishMessage(TopicType.ui, nameof(TopicSubType.response), message);
                                 }
                             }
                             break;

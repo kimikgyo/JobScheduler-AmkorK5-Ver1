@@ -43,7 +43,7 @@ namespace JOB.JobQueues.Process
                 };
                 _repository.Jobs.Add(job);
                 _repository.JobHistorys.Add(job);
-                _mqttQueue.MqttPublishMessage(TopicType.job, TopicSubType.status, _mapping.Jobs.Publish(job));
+                _mqttQueue.MqttPublishMessage(TopicType.job, nameof(TopicSubType.status), _mapping.Jobs.Publish(job));
 
                 if (job.orderId != null)
                 {
@@ -55,7 +55,7 @@ namespace JOB.JobQueues.Process
                         order.updatedAt = DateTime.Now;
                         _repository.Orders.Update(order);
                         _repository.OrderHistorys.Add(order);
-                        _mqttQueue.MqttPublishMessage(TopicType.order, TopicSubType.status, _mapping.Orders.Publish(order));
+                        _mqttQueue.MqttPublishMessage(TopicType.order, nameof(TopicSubType.status), _mapping.Orders.Publish(order));
                     }
                 }
             }

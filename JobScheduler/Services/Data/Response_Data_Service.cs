@@ -129,6 +129,7 @@ namespace JobScheduler.Services
                     {
                         Complete = true;
                         ConfigData.SubscribeTopics = suscreibeTopicsAdd();
+                        publishesMissionTopicsAdd();
                         _eventlog.Info($"GetData{nameof(Complete)}");
                     }
                     await Task.Delay(500);
@@ -141,6 +142,30 @@ namespace JobScheduler.Services
             }
 
             return Complete;
+        }
+
+        private void publishesMissionTopicsAdd()
+        {
+            var oldMissionTopics = ConfigData.PublishTopics.Where(r => r.type == nameof(TopicType.mission));
+
+            foreach (var oldMissionTopic in oldMissionTopics)
+            {
+                ConfigData.PublishTopics.Remove(oldMissionTopic);
+            }
+
+            var workers = _repository.Workers.GetAll();
+            List<MqttTopicPublish> publishesMissionTopic = new List<MqttTopicPublish>();
+
+            foreach (var worker in workers)
+            {
+                var missionTopic = new MqttTopicPublish
+                {
+                    topic = $"acs/jobScheduler/mission/{worker.id}",
+                    type = "mission",
+                    subType = $"{worker.id}"
+                };
+                ConfigData.PublishTopics.Add(missionTopic);
+            }
         }
 
         private List<MqttTopicSubscribe> suscreibeTopicsAdd()
@@ -263,7 +288,8 @@ namespace JobScheduler.Services
                         Complete = true;
                         _repository.MissionTemplates_Group.Load();
                         _repository.MissionTemplates_Single.Load();
-                        ConfigData.SubscribeTopics = mqttTopicSubscribes;
+                        ConfigData.SubscribeTopics = suscreibeTopicsAdd();
+                        publishesMissionTopicsAdd();
                         _eventlog.Info($"GetData{nameof(Complete)}");
                     }
                     await Task.Delay(500);

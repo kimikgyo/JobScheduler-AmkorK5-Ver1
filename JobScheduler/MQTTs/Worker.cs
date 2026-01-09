@@ -25,7 +25,7 @@ namespace JOB.MQTTs
                             case nameof(TopicSubType.state):
                                 var state = JsonSerializer.Deserialize<Subscribe_WorkerStatusDto>(subscribe.Payload!);
                                 _mapping.Workers.MqttUpdateState(worker, state);
-                                mapAndPositionOccupied(worker);
+                                PositionOccupied(worker);
                                 _repository.Workers.Update(worker);
                                 break;
 
@@ -56,7 +56,9 @@ namespace JOB.MQTTs
             }
         }
 
-        private void mapAndPositionOccupied(Worker worker)
+
+
+        private void PositionOccupied(Worker worker)
         {
             var positions = _repository.Positions.MiR_GetByPosValue(worker.position_X, worker.position_Y, worker.mapId).ToList();
 
@@ -72,6 +74,7 @@ namespace JOB.MQTTs
                     worker.PositionId = null;
                     worker.PositionName = null;
                     _repository.Workers.Update(worker);
+
                 }
             }
             else
@@ -85,6 +88,7 @@ namespace JOB.MQTTs
                         worker.PositionId = position.id;
                         worker.PositionName = position.name;
                         _repository.Workers.Update(worker);
+
                     }
                 }
             }

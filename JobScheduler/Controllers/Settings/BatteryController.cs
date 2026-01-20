@@ -4,7 +4,6 @@ using Data.Interfaces;
 using JOB.JobQueues.Interfaces;
 using JOB.Mappings.Interfaces;
 using Microsoft.AspNetCore.Mvc;
-using System.Diagnostics.Eventing.Reader;
 
 // For more information on enabling Web API for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
 
@@ -65,16 +64,17 @@ namespace JOB.Controllers.Settings
         //}
 
         // PUT api/<BatteryController>/5
-        [HttpPut]
-        public ActionResult Put([FromBody] Put_BatteryDto apiPutRequstDto)
+        [HttpPatch]
+        public ActionResult Patch([FromBody] Put_BatteryDto apiPutRequstDto)
         {
             var battery = _repository.Battery.GetAll();
             if (battery != null)
             {
-                battery.minimum = apiPutRequstDto.minimum;
-                battery.crossCharge = apiPutRequstDto.crossCharge;
-                battery.chargeStart = apiPutRequstDto.chargeStart;
-                battery.chargeEnd = apiPutRequstDto.chargeEnd;
+                if (apiPutRequstDto.minimum != null) battery.minimum = (double)apiPutRequstDto.minimum;
+                if (apiPutRequstDto.crossCharge != null) battery.crossCharge = (double)apiPutRequstDto.crossCharge;
+                if (apiPutRequstDto.chargeStart != null) battery.chargeStart = (double)apiPutRequstDto.chargeStart;
+                if (apiPutRequstDto.chargeEnd != null) battery.chargeEnd = (double)apiPutRequstDto.chargeEnd;
+
                 battery.updatedAt = DateTime.Now;
                 _repository.Battery.Update(battery);
                 return Ok(battery);

@@ -23,9 +23,9 @@ namespace Data.Repositorys.Historys
         {
             // 테이블 존재 여부 확인 쿼리
             string checkTableQuery = @"
-               IF OBJECT_id('dbo.[MissionHistory]', 'U') IS NULL
+               IF OBJECT_id('dbo.[JobScheduler_MissionHistory]', 'U') IS NULL
                 BEGIN
-                    CREATE TABLE dbo.[MissionHistory]
+                    CREATE TABLE dbo.[JobScheduler_MissionHistory]
                      (
                           [orderId]                  NVARCHAR(64)     NULL,
                         [jobId]                    NVARCHAR(64)     NULL,
@@ -71,7 +71,7 @@ namespace Data.Repositorys.Historys
                 using (var con = new SqlConnection(connectionString))
                 {
                     const string INSERT_SQL = @"
-                            INSERT INTO [MissionHistory]
+                            INSERT INTO [JobScheduler_MissionHistory]
                                    (
                                      [orderId]
                                       ,[jobId]
@@ -136,7 +136,7 @@ namespace Data.Repositorys.Historys
             lock (_lock)
             {
                 histories.Clear();
-                var sql = @"SELECT * FROM [MissionHistory] WHERE orderId = @orderId";
+                var sql = @"SELECT * FROM [JobScheduler_MissionHistory] WHERE orderId = @orderId";
                 using (var con = new SqlConnection(connectionString))
                 {
                     foreach (var data in con.Query<Mission>(sql, new { orderId = orderId }))
@@ -154,7 +154,7 @@ namespace Data.Repositorys.Historys
             lock (_lock)
             {
                 histories.Clear();
-                var sql = @"SELECT * FROM [MissionHistory] WHERE jobId = @jobId";
+                var sql = @"SELECT * FROM [JobScheduler_MissionHistory] WHERE jobId = @jobId";
                 using (var con = new SqlConnection(connectionString))
                 {
                     foreach (var data in con.Query<Mission>(sql, new { jobId = jobId }))
@@ -173,7 +173,7 @@ namespace Data.Repositorys.Historys
             lock (_lock)
             {
                 histories.Clear();
-                var sql = @"SELECT * FROM [MissionHistory] WHERE finishedAt >= @start AND finishedAt <= @end";
+                var sql = @"SELECT * FROM [JobScheduler_MissionHistory] WHERE finishedAt >= @start AND finishedAt <= @end";
                 using (var con = new SqlConnection(connectionString))
                 {
                     foreach (var data in con.Query<Mission>(sql, new { start = start, end = end }))
@@ -192,7 +192,7 @@ namespace Data.Repositorys.Historys
             {
                 using (var con = new SqlConnection(connectionString))
                 {
-                    var sql = @"DELETE [MissionHistory] WHERE finishedAt <= @endAt";
+                    var sql = @"DELETE [JobScheduler_MissionHistory] WHERE finishedAt <= @endAt";
                     object queryParams = new { endAt = endAt };
                     var list = con.Execute(sql, queryParams);
                 }

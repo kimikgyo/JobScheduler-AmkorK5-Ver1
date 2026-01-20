@@ -8,7 +8,7 @@ namespace JOB.MQTTs
 {
     public partial class MqttProcess
     {
-        public void Trffic()
+        public void Subscribe_Trffic()
         {
             while (QueueStorage.MqttTryDequeueSubscribeTraffic(out MqttSubscribeMessageDto subscribe))
             {

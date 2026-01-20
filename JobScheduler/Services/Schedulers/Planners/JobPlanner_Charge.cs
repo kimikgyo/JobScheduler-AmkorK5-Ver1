@@ -50,7 +50,7 @@ namespace JOB.Services
             }
 
             // ------------------------------------------------------------
-            // 3-2) 충전 중인 Worker 목록 만들기
+            // 3-2) 충전 중인 Subscribe_Worker 목록 만들기
             //      - 기준:
             //        1) _repository.Jobs.GetByWorkerId(workerId) 로 Job 목록 조회
             //        2) Job.type == CHARGE 또는 Job.subType == CHARGE
@@ -74,17 +74,17 @@ namespace JOB.Services
                 }
             }
             // ------------------------------------------------------------
-            // 3-1) IDLE 상태 Worker 목록 만들기
-            //      - Worker.state == WorkerState.IDLE 인 로봇만 선별
+            // 3-1) IDLE 상태 Subscribe_Worker 목록 만들기
+            //      - Subscribe_Worker.state == WorkerState.IDLE 인 로봇만 선별
             //      - 실제로 새 충전 Job을 받을 수 있는 후보들
             // ------------------------------------------------------------
             var idleWorkers = workers.Where(r => r.state == nameof(WorkerState.IDLE)).ToList();
 
             // ------------------------------------------------------------
-            // 4) 이번 사이클에서 이미 Job 계획된 Worker / 충전기를 추적하기 위한 Set
+            // 4) 이번 사이클에서 이미 Job 계획된 Subscribe_Worker / 충전기를 추적하기 위한 Set
             //    - 중복 Job 생성 방지 목적
             // ------------------------------------------------------------
-            List<string> workerPlanned = new List<string>();   // CHARGE/WAIT Job 계획된 Worker Id
+            List<string> workerPlanned = new List<string>();   // CHARGE/WAIT Job 계획된 Subscribe_Worker Id
             List<string> chargerPlanned = new List<string>();  // 이번 사이클에 할당된 충전기 Position Id
 
             // ------------------------------------------------------------
@@ -107,7 +107,7 @@ namespace JOB.Services
         }
 
         /// <summary>
-        /// 특정 Worker 가 "현재 충전 중"인지 판단하는 함수
+        /// 특정 Subscribe_Worker 가 "현재 충전 중"인지 판단하는 함수
         /// - 조건:
         ///   1) _repository.Jobs.GetByWorkerId(workerId)를 통해 해당 Worker의 Job 전체를 가져온다.
         ///   2) 그 Job 중에서
@@ -158,12 +158,12 @@ namespace JOB.Services
         /// <summary>
         /// 전용 충전기(linkedRobotId)가 설정된 충전기를 처리하는 함수
         /// - 충전기 Position.linkedRobotId 에 특정 WorkerId 가 지정된 경우,
-        ///   해당 Worker 전용 충전기로 간주한다.
+        ///   해당 Subscribe_Worker 전용 충전기로 간주한다.
         /// - 조건:
         ///   1) 충전기: subType == CHARGE, hasCharger == true, isEnabled == true (이미 필터링된 상태)
         ///   2) linkedRobotId 가 비어있지 않은 충전기만 대상
-        ///   3) linkedRobotId 와 일치하는 Worker 가 idleWorkers 에 있어야 한다.
-        ///   4) Worker 배터리 <= chargeStart 일 때만 CHARGE Job 생성
+        ///   3) linkedRobotId 와 일치하는 Subscribe_Worker 가 idleWorkers 에 있어야 한다.
+        ///   4) Subscribe_Worker 배터리 <= chargeStart 일 때만 CHARGE Job 생성
         ///   5) chargerPositions 중 해당 충전기가 isOccupied == false 여야 한다.
         ///   6) 같은 사이클 내에서 이미 Job 계획된 Worker/Charger 는 workerPlanned, chargerPlanned 로 중복 방지
         /// </summary>
@@ -209,8 +209,8 @@ namespace JOB.Services
             // 2) 전용 충전기 하나씩 검사
             //    - 각 충전기에 대해:
             //      1) 이미 이번 사이클에서 사용 계획된 충전기인지 확인
-            //      2) linkedRobotId 와 매칭되는 IDLE Worker 찾기
-            //      3) Worker 배터리 / 충전기 점유 상태 / 그룹 조건 확인
+            //      2) linkedRobotId 와 매칭되는 IDLE Subscribe_Worker 찾기
+            //      3) Subscribe_Worker 배터리 / 충전기 점유 상태 / 그룹 조건 확인
             //      4) 조건을 만족하면 CHARGE Job 생성
             // ------------------------------------------------------------
             foreach (var chargerPosition in reservedChargers)
@@ -228,19 +228,19 @@ namespace JOB.Services
                     EventLogger.Warn($"[CHARGE][RESERVED][SKIP] charger already planned in cycle: chargerPOSName= {chargerPosition.name}, chargerId= {chargerPosition.id}");
                     continue;
                 }
-                // 2-2) linkedRobotId 와 일치하는 IDLE Worker 찾기
-                //      - 같은 그룹인 Worker 만 대상 (충전기 group == Worker.group)
+                // 2-2) linkedRobotId 와 일치하는 IDLE Subscribe_Worker 찾기
+                //      - 같은 그룹인 Subscribe_Worker 만 대상 (충전기 group == Subscribe_Worker.group)
                 var targetWorker = candidateWorkers.FirstOrDefault(w => w != null && w.id == chargerPosition.linkedRobotId);
 
                 if (targetWorker == null)
                 {
-                    // 전용 충전기에 매칭되는 IDLE Worker 가 없으면 스킵
+                    // 전용 충전기에 매칭되는 IDLE Subscribe_Worker 가 없으면 스킵
                     //EventLogger.Warn($"[CHARGE][RESERVED][SKIP] no idle worker for reserved charger: chargerPOSName={chargerPosition.name}, chargerId={chargerPosition.id}" +
                     //                 $", linkedWorkerId={chargerPosition.linkedRobotId}");
                     continue;
                 }
 
-                // 2-3) 이번 사이클에서 이미 Job 이 계획된 Worker 인지 확인
+                // 2-3) 이번 사이클에서 이미 Job 이 계획된 Subscribe_Worker 인지 확인
                 if (workerPlanned.Contains(targetWorker.id))
                 {
                     // 한 사이클에 동일 Worker에게 중복으로 CHARGE/WAIT Job 을 만들지 않기 위한 방어
@@ -283,7 +283,7 @@ namespace JOB.Services
                     continue;
                 }
 
-                // 이번 사이클에서 이 Worker / Charger 는 이미 처리되었음을 기록
+                // 이번 사이클에서 이 Subscribe_Worker / Charger 는 이미 처리되었음을 기록
                 if (!workerPlanned.Contains(targetWorker.id))
                 {
                     workerPlanned.Add(targetWorker.id);
@@ -308,8 +308,8 @@ namespace JOB.Services
         /// - 조건:
         ///   1) chargerPosition.linkedRobotId 가 비어 있어야 한다. (전용 충전기 제외)
         ///   2) 충전기 isOccupied == false 여야 한다.
-        ///   3) 같은 그룹(worker.group == charger.group) 이고 같은 층(worker.mapId == charger.mapId) 인 IDLE Worker 대상
-        ///   4) Worker 배터리 <= chargeStart 인 경우에만 충전 Job 생성
+        ///   3) 같은 그룹(worker.group == charger.group) 이고 같은 층(worker.mapId == charger.mapId) 인 IDLE Subscribe_Worker 대상
+        ///   4) Subscribe_Worker 배터리 <= chargeStart 인 경우에만 충전 Job 생성
         ///   5) 같은 사이클 내에서 이미 Job 이 계획된 Worker/Charger 는 workerPlanned / chargerPlanned 로 중복 방지
         /// </summary>
         private void HandleNormalChargerChargeStart(List<Worker> idleWorkers, List<Worker> chargingWorkers, List<Position> chargerPositions
@@ -357,7 +357,7 @@ namespace JOB.Services
             // 2) 일반 충전기 하나씩 검사
             //    - 각 충전기에 대해:
             //      1) 이미 이번 사이클에 사용된 충전기인지 확인
-            //      2) 같은 그룹/층의 IDLE Worker 중에서 배터리가 낮고 chargeStart 이하인 Worker 찾기
+            //      2) 같은 그룹/층의 IDLE Subscribe_Worker 중에서 배터리가 낮고 chargeStart 이하인 Subscribe_Worker 찾기
             //      3) 충전기 점유 상태 확인
             //      4) 조건을 만족하면 CHARGE Job 생성 요청
             // ------------------------------------------------------------
@@ -386,7 +386,7 @@ namespace JOB.Services
                 // 2-3) 이 충전기와 같은 그룹/층이면서,
                 //      - IDLE 상태
                 //      - 이번 사이클에 아직 Job 이 계획되지 않았고
-                //      - 배터리가 chargeStart 이하인 Worker 후보 목록 생성
+                //      - 배터리가 chargeStart 이하인 Subscribe_Worker 후보 목록 생성
                 // 배터리 낮은 순으로 정렬 (가장 급한 로봇 우선)
 
                 candidateWorkers = candidateWorkers.Where(w => w != null && !workerPlanned.Contains(w.id) && w.group == charger.group
@@ -401,7 +401,7 @@ namespace JOB.Services
                     continue;
                 }
 
-                // 2-4) 가장 배터리가 낮은 Worker 선택
+                // 2-4) 가장 배터리가 낮은 Subscribe_Worker 선택
                 var targetWorker = candidateWorkers.FirstOrDefault();
                 if (targetWorker == null)
                 {
@@ -421,7 +421,7 @@ namespace JOB.Services
                     continue;
                 }
 
-                // 3-1) 이번 사이클에 처리 완료된 Worker / Charger 기록 (중복 방지)
+                // 3-1) 이번 사이클에 처리 완료된 Subscribe_Worker / Charger 기록 (중복 방지)
                 if (!workerPlanned.Contains(targetWorker.id))
                 {
                     workerPlanned.Add(targetWorker.id);
@@ -469,9 +469,29 @@ namespace JOB.Services
                 );
                 return false;
             }
+            // ------------------------------------------------------------
+            // 2) 층(mapId) 다르면 엘리베이터 상태 확인 (추가)
+            // ------------------------------------------------------------
+            bool isCrossMap = !string.IsNullOrEmpty(worker.mapId)
+                              && !string.IsNullOrEmpty(chargerPosition.mapId)
+                              && worker.mapId != chargerPosition.mapId;
+
+            if (isCrossMap)
+            {
+                bool elevatorActive = _repository.Elevator.Active("NO1");
+                if (elevatorActive == false)
+                {
+                    EventLogger.Warn(
+                        $"[CHARGE][{createType}][ELEVATOR][SKIP] elevator inactive → cannot send cross-map charge. " +
+                        $"workerId={worker.id}, workerName={worker.name}, workerMapId={worker.mapId}, " +
+                        $"chargerId={chargerPosition.id}, chargerName={chargerPosition.name}, chargerMapId={chargerPosition.mapId}"
+                    );
+                    return false; // 여기서 막아야 뒤 로직 진행 안 함
+                }
+            }
 
             // ------------------------------------------------------------
-            // 2) Queue 를 통한 Job 생성 요청
+            // 3) Queue 를 통한 Job 생성 요청
             // ------------------------------------------------------------
 
             _Queue.Create_Job(worker.group, null, nameof(JobType.CHARGE), nameof(JobSubType.CHARGE), null, 0, null,
@@ -493,13 +513,13 @@ namespace JOB.Services
 
         /// <summary>
         /// 교차 충전(Cross Charge) 처리
-        /// - 이미 충전 중인 Worker(충전기 점유)가 있고,
+        /// - 이미 충전 중인 Subscribe_Worker(충전기 점유)가 있고,
         ///   같은 그룹/같은 층(mapId)에 배터리가 더 낮은 IDLE Worker가 존재하면
         ///   충전 중 Worker가 crossCharge 이상일 때 충전을 양보한다.
         ///
         /// 처리:
         /// 1) 충전 중 Worker가 점유한 충전기(CHARGE 포지션)를 찾는다.
-        /// 2) 같은 그룹/같은 층에서 배터리 낮은 IDLE Worker(<= crossCharge)를 찾는다.
+        /// 2) 같은 그룹/같은 층에서 배터리 낮은 IDLE Subscribe_Worker(<= crossCharge)를 찾는다.
         /// 3) 조건 만족 시
         ///    - 충전 중 Worker → WAIT Job 생성 (지정 WAIT 우선, 없으면 가까운 WAIT)
         ///    - 저배터리 Worker → CHARGE Job 생성 (같은 충전기로)
@@ -525,7 +545,7 @@ namespace JOB.Services
             if (chargerPlanned == null) return;
 
             // ------------------------------------------------------------
-            // 1) 교차 충전 대상이 될 수 있는 "저배터리 IDLE Worker" 후보 생성
+            // 1) 교차 충전 대상이 될 수 있는 "저배터리 IDLE Subscribe_Worker" 후보 생성
             //    - batteryPercent <= crossCharge
             //    - 이번 사이클에 이미 계획된 worker 제외
             //    - 배터리 낮은 순 정렬
@@ -555,15 +575,16 @@ namespace JOB.Services
                     continue;
                 }
 
-                // 2-2) 충전 중 Worker가 crossCharge 이상이어야 양보 가능
-                if (chargingWorker.batteryPercent < crossCharge)
+
+                // 2-3) 충전 중 Worker가 crossCharge 이상 이고 충전 완료 배터리 이상이어야 양보 가능
+                if (chargingWorker.batteryPercent < crossCharge || chargingWorker.batteryPercent < chargeEnd)
                 {
                     continue;
                 }
 
                 // --------------------------------------------------------
-                // 2-3) 충전 중 Worker가 점유한 충전기 포지션(CHARGE)을 찾는다.
-                //      - Worker.PositionId(현재 점유 포지션) == ChargerPosition.id
+                // 2-4) 충전 중 Worker가 점유한 충전기 포지션(CHARGE)을 찾는다.
+                //      - Subscribe_Worker.PositionId(현재 점유 포지션) == ChargerPosition.id
                 // --------------------------------------------------------
 
                 var chargingMissions = _repository.Missions.GetByAssignedWorkerId(chargingWorker.id)
@@ -589,7 +610,7 @@ namespace JOB.Services
                     continue;
                 }
 
-                // 2-4) 이번 사이클에 이미 이 충전기가 계획되었으면 스킵
+                // 2-5) 이번 사이클에 이미 이 충전기가 계획되었으면 스킵
                 if (chargerPlanned.Contains(usingCharger.id))
                 {
                     EventLogger.Warn($"[CHARGE][CROSS][SKIP] charger already planned in cycle: chargerPOSId={usingCharger.id}, chargerPOSName={usingCharger.name}");
@@ -597,7 +618,7 @@ namespace JOB.Services
                 }
 
                 // --------------------------------------------------------
-                // 2-5) 같은 그룹/같은 층(mapId)에서 교차 충전 받을 저배터리 로봇 선택
+                // 2-6) 같은 그룹/같은 층(mapId)에서 교차 충전 받을 저배터리 로봇 선택
                 // --------------------------------------------------------
                 var targetLowWorker = lowBatteryIdleWorkers.FirstOrDefault(w => w != null && w.group == usingCharger.group && w.mapId == usingCharger.mapId);
 
@@ -608,7 +629,7 @@ namespace JOB.Services
                 }
 
                 // --------------------------------------------------------
-                // 2-6) 전용 충전기(linkedRobotId) 정책 적용
+                // 2-7) 전용 충전기(linkedRobotId) 정책 적용
                 //      - linkedRobotId 가 설정된 충전기는 지정된 로봇만 사용 가능
                 // --------------------------------------------------------
                 if (!string.IsNullOrEmpty(usingCharger.linkedRobotId))
@@ -622,7 +643,7 @@ namespace JOB.Services
                 }
 
                 // --------------------------------------------------------
-                // 2-7) WAIT 포지션 선택 (지정 WAIT 우선, 없으면 가까운 WAIT)
+                // 2-8) WAIT 포지션 선택 (지정 WAIT 우선, 없으면 가까운 WAIT)
                 //      - WAIT 조건: subType=WAIT, isEnabled=true, isOccupied=false
                 // --------------------------------------------------------
                 //Position waitPosition = FindWaitPositionForWorker(chargingWorker, usingCharger.group, usingCharger.mapId);
@@ -636,8 +657,8 @@ namespace JOB.Services
 
                 // --------------------------------------------------------
                 // 3) 교차 충전 실행 (순서 중요)
-                //    1) 충전 중 Worker → WAIT Job 생성
-                //    2) 저배터리 Worker → CHARGE Job 생성 (같은 충전기)
+                //    1) 충전 중 Subscribe_Worker → WAIT Job 생성
+                //    2) 저배터리 Subscribe_Worker → CHARGE Job 생성 (같은 충전기)
                 // --------------------------------------------------------
 
                 // 3) 교차 충전 실행 직전 (가장 먼저 충전 미션 삭제)
@@ -730,7 +751,7 @@ namespace JOB.Services
             if (workerPlanned == null) return;
 
             // ------------------------------------------------------------
-            // 1) 충전 중 Worker 순회
+            // 1) 충전 중 Subscribe_Worker 순회
             // ------------------------------------------------------------
             foreach (var chargingWorker in chargingWorkers)
             {
@@ -754,7 +775,7 @@ namespace JOB.Services
 
                 // --------------------------------------------------------
                 // 2) 이 Worker가 실제로 점유 중인 충전기(CHARGE 포지션) 찾기
-                //    - Worker.PositionId == chargerPosition.id
+                //    - Subscribe_Worker.PositionId == chargerPosition.id
                 // --------------------------------------------------------
                 //Position usingCharger = null;
 

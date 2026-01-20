@@ -31,6 +31,10 @@ namespace JOB.Services
                 case nameof(Service.TRAFFIC):
                     completed = TrafficDeleteMission(mission);
                     break;
+
+                case nameof(Service.IOT):
+                    completed = IOTDeleteMission(mission);
+                    break;
             }
             return completed;
         }
@@ -38,7 +42,7 @@ namespace JOB.Services
         private bool WorkerDeleteMission(Mission mission)
         {
             bool CommandRequst = false;
-            //Worker 전송 API로
+            //Subscribe_Worker 전송 API로
             var workerApi = _repository.ServiceApis.GetAll().FirstOrDefault(r => r.type == "worker");
             if (workerApi != null)
             {
@@ -102,7 +106,7 @@ namespace JOB.Services
                 if (mapping_mission != null)
                 {
                     //[조건4] Service 로 Api Mission 전송을 한다.
-                    var postmission = service.Api.Deletet_Elevator_Mission_Async(mapping_mission.guid).Result;
+                    var postmission = service.Api.Deletet_Traffic_Mission_Async(mapping_mission.guid).Result;
                     if (postmission != null)
                     {
                         //[조건5] 상태코드 200~300 까지는 완료 처리
@@ -116,6 +120,37 @@ namespace JOB.Services
                                              $", MissionId = {mission.guid}, AssignedWorkerId = {mission.assignedWorkerId}, AssignedWorkerName = {mission.assignedWorkerName}");
                     }
                     else EventLogger.Warn($"[DeleteMission][TRAFFIC][APIResponseIsNull] MissionName = {mission.name}, MissionSubType = {mission.subType}" +
+                                         $", MissionId = {mission.guid}, AssignedWorkerId = {mission.assignedWorkerId}, AssignedWorkerName = {mission.assignedWorkerName}");
+                }
+            }
+            return CommandRequst;
+        }
+
+        private bool IOTDeleteMission(Mission mission)
+        {
+            bool CommandRequst = false;
+            var service = _repository.ServiceApis.GetAll().FirstOrDefault(r => r.type == "IOT");
+            if (service != null)
+            {
+                //[조건3] API 형식에 맞추어서 Mapping 을 한다.
+                var mapping_mission = _mapping.Missions.Request(mission);
+                if (mapping_mission != null)
+                {
+                    //[조건4] Service 로 Api Mission 전송을 한다.
+                    var postmission = service.Api.Deletet_IOT_Mission_Async(mapping_mission.guid).Result;
+                    if (postmission != null)
+                    {
+                        //[조건5] 상태코드 200~300 까지는 완료 처리
+                        if (postmission.statusCode >= 200 && postmission.statusCode < 300)
+                        {
+                            EventLogger.Info($"[DeleteMission][IOT][Success], Message = {postmission.statusText}, MissionName = {mission.name}, MissionSubType = {mission.subType}" +
+                                             $", MissionId = {mission.guid}, AssignedWorkerId = {mission.assignedWorkerId}, AssignedWorkerName = {mission.assignedWorkerName}");
+                            CommandRequst = true;
+                        }
+                        else EventLogger.Warn($"[DeleteMission][IOT][Failed], Message = {postmission.message}, MissionName = {mission.name}, MissionSubType = {mission.subType}" +
+                                             $", MissionId = {mission.guid}, AssignedWorkerId = {mission.assignedWorkerId}, AssignedWorkerName = {mission.assignedWorkerName}");
+                    }
+                    else EventLogger.Warn($"[DeleteMission][IOT][APIResponseIsNull] MissionName = {mission.name}, MissionSubType = {mission.subType}" +
                                          $", MissionId = {mission.guid}, AssignedWorkerId = {mission.assignedWorkerId}, AssignedWorkerName = {mission.assignedWorkerName}");
                 }
             }

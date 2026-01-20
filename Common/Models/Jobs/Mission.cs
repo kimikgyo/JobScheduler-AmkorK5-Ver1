@@ -10,7 +10,9 @@ namespace Common.Models.Jobs
         WORKER,
         ELEVATOR,
         MIDDLEWARE,
-        TRAFFIC
+        TRAFFIC,
+        IOT,
+        JOBSCHEDULER
     }
 
     public enum MissionType
@@ -72,7 +74,10 @@ namespace Common.Models.Jobs
         DESTINATIONACTION,
         ELEVATORSOURCEFLOOR,
         ELEVATORDESTINATIONFLOOR,
-        PICK,
+        TRANSPORTPICK,
+        TRANSPORTDROP,
+        MANUALTRANSPORTPICK,
+        MANUALTRANSPORTDROP,
         DROP,
         WAIT,
         CHARGE,

@@ -5,8 +5,10 @@ namespace Common.Templates
 {
     public enum MissionsTemplateGroup
     {
-        PICK,
-        DROP,
+        MANUALTRANSPORTPICK,
+        MANUALTRANSPORTDROP,
+        TRANSPORTPICK,
+        TRANSPORTDROP,
         TRAFFIC,
         ELEVATORSOURCE,
         ELEVATORDEST,
@@ -18,7 +20,6 @@ namespace Common.Templates
         //[JsonProperty(Order = 1)]
         //public int jobTemplateId { get; set; }
         [JsonPropertyOrder(1)] public string guid { get; set; }
-
         [JsonPropertyOrder(2)] public string group { get; set; }
         [JsonPropertyOrder(3)] public string name { get; set; }
         [JsonPropertyOrder(4)] public string service { get; set; }

@@ -27,9 +27,9 @@ namespace Data.Repositorys.Jobs
             //VARCHAR 대신 NVARCHAR로 저장해야함 VARCHAR은 영문만 가능함
             // 테이블 존재 여부 확인 쿼리
             string checkTableQuery = @"
-               IF OBJECT_id('dbo.[Mission]', 'U') IS NULL
+               IF OBJECT_id('dbo.[JobScheduler_Mission]', 'U') IS NULL
                 BEGIN
-                    CREATE TABLE dbo.[Mission]
+                    CREATE TABLE dbo.[JobScheduler_Mission]
                     (
                         [orderId]                  NVARCHAR(64)     NULL,
                         [jobId]                    NVARCHAR(64)     NULL,
@@ -74,7 +74,7 @@ namespace Data.Repositorys.Jobs
             _missions.Clear();
             using (var con = new SqlConnection(connectionString))
             {
-                foreach (var data in con.Query<Mission>("SELECT * FROM [Mission]"))
+                foreach (var data in con.Query<Mission>("SELECT * FROM [JobScheduler_Mission]"))
                 {
                     //파라메타를 Json으로 되어있던것을 다시 List로 변경한다.
                     if (data.parametersJson != null) data.parameters = JsonSerializer.Deserialize<List<Parameter>>(data.parametersJson);
@@ -94,7 +94,7 @@ namespace Data.Repositorys.Jobs
                 using (var con = new SqlConnection(connectionString))
                 {
                     const string INSERT_SQL = @"
-                            INSERT INTO [Mission]
+                            INSERT INTO [JobScheduler_Mission]
                                  (
                                        [orderId]
                                       ,[jobId]
@@ -164,7 +164,7 @@ namespace Data.Repositorys.Jobs
                 using (var con = new SqlConnection(connectionString))
                 {
                     const string UPDATE_SQL = @"
-                            UPDATE [Mission]
+                            UPDATE [JobScheduler_Mission]
                             SET
                                 [orderId]                  =  @orderId
                                ,[jobId]                    =  @jobId
@@ -207,7 +207,7 @@ namespace Data.Repositorys.Jobs
 
                 using (var con = new SqlConnection(connectionString))
                 {
-                    con.Execute("DELETE FROM [Mission]");
+                    con.Execute("DELETE FROM [JobScheduler_Mission]");
                     _missions.Clear();
                     logger.Info($"Delete");
                 }
@@ -222,7 +222,7 @@ namespace Data.Repositorys.Jobs
 
                 using (var con = new SqlConnection(connectionString))
                 {
-                    con.Execute("DELETE FROM [Mission] WHERE guid = @guid", param: new { guid = remove.guid });
+                    con.Execute("DELETE FROM [JobScheduler_Mission] WHERE guid = @guid", param: new { guid = remove.guid });
                     _missions.Remove(remove);
                     logger.Info($"Remove: {remove}");
                 }

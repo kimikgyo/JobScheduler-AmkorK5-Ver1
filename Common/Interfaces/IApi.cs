@@ -30,14 +30,17 @@ namespace Common.Interfaces
 
         Task<ResponseDto> Post_Traffic_Mission_Async(object value);
 
-        Task<ResponseDto> Deletet_Traffic_Mission_Async(string id);
-
+        Task<ResponseDto> Post_IOT_Mission_Async(object value);
 
         Task<ResponseDto> Delete_Worker_Mission_Async(string id);
 
         Task<ResponseDto> Delete_Middleware_Mission_Async(string id);
 
         Task<ResponseDto> Deletet_Elevator_Mission_Async(string id);
+
+        Task<ResponseDto> Deletet_Traffic_Mission_Async(string id);
+
+        Task<ResponseDto> Deletet_IOT_Mission_Async(string id);
 
         Task<ResponseDto> Patch_Position_Async(string id, object value);
 

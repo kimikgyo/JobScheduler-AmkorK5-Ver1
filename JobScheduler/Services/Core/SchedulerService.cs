@@ -106,6 +106,7 @@ namespace JOB.Services
                     {
                         JobPlanner();
                         WorkerAssined();
+                        manualTransport_PickAndDrop_Control();
                         MissionPostScheduler();
                         cancelControl();
                         ElevatorPolicy();

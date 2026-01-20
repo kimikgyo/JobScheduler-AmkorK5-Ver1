@@ -9,7 +9,7 @@ namespace JOB.MQTTs
 {
     public partial class MqttProcess
     {
-        public void Middleware()
+        public void Subscribe_Middleware()
         {
             while (QueueStorage.MqttTryDequeueSubscribeMiddleware(out MqttSubscribeMessageDto subscribe))
             {

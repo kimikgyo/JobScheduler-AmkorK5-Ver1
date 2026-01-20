@@ -11,7 +11,7 @@ namespace Common.Models.Bases
         [JsonPropertyOrder(1)] public string id { get; set; }
         [JsonPropertyOrder(2)] public string mapId { get; set; }
         [JsonPropertyOrder(3)] public string source { get; set; }
-        [JsonPropertyOrder(4)] public int    level { get; set; }
+        [JsonPropertyOrder(4)] public int level { get; set; }
         [JsonPropertyOrder(5)] public string name { get; set; }
 
         public override string ToString()
@@ -22,7 +22,6 @@ namespace Common.Models.Bases
                 $",source = {source,-5}" +
                 $",level = {level,-5}" +
                 $",name = {name,-5}";
-
         }
 
         //public string ToJson(bool indented = false)

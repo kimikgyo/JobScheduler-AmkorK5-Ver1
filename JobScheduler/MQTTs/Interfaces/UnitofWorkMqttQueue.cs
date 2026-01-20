@@ -119,11 +119,12 @@ namespace JOB.MQTTs.Interfaces
         public void HandleReceivedMqttMessage()
         {
             _mqttProcess.HandleReceivedMqttMessage();
-            _mqttProcess.Worker();
-            _mqttProcess.Middleware();
-            _mqttProcess.Carrier();
-            _mqttProcess.Elevator();
-            _mqttProcess.Trffic();
+            _mqttProcess.Subscribe_Worker();
+            _mqttProcess.Subscribe_Middleware();
+            _mqttProcess.Subscribe_Carrier();
+            _mqttProcess.Subscribe_Elevator();
+            _mqttProcess.Subscribe_Trffic();
+            _mqttProcess.Subscribe_Device();
         }
     }
 }

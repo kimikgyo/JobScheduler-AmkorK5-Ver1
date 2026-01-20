@@ -17,7 +17,7 @@ namespace JOB.Services
         /// ------------------------------------------------------------
         /// 1) UnAssigned Job 목록 조회 (priority 내림차순 + createdAt 오름차순)
         /// 2) 엘리베이터 상태에 따라 EV 관련 Job 필터링
-        /// 3) 거리 기반으로 Worker 에 Job 어사인 시도 (distance 방식)
+        /// 3) 거리 기반으로 Subscribe_Worker 에 Job 어사인 시도 (distance 방식)
         /// </summary>
         private void JobAssigned_Normal()
         {
@@ -53,7 +53,7 @@ namespace JOB.Services
                 var crossFloorJobs = unAssignedWorkerJobs.Where(job => IsSameFloorJob(job) == false).ToList();
                 // 2) 같은 층 Job 만 남기기
                 unAssignedWorkerJobs = unAssignedWorkerJobs.Where(job => IsSameFloorJob(job)).ToList();
-                EventLogger.Info($"[ASSIGN][FILTER] Elevator unavailable. Removed {crossFloorJobs.Count} cross-floor jobs. " + $"Remaining={unAssignedWorkerJobs.Count}");
+                EventLogger.Info($"[ASSIGN][FILTER] Subscribe_Elevator unavailable. Removed {crossFloorJobs.Count} cross-floor jobs. " + $"Remaining={unAssignedWorkerJobs.Count}");
             }
            
 
@@ -106,7 +106,7 @@ namespace JOB.Services
             if (batterySetting == null)
                 return;
 
-            // 1) Active Worker 목록 조회
+            // 1) Active Subscribe_Worker 목록 조회
             var workers = _repository.Workers.MiR_GetByActive();
             if (workers == null || workers.Count == 0)
                 return;
@@ -169,7 +169,7 @@ namespace JOB.Services
         /// <summary>
         /// distance
         /// ------------------------------------------------------------
-        /// 1) Active Worker 조회 → IDLE 상태인 워커만 대상
+        /// 1) Active Subscribe_Worker 조회 → IDLE 상태인 워커만 대상
         /// 2) 이미 Job 이 할당된 워커 중, CHARGE/WAIT 가 아닌 Job 을 수행중인 워커는 제외
         /// 3) 지정 워커 Job / 비지정 워커 Job 으로 분리하여 어사인
         ///    - 지정 워커 Job : 워커 기준으로 가장 가까운 Job 선택
@@ -183,7 +183,7 @@ namespace JOB.Services
             if (batterySetting == null)
                 return;
 
-            // 1) Active Worker 목록 조회
+            // 1) Active Subscribe_Worker 목록 조회
             var workers = _repository.Workers.MiR_GetByActive();
             if (workers == null || workers.Count == 0)
             {
@@ -302,7 +302,7 @@ namespace JOB.Services
                     if (candidates == null || candidates.Count == 0)
                         continue;
 
-                    // Job 기준으로 가장 가까운 Worker 선택
+                    // Job 기준으로 가장 가까운 Subscribe_Worker 선택
                     var worker = SelectNearestWorkerForJob(candidates, job);
                     if (worker == null)
                         continue;
@@ -353,11 +353,11 @@ namespace JOB.Services
         /// [Sub] AssignedControl
         /// 지정 워커가 없는 Job 에 대해
         /// Job 의 출발/도착 Position 을 기준으로
-        /// 가장 가까운 Worker 1명을 선택한다.
+        /// 가장 가까운 Subscribe_Worker 1명을 선택한다.
         /// </summary>
-        /// <param name="workers">후보 Worker 리스트 (같은 group 등 사전 필터 완료된 상태)</param>
-        /// <param name="job">Worker 를 배정할 대상 Job</param>
-        /// <returns>선택된 Worker (없으면 null)</returns>
+        /// <param name="workers">후보 Subscribe_Worker 리스트 (같은 group 등 사전 필터 완료된 상태)</param>
+        /// <param name="job">Subscribe_Worker 를 배정할 대상 Job</param>
+        /// <returns>선택된 Subscribe_Worker (없으면 null)</returns>
         private Worker SelectNearestWorkerForJob(List<Worker> workers, Job job)
         {
             // ------------------------------------------------------------
@@ -409,7 +409,7 @@ namespace JOB.Services
                 }
             }
 
-            // Position 조회 실패 시 이 Job 에 대해 Worker 선택 불가
+            // Position 조회 실패 시 이 Job 에 대해 Subscribe_Worker 선택 불가
             if (position == null)
             {
                 EventLogger.Warn($"[ASSIGN][NEAREST-WORKER][SKIP][POSITION-NOTFOUND] jobId={job.guid}, sourceId={job.sourceId}, destinationId={job.destinationId}");
@@ -417,11 +417,11 @@ namespace JOB.Services
             }
 
             // ------------------------------------------------------------
-            // [2] Position 기준 가장 가까운 Worker 선택
+            // [2] Position 기준 가장 가까운 Subscribe_Worker 선택
             // ------------------------------------------------------------
             Worker selectedWorker = null;
 
-            // FindNearestWorker 는 "거리 순으로 정렬된 Worker 리스트" 를 반환한다고 가정
+            // FindNearestWorker 는 "거리 순으로 정렬된 Subscribe_Worker 리스트" 를 반환한다고 가정
             var nearestWorker = _repository.Workers.FindNearestWorker(workers, position).FirstOrDefault();
 
             if (nearestWorker != null)
@@ -438,7 +438,7 @@ namespace JOB.Services
         }
 
         /// <summary>
-        /// 주어진 Worker 입장에서, 전달된 Job 목록 중
+        /// 주어진 Subscribe_Worker 입장에서, 전달된 Job 목록 중
         /// "가장 가까운 위치의 Job 하나" 를 선택해서 리턴한다.
         ///
         /// - Job 기준 포지션 선택 규칙
@@ -514,7 +514,7 @@ namespace JOB.Services
                 // Job 과 대표 Position 매핑 저장
                 jobMainPositionMap[job.guid] = mainPosition;
 
-                // Worker 와의 거리 계산 후보로 추가
+                // Subscribe_Worker 와의 거리 계산 후보로 추가
                 candidatePositions.Add(mainPosition);
             }
 
@@ -530,7 +530,7 @@ namespace JOB.Services
             //);
 
             // ------------------------------------------------------------
-            // [2] Worker 기준 가장 가까운 Position 선택
+            // [2] Subscribe_Worker 기준 가장 가까운 Position 선택
             // ------------------------------------------------------------
             var nearestPosition = _repository.Positions.FindNearestWayPoint(worker, candidatePositions).FirstOrDefault();
 
@@ -620,6 +620,7 @@ namespace JOB.Services
             switch (job.type)
             {
                 case nameof(JobType.TRANSPORT):
+                case nameof(JobType.MANUALTRANSPORT):
                 case nameof(JobType.TRANSPORT_SLURRY_SUPPLY):
                 case nameof(JobType.TRANSPORT_SLURRY_RECOVERY):
                 case nameof(JobType.TRANSPORT_CHEMICAL_RECOVERY):

@@ -36,7 +36,7 @@ namespace JOB.Services
                 .Select(j => j.destinationId)
                 .ToList();
 
-            // 1-3) Worker 점유
+            // 1-3) Subscribe_Worker 점유
             var workerOccupied = workerPositionOccupied();
 
             occupiedPositionIds.AddRange(runMissionTargetIds);

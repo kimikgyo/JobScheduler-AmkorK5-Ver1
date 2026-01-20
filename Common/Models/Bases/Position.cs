@@ -1,4 +1,5 @@
-﻿using System.Text.Json.Serialization;
+﻿using Common.Models.Bases;
+using System.Text.Json.Serialization;
 
 namespace Common.Models.Jobs
 {
@@ -22,6 +23,8 @@ namespace Common.Models.Jobs
         WORK,
         ELEVATOR,
         CHARGER,
+        AUTODOOROPENREQUEST,
+        AUTODOORCLOSEREQUEST
     }
 
     public class Position
@@ -44,12 +47,30 @@ namespace Common.Models.Jobs
         [JsonPropertyOrder(16)] public string linkedZone { get; set; }          //포지션 관련 Area
         [JsonPropertyOrder(17)] public string linkedFacility { get; set; }      //포지션 관련 장비
         [JsonPropertyOrder(18)] public string linkedRobotId { get; set; }       //포지션 지정 Robot
-        [JsonPropertyOrder(19)] public bool hasCharger { get; set; }            //충전기에 대한 포지션인지
-        [JsonPropertyOrder(20)] public string nodeType { get; set; }            //포지션 로드타입
-        [JsonPropertyOrder(21)] public DateTime occupiedHoldTime { get; set; }  //포지션 로드타입
+        [JsonPropertyOrder(19)] public List<linkedDevice> linkedDevices { get; set; } //포지션에서 디바이스 정리
+        [JsonPropertyOrder(20)] public bool hasCharger { get; set; }            //충전기에 대한 포지션인지
+        [JsonPropertyOrder(21)] public string nodeType { get; set; }            //포지션 로드타입
+        [JsonPropertyOrder(22)] public DateTime occupiedHoldTime { get; set; }  //포지션 로드타입
 
         public override string ToString()
         {
+            string linkedDevicesStr;
+
+            if (linkedDevices != null && linkedDevices.Count > 0)
+            {
+                // 리스트 안의 Parameter 각각을 { ... } 모양으로 변환
+                var items = linkedDevices
+                    .Select(p => $"{{ id={p.id}}}");
+
+                // 여러 개 항목을 ", " 로 이어붙임
+                linkedDevicesStr = string.Join(", ", items);
+            }
+            else
+            {
+                // 값이 없으면 빈 중괄호로 표시
+                linkedDevicesStr = "{}";
+            }
+
             return
                 $"id = {id,-5}" +
                 $",positionId = {positionId,-5}" +
@@ -69,6 +90,7 @@ namespace Common.Models.Jobs
                 $",linkedZone = {linkedZone,-5}" +
                 $",linkedFacility = {linkedFacility,-5}" +
                 $",linkedRobotId = {linkedRobotId,-5}" +
+                $",linkedDevicesStr = {linkedDevicesStr,-5}" +
                 $",hasCharger = {hasCharger,-5}" +
                 $",nodeType = {nodeType,-5}" +
                 $",occupiedHoldTime = {occupiedHoldTime,-5}";

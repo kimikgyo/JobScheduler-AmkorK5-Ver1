@@ -4,9 +4,9 @@ namespace Common.Models.Bases
 {
     public class Parameter
     {
-        [JsonPropertyOrder(1)] public string key { get; set; }
-        [JsonPropertyOrder(2)] public string value { get; set; }
-
+        [JsonPropertyOrder(1)] public string key { get; set; } = "";
+        [JsonPropertyOrder(2)] public string value { get; set; } = "";
+        [JsonPropertyOrder(3)] public List<string> values { get; set; } = new List<string>(); // 멀티 값용 (추가) 무조건 빈배열
         // 사람용 요약 (디버거/로그에서 보기 좋게)
         public override string ToString()
         {

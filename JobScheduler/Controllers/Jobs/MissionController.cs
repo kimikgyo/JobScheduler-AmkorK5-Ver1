@@ -166,15 +166,26 @@ namespace JOB.Controllers.Jobs
         //{
         //}
 
-        //// PUT api/<MissionController>/5
-        //[HttpPut("{id}")]
-        //public void Put(int id, [FromBody] string value)
-        //{
-        //}
+        // PUT api/<MissionController>/5
+        [HttpPut("{acsMissionid}")]
+        public ActionResult<Mission> Put(string acsMissionid, [FromBody] string value)
+        {
+            var mission = _repository.Missions.GetById(acsMissionid);
+            if (mission != null)
+            {
+                string missionstate = value.Replace(" ", "").ToUpper();
+                updateStateMission(mission, missionstate, true);
+                return Ok(mission);
+            }
+            else
+            {
+                return NotFound();
+            }
+        }
 
         // PUT api/<MissionController>/5
         [HttpPatch]
-        public ActionResult<Get_MissionDto> Put([FromBody] Patch_MissionDto patchDto)
+        public ActionResult<Get_MissionDto> Patch([FromBody] Patch_MissionDto patchDto)
         {
             Get_MissionDto responseDto = null;
             string message = null;
@@ -266,6 +277,45 @@ namespace JOB.Controllers.Jobs
             string message = ex.GetFullMessage() + Environment.NewLine + ex.StackTrace;
             Debug.WriteLine(message);
             logger.Error(message);
+        }
+
+        private void updateStateMission(Mission mission, string state, bool historyAdd = false)
+        {
+            bool worekerMissionIdUpdateFlag = true;
+            if (mission.state != state)
+            {
+                mission.state = state;
+                switch (mission.state)
+                {
+                    case nameof(MissionState.INIT):
+                    case nameof(MissionState.WORKERASSIGNED):
+                    case nameof(MissionState.WAITING):
+                    case nameof(MissionState.COMMANDREQUEST):
+                    case nameof(MissionState.COMMANDREQUESTCOMPLETED):
+                    case nameof(MissionState.PENDING):
+                    case nameof(MissionState.EXECUTING):
+                    case nameof(MissionState.FAILED):
+                    case nameof(MissionState.ABORTINITED):
+                    case nameof(MissionState.ABORTFAILED):
+                    case nameof(MissionState.CANCELINITED):
+                    case nameof(MissionState.CNACELFAILED):
+                        mission.updatedAt = DateTime.Now;
+                        break;
+
+                    case nameof(MissionState.SKIPPED):
+                    case nameof(MissionState.ABORTCOMPLETED):
+                    case nameof(MissionState.CANCELINITCOMPLETED):
+                    case nameof(MissionState.CANCELED):
+                    case nameof(MissionState.COMPLETED):
+                        mission.finishedAt = DateTime.Now;
+                        worekerMissionIdUpdateFlag = false;
+                        break;
+                }
+
+                _repository.Missions.Update(mission);
+                if (historyAdd) _repository.MissionHistorys.Add(mission);
+                _mqttQueue.MqttPublishMessage(TopicType.mission, mission.assignedWorkerId, _mapping.Missions.Publish(mission));
+            }
         }
 
         //// DELETE api/<MissionController>/5

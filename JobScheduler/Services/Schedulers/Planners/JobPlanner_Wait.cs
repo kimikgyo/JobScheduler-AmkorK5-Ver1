@@ -12,7 +12,7 @@ namespace JOB.Services
         /// - 외부 Loop(스케줄러)가 주기적으로 이 함수를 호출하는 구조를 전제로 한다.
         ///
         /// [처리 흐름]
-        /// 1) Active Worker 목록 조회
+        /// 1) Active Subscribe_Worker 목록 조회
         /// 2) 각 Worker별 조건 검사
         ///    - Invalid 상태 스킵
         ///    - 진행 중 Job 있으면 스킵
@@ -44,7 +44,7 @@ namespace JOB.Services
             }
 
             // ------------------------------------------------------------
-            // 1) Worker 순회
+            // 1) Subscribe_Worker 순회
             // ------------------------------------------------------------
             foreach (var worker in workers)
             {
@@ -76,18 +76,18 @@ namespace JOB.Services
                     continue;
                 }
 
-                if (worker.batteryPercent < batterySetting.minimum)
-                {
-                    EventLogger.Warn($"[WAIT][CHECK][SKIP] worker Battery Low: workerId={worker.id}, workerName={worker.name}, state={worker.batteryPercent}, chargeStartbattery={batterySetting.chargeStart}");
-                    continue;
-                }
-
                 // --------------------------------------------------------
                 // 1-4) IDLE 상태만 WAIT 이동 대상
                 // --------------------------------------------------------
                 if (worker.state != nameof(WorkerState.IDLE))
                 {
                     //EventLogger.Warn($"[WAIT][CHECK][SKIP] worker not idle: workerId={worker.id}, workerName={worker.name}, state={worker.state}");
+                    continue;
+                }
+
+                if (worker.batteryPercent < batterySetting.minimum)
+                {
+                    EventLogger.Warn($"[WAIT][CHECK][SKIP] worker Battery Low: workerId={worker.id}, workerName={worker.name}, state={worker.batteryPercent}, chargeStartbattery={batterySetting.chargeStart}");
                     continue;
                 }
 
@@ -192,7 +192,7 @@ namespace JOB.Services
         ///    - 그리고 linkedRobotId == worker.id 로 지정된 경우
         /// 2) 지정 WAIT가 없으면 가까운 WAIT 포지션
         ///    - 같은 그룹/같은 층(mapId) 범위에서 후보를 모은 뒤
-        ///    - Worker 현재 좌표와의 거리(제곱거리)로 가장 가까운 포지션 선택
+        ///    - Subscribe_Worker 현재 좌표와의 거리(제곱거리)로 가장 가까운 포지션 선택
         ///
         /// 공통 조건(모든 후보에 적용):
         /// - subType == WAIT

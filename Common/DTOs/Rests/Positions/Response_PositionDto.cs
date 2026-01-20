@@ -1,4 +1,5 @@
-﻿using System.Text.Json.Serialization;
+﻿using Common.Models.Bases;
+using System.Text.Json.Serialization;
 
 namespace Common.DTOs.Rests.Positions
 {
@@ -22,15 +23,33 @@ namespace Common.DTOs.Rests.Positions
         [JsonPropertyOrder(16)] public string linkedZone { get; set; }
         [JsonPropertyOrder(17)] public string linkedFacility { get; set; }
         [JsonPropertyOrder(18)] public string linkedRobotId { get; set; }
-        [JsonPropertyOrder(19)] public bool hasCharger { get; set; }
-        [JsonPropertyOrder(20)] public string nodeType { get; set; }
-        [JsonPropertyOrder(21)] public DateTime createdAt { get; set; }
-        [JsonPropertyOrder(22)] public DateTime updatedAt { get; set; }
-        [JsonPropertyOrder(23)] public string createdBy { get; set; }
-        [JsonPropertyOrder(24)] public string updatedBy { get; set; }
+        [JsonPropertyOrder(19)] public List<linkedDevice> linkedDevices { get; set; }
+        [JsonPropertyOrder(20)] public bool hasCharger { get; set; }
+        [JsonPropertyOrder(21)] public string nodeType { get; set; }
+        [JsonPropertyOrder(22)] public DateTime createdAt { get; set; }
+        [JsonPropertyOrder(23)] public DateTime updatedAt { get; set; }
+        [JsonPropertyOrder(24)] public string createdBy { get; set; }
+        [JsonPropertyOrder(25)] public string updatedBy { get; set; }
 
         public override string ToString()
         {
+            string linkedDevicesStr;
+
+            if (linkedDevices != null && linkedDevices.Count > 0)
+            {
+                // 리스트 안의 Parameter 각각을 { ... } 모양으로 변환
+                var items = linkedDevices
+                    .Select(p => $"{{ id={p.id}}}");
+
+                // 여러 개 항목을 ", " 로 이어붙임
+                linkedDevicesStr = string.Join(", ", items);
+            }
+            else
+            {
+                // 값이 없으면 빈 중괄호로 표시
+                linkedDevicesStr = "{}";
+            }
+
             return
 
                 $" _id = {_id,-5}" +
@@ -51,6 +70,7 @@ namespace Common.DTOs.Rests.Positions
                 $",linkedZone = {linkedZone,-5}" +
                 $",linkedFacility = {linkedFacility,-5}" +
                 $",linkedRobotId = {linkedRobotId,-5}" +
+                $",linkedDevicesStr = {linkedDevicesStr,-5}" +
                 $",hasCharger = {hasCharger,-5}" +
                 $",nodeType = {nodeType,-5}" +
                 $",createdAt = {createdAt,-5}" +

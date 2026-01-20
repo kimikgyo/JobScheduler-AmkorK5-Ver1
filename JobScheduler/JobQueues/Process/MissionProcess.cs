@@ -189,6 +189,36 @@ namespace JOB.JobQueues.Process
                             };
                         }
                         break;
+
+                    case "devices":
+                        {
+                            // 항상 "devices" 키로 보내기
+                            var ids = new List<string>();
+
+                            // position / linkedDevices가 있을 때만 채움
+                            if (position != null && position.linkedDevices != null)
+                            {
+                                foreach (var device in position.linkedDevices)
+                                {
+                                    if (device == null) continue;
+
+                                    var id = device.id;
+                                    if (string.IsNullOrWhiteSpace(id)) continue;
+
+                                    ids.Add(id);
+                                }
+                            }
+
+                            // linkedDevices가 없거나 / 비어있거나 / 유효 id가 없어도
+                            // values는 "빈 배열"로 항상 전송됨
+                            param = new Parameter
+                            {
+                                key = "devices",
+                                values = ids
+                            };
+
+                            break;
+                        }
                 }
             }
             else

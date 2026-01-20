@@ -24,9 +24,9 @@ namespace Data.Repositorys.Jobs
         {
             // 테이블 존재 여부 확인 쿼리
             string checkTableQuery = @"
-               IF OBJECT_id('dbo.[Order]', 'U') IS NULL
+               IF OBJECT_id('dbo.[JobScheduler_Order]', 'U') IS NULL
                 BEGIN
-                    CREATE TABLE dbo.[Order]
+                    CREATE TABLE dbo.[JobScheduler_Order]
                     (
                         [id]                      NVARCHAR(64)     NULL,
                         [type]                    NVARCHAR(64)     NULL,
@@ -63,7 +63,7 @@ namespace Data.Repositorys.Jobs
             _orders.Clear();
             using (var con = new SqlConnection(connectionString))
             {
-                foreach (var data in con.Query<Order>("SELECT * FROM [Order]"))
+                foreach (var data in con.Query<Order>("SELECT * FROM [JobScheduler_Order]"))
                 {
                     _orders.Add(data);
                     logger.Info($"Load:{data}");
@@ -80,7 +80,7 @@ namespace Data.Repositorys.Jobs
                 using (var con = new SqlConnection(connectionString))
                 {
                     const string INSERT_SQL = @"
-                            INSERT INTO [Order]
+                            INSERT INTO [JobScheduler_Order]
                                    (
                                      [id]
                                     ,[type]
@@ -134,7 +134,7 @@ namespace Data.Repositorys.Jobs
                 using (var con = new SqlConnection(connectionString))
                 {
                     const string UPDATE_SQL = @"
-                            UPDATE [Order]
+                            UPDATE [JobScheduler_Order]
                             SET
                                  [subType]                 = @subType
                                 ,[sourceId]                = @sourceId
@@ -168,7 +168,7 @@ namespace Data.Repositorys.Jobs
 
                 using (var con = new SqlConnection(connectionString))
                 {
-                    con.Execute("DELETE FROM [Order]");
+                    con.Execute("DELETE FROM [JobScheduler_Order]");
                     _orders.Clear();
                     logger.Info($"Delete");
                 }
@@ -183,7 +183,7 @@ namespace Data.Repositorys.Jobs
 
                 using (var con = new SqlConnection(connectionString))
                 {
-                    con.Execute("DELETE FROM [Order] WHERE id=@id", param: new { id = remove.id });
+                    con.Execute("DELETE FROM [JobScheduler_Order] WHERE id=@id", param: new { id = remove.id });
                     _orders.Remove(remove);
                     logger.Info($"Remove: {remove}");
                 }

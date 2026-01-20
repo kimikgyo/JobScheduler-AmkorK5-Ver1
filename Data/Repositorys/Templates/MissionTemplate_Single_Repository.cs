@@ -26,9 +26,9 @@ namespace Data.Repositorys.Templates
             //VARCHAR 대신 NVARCHAR로 저장해야함 VARCHAR은 영문만 가능함
             // 테이블 존재 여부 확인 쿼리
             string checkTableQuery = @"
-               IF OBJECT_id('dbo.[MissionTemplate_Single]', 'U') IS NULL
+               IF OBJECT_id('dbo.[JobScheduler_MissionTemplate_Single]', 'U') IS NULL
                 BEGIN
-                    CREATE TABLE dbo.[MissionTemplate_Single]
+                    CREATE TABLE dbo.[JobScheduler_MissionTemplate_Single]
                     (
 
                         [guid]                    NVARCHAR(64)     NULL,
@@ -61,7 +61,7 @@ namespace Data.Repositorys.Templates
             _missionTemplates.Clear();
             using (var con = new SqlConnection(connectionString))
             {
-                foreach (var data in con.Query<MissionTemplate_Single>("SELECT * FROM [MissionTemplate_Single]"))
+                foreach (var data in con.Query<MissionTemplate_Single>("SELECT * FROM [JobScheduler_MissionTemplate_Single]"))
                 {
                     //파라메타를 Json으로 되어있던것을 다시 List로 변경한다.
                     if (data.parametersJson != null) data.parameters = JsonSerializer.Deserialize<List<Parameter>>(data.parametersJson);
@@ -81,7 +81,7 @@ namespace Data.Repositorys.Templates
                 using (var con = new SqlConnection(connectionString))
                 {
                     const string INSERT_SQL = @"
-                            INSERT INTO [MissionTemplate_Single]
+                            INSERT INTO [JobScheduler_MissionTemplate_Single]
                                  (
                                      [guid]
                                     ,[name]
@@ -126,7 +126,7 @@ namespace Data.Repositorys.Templates
                 using (var con = new SqlConnection(connectionString))
                 {
                     const string UPDATE_SQL = @"
-                            UPDATE [MissionTemplate_Single]
+                            UPDATE [JobScheduler_MissionTemplate_Single]
                             SET
                                     ,[name] = @name
                                     ,[service] = @service
@@ -155,7 +155,7 @@ namespace Data.Repositorys.Templates
 
                 using (var con = new SqlConnection(connectionString))
                 {
-                    con.Execute("DELETE FROM [MissionTemplate_Single]");
+                    con.Execute("DELETE FROM [JobScheduler_MissionTemplate_Single]");
                     _missionTemplates.Clear();
                     logger.Info($"Delete");
                 }
@@ -170,7 +170,7 @@ namespace Data.Repositorys.Templates
 
                 using (var con = new SqlConnection(connectionString))
                 {
-                    con.Execute("DELETE FROM [MissionTemplate_Single] WHERE guid = @guid", param: new { guid = remove.guid });
+                    con.Execute("DELETE FROM [JobScheduler_MissionTemplate_Single] WHERE guid = @guid", param: new { guid = remove.guid });
                     _missionTemplates.Remove(remove);
                     logger.Info($"Remove: {remove}");
                 }

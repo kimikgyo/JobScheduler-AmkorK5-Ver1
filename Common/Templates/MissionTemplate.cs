@@ -50,7 +50,9 @@ namespace Common.Templates
         ENTERCOMPLETE,
         DOORCLOSE,
         EXITCOMPLETE,
-        TRAFFIC
+        TRAFFIC,
+        AUTODOOROPENREQUEST,
+        AUTODOORCLOSEREQUEST
     }
 
     public enum MissionTemplateType

@@ -7,6 +7,7 @@ namespace Common.Models.Jobs
         None,                       //
         MOVE,                       // 이동
         TRANSPORT,                  // 일반 자재 운반
+        MANUALTRANSPORT,
         TRANSPORT_SLURRY_SUPPLY,    // 케미컬 공급
         TRANSPORT_SLURRY_RECOVERY,  // 케미컬 회수
         TRANSPORT_CHEMICAL_RECOVERY,      // 슬러리 공급

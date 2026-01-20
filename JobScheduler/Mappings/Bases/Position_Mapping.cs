@@ -29,6 +29,7 @@ namespace JOB.Mappings.Bases
                 linkedZone = model.linkedZone,
                 linkedFacility = model.linkedFacility,
                 linkedRobotId = model.linkedRobotId,
+                linkedDevices = model.linkedDevices,
                 hasCharger = model.hasCharger,
             };
             return response;
@@ -55,6 +56,7 @@ namespace JOB.Mappings.Bases
                 linkedZone = model.linkedZone,
                 linkedFacility = model.linkedFacility,
                 linkedRobotId = model.linkedRobotId,
+                linkedDevices = model.linkedDevices,
                 hasCharger = model.hasCharger,
                 updatedAt = DateTime.Now,
                 updatedBy = "JobScheduler"

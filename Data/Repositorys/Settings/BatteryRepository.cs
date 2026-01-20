@@ -22,9 +22,9 @@ namespace Data.Repositorys.Settings
         {
             // 테이블 존재 여부 확인 쿼리
             string checkTableQuery = @"
-               IF OBJECT_id('dbo.[Battery]', 'U') IS NULL
+               IF OBJECT_id('dbo.[JobScheduler_Battery]', 'U') IS NULL
                 BEGIN
-                    CREATE TABLE dbo.[Battery]
+                    CREATE TABLE dbo.[JobScheduler_Battery]
                     (
                         [minimum]                   float         NOT NULL,
                         [crossCharge]               float         NOT NULL,                        
@@ -50,7 +50,7 @@ namespace Data.Repositorys.Settings
         {
             using (var con = new SqlConnection(connectionString))
             {
-                _battery = con.Query<Battery>("SELECT * FROM [Battery]").FirstOrDefault();
+                _battery = con.Query<Battery>("SELECT * FROM [JobScheduler_Battery]").FirstOrDefault();
                 if (_battery == null)
                 {
                     _battery = new Battery
@@ -76,7 +76,7 @@ namespace Data.Repositorys.Settings
                 using (var con = new SqlConnection(connectionString))
                 {
                     const string INSERT_SQL = @"
-                            INSERT INTO [Battery]
+                            INSERT INTO [JobScheduler_Battery]
                                    (
                                      [minimum]
                                     ,[crossCharge]                                   
@@ -106,7 +106,7 @@ namespace Data.Repositorys.Settings
                 using (var con = new SqlConnection(connectionString))
                 {
                     const string UPDATE_SQL = @"
-                    UPDATE Battery
+                    UPDATE [JobScheduler_Battery]
                     SET
                          [minimum]         = @minimum
                         ,[crossCharge]     = @crossCharge

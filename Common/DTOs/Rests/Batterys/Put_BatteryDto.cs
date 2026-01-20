@@ -2,10 +2,10 @@
 {
     public class Put_BatteryDto
     {
-        public double minimum { get; set; }
-        public double crossCharge { get; set; }
-        public double chargeStart { get; set; }
-        public double chargeEnd { get; set; }
+        public double? minimum { get; set; }
+        public double? crossCharge { get; set; }
+        public double? chargeStart { get; set; }
+        public double? chargeEnd { get; set; }
 
         public override string ToString()
         {

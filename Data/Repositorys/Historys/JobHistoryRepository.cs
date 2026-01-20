@@ -20,9 +20,9 @@ namespace Data.Repositorys.Historys
         {
             // 테이블 존재 여부 확인 쿼리
             string checkTableQuery = @"
-               IF OBJECT_id('dbo.[JobHistory]', 'U') IS NULL
+               IF OBJECT_id('dbo.[JobScheduler_JobHistory]', 'U') IS NULL
                 BEGIN
-                    CREATE TABLE dbo.[JobHistory]
+                    CREATE TABLE dbo.[JobScheduler_JobHistory]
                     (
                             [orderId]             NVARCHAR(64)     NULL,
                             [guid]                NVARCHAR(64)     NULL,
@@ -72,7 +72,7 @@ namespace Data.Repositorys.Historys
                 using (var con = new SqlConnection(connectionString))
                 {
                     const string INSERT_SQL = @"
-                            INSERT INTO [JobHistory]
+                            INSERT INTO [JobScheduler_JobHistory]
                                    (
                                      [orderId]
                                     ,[guid]
@@ -144,7 +144,7 @@ namespace Data.Repositorys.Historys
             lock (_lock)
             {
                 histories.Clear();
-                var sql = @"SELECT * FROM [JobHistory] WHERE orderId = @orderId";
+                var sql = @"SELECT * FROM [JobScheduler_JobHistory] WHERE orderId = @orderId";
                 using (var con = new SqlConnection(connectionString))
                 {
                     foreach (var data in con.Query<Job>(sql, new { orderId = orderId }))
@@ -161,7 +161,7 @@ namespace Data.Repositorys.Historys
             lock (_lock)
             {
                 histories.Clear();
-                var sql = @"SELECT * FROM [JobHistory] WHERE finishedAt >= @start AND finishedAt <= @end";
+                var sql = @"SELECT * FROM [JobScheduler_JobHistory] WHERE finishedAt >= @start AND finishedAt <= @end";
                 using (var con = new SqlConnection(connectionString))
                 {
                     foreach (var data in con.Query<Job>(sql, new { start = start, end = end }))
@@ -179,7 +179,7 @@ namespace Data.Repositorys.Historys
             {
                 using (var con = new SqlConnection(connectionString))
                 {
-                    var sql = @"DELETE [JobHistory] WHERE finishedAt <= @endAt";
+                    var sql = @"DELETE [JobScheduler_JobHistory] WHERE finishedAt <= @endAt";
                     object queryParams = new { endAt = endAt };
                     var list = con.Execute(sql, queryParams);
                 }

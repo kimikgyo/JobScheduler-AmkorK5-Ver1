@@ -11,7 +11,7 @@ namespace JOB.MQTTs
 {
     public partial class MqttProcess
     {
-        public void Elevator()
+        public void Subscribe_Elevator()
         {
             while (QueueStorage.MqttTryDequeueSubscribeElevator(out MqttSubscribeMessageDto subscribe))
             {
@@ -57,7 +57,7 @@ namespace JOB.MQTTs
 
                         case nameof(TopicSubType.request):
                             var requestDto = JsonSerializer.Deserialize<Subscribe_UIDto>(subscribe.Payload!);
-                            var elevatorParam = requestDto.parameters.FirstOrDefault(r => r.key.ToUpper() == "LINKEDFACILITY");
+                            var elevatorParam = requestDto.parameters.FirstOrDefault(r => r.key.ToUpper() == "ELEVATORID");
                             var requsetParam = requestDto.parameters.FirstOrDefault(r => r.key.ToUpper() == "MODECHANGE");
                             if (elevatorParam != null && requsetParam != null)
                             {

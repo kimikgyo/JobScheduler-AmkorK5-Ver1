@@ -6,7 +6,7 @@ namespace JOB.Services
     {
         public void ElevatorPolicy()
         {
-            CancelCrossFloorJobsWhenElevatorDown("NO1");
+            //CancelCrossFloorJobsWhenElevatorDown("NO1");
             ElevatorModeChange();
         }
 
@@ -60,7 +60,7 @@ namespace JOB.Services
         ///     - 모든 Job에 대해
         ///       a) 목적지 Position의 MapId가 존재해야 한다.
         ///       b) Worker의 MapId가 존재해야 한다.
-        ///       c) 각 Job에서 목적지 MapId == Worker MapId 여야 한다. (같은 층/맵에서 움직이는 상황)
+        ///       c) 각 Job에서 목적지 MapId == Subscribe_Worker MapId 여야 한다. (같은 층/맵에서 움직이는 상황)
         ///       d) 모든 Job의 MapId가 서로 동일해야 한다.
         ///     - 위 조건 중 1개라도 깨지면 절대 모드체인지 미션을 보내면 안 된다.
         /// </summary>
@@ -161,7 +161,7 @@ namespace JOB.Services
                 // 진행중인데 워커가 미할당이면 "전부 동일" 조건 자체가 깨짐 -> 종료
                 if (IsInvalid(job.assignedWorkerId)) return;
 
-                // Worker 리포지토리에서 워커 정보 조회
+                // Subscribe_Worker 리포지토리에서 워커 정보 조회
                 var worker = _repository.Workers.GetById(job.assignedWorkerId);
 
                 // 워커 정보가 없으면 안전 조건 불만족 -> 종료

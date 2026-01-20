@@ -171,6 +171,18 @@ namespace JobScheduler.Services
         private List<MqttTopicSubscribe> suscreibeTopicsAdd()
         {
             mqttTopicSubscribes.Clear();
+            //특정 패턴의 모든 id
+            //acs / device / +/ status
+            //acs / device / +/ mission
+            var deviceStateTopic = new MqttTopicSubscribe
+            {
+                topic = $"acs/device/+/state"
+            };
+            var deviceMissionTopic = new MqttTopicSubscribe
+            {
+                topic = $"acs/device/+/mission"
+            };
+
             var workers = _repository.Workers.GetAll();
             foreach (var worker in workers)
             {

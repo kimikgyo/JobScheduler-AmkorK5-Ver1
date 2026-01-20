@@ -13,7 +13,7 @@ namespace JOB.Services
             //[조회] 배터리 Setting 정보
             var batterySetting = _repository.Battery.GetAll();
 
-            //[조회] 작업이 가능한 Worker
+            //[조회] 작업이 가능한 Subscribe_Worker
             foreach (var worker in _repository.Workers.MiR_GetByActive()/*.Where(m => m.state == nameof(WorkerState.IDLE) && m.acsmissionId == null */)
             {
                 //[초기화] 충전 파라메터

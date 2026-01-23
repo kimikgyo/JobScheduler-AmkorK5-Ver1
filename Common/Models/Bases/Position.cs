@@ -23,8 +23,8 @@ namespace Common.Models.Jobs
         WORK,
         ELEVATOR,
         CHARGER,
-        AUTODOOROPENREQUEST,
-        AUTODOORCLOSEREQUEST
+        AUTODOOROPEN,
+        AUTODOORCLOSE
     }
 
     public class Position

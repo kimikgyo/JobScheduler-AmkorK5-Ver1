@@ -77,10 +77,7 @@ namespace JOB.Services
             if (missions == null || missions.Count == 0) return;
 
             // ELEVATOR + ACTION + MODECHANGE 미션 1개를 찾음
-            var mission = missions.FirstOrDefault(m =>
-                m.service == nameof(Service.ELEVATOR) &&
-                m.type == nameof(MissionType.ACTION) &&
-                m.subType == nameof(MissionSubType.MODECHANGE));
+            var mission = missions.FirstOrDefault(m => m.service == nameof(Service.ELEVATOR) && m.type == nameof(MissionType.ACTION) && m.subType == nameof(MissionSubType.MODECHANGE));
 
             // MODECHANGE 미션이 없으면 종료
             if (mission == null) return;
@@ -95,7 +92,13 @@ namespace JOB.Services
             // terminator == null : 종료 처리되지 않은 Job
             // state == INPROGRESS : 현재 진행 중인 Job
             var jobs = _repository.Jobs.GetAll().Where(j => j.terminator == null && j.state == nameof(JobState.INPROGRESS)).ToList();
-
+            var serviceApi = _repository.ServiceApis.GetAll().FirstOrDefault(r => r.type == mission.service);
+            if (serviceApi == null)
+            {
+                EventLogger.Warn($"[ElevatorModeChange][ELEVATOR][API_IsNull] MissionName = {mission.name}, MissionSubType = {mission.subType}" +
+                               $", MissionId = {mission.guid}, AssignedWorkerId = {mission.assignedWorkerId}, AssignedWorkerName = {mission.assignedWorkerName}");
+                return;
+            }
             // -----------------------------
             // 2) 진행중 Job이 하나도 없을 때 처리
             // -----------------------------
@@ -104,7 +107,7 @@ namespace JOB.Services
             if (jobs == null || jobs.Count == 0)
             {
                 // 엘리베이터 모드 변경 미션 전송 시도
-                bool sent = ElevatorPostMission(mission);
+                bool sent = ElevatorPostMission(serviceApi, mission);
 
                 // 전송이 성공했으면, 미션 상태를 COMMANDREQUESTCOMPLETED로 변경
                 if (sent)
@@ -204,7 +207,7 @@ namespace JOB.Services
             //  - 모든 Job의 MapId가 baseMapId로 동일했다는 뜻
             // => 모드 변경 미션을 보내도 안전
 
-            bool commandRequest = ElevatorPostMission(mission);
+            bool commandRequest = ElevatorPostMission(serviceApi, mission);
 
             // 전송 성공 시 미션 상태 변경
             if (commandRequest)

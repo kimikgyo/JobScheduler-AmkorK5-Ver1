@@ -10,6 +10,8 @@ namespace Common.Templates
         TRANSPORTPICK,
         TRANSPORTDROP,
         TRAFFIC,
+        AUTODOOROPEN,
+        AUTODOORCLOSE,
         ELEVATORSOURCE,
         ELEVATORDEST,
         CHARGE

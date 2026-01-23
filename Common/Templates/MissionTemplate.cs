@@ -38,21 +38,23 @@ namespace Common.Templates
         DESTINATIONACTION,
         ELEVATORSOURCEFLOOR,
         ELEVATORDESTINATIONFLOOR,
-        PICK,
-        DROP,
+        MANUALTRANSPORTPICK,
+        MANUALTRANSPORTDROP,
+        TRANSPORTPICK,
+        TRANSPORTDROP,
         WAIT,
         CHARGE,
         CHARGECOMPLETE,
         RESET,
         CANCEL,
         CALL,
-        DOOROPEN,
+        ELEVATORDOOROPEN,
         ENTERCOMPLETE,
-        DOORCLOSE,
+        ELEVATORDOORCLOSE,
         EXITCOMPLETE,
         TRAFFIC,
-        AUTODOOROPENREQUEST,
-        AUTODOORCLOSEREQUEST
+        AUTODOOROPEN,
+        AUTODOORCLOSE
     }
 
     public enum MissionTemplateType

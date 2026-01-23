@@ -39,7 +39,15 @@ namespace JOB.Services
             // 충전용 포지션
             // 실제 충전기 존재
             // 사용 가능 상태
-            var chargerPositions = _repository.Positions.GetAll().Where(r => r.subType == nameof(PositionSubType.CHARGE) && r.nodeType == nameof(NodeType.CHARGER)
+            var positions = _repository.Positions.GetAll();
+
+            if (positions == null || positions.Count == 0)
+            {
+                //EventLogger.Info("[CHARGE][BUILD] no available Position → exit");
+                return;
+            }
+
+            var chargerPositions = positions.Where(r => r.subType == nameof(PositionSubType.CHARGE) && r.nodeType == nameof(NodeType.CHARGER)
                                                                      && r.isEnabled == true).ToList();
 
             // 2-3) 충전기가 하나도 없으면 이번 사이클은 아무 일도 하지 않고 종료
@@ -79,6 +87,13 @@ namespace JOB.Services
             //      - 실제로 새 충전 Job을 받을 수 있는 후보들
             // ------------------------------------------------------------
             var idleWorkers = workers.Where(r => r.state == nameof(WorkerState.IDLE)).ToList();
+
+        
+            // 3-2) WAIT 포지션 id 집합 만들기
+            var waitPositionIds = positions.Where(p => p.subType == nameof(PositionSubType.WAIT)).Select(p => p.id).ToList();
+
+            // 3-3) WAIT 위치에 있는 IDLE만 선별
+            idleWorkers = idleWorkers.Where(w => !string.IsNullOrWhiteSpace(w.PositionId) && waitPositionIds.Contains(w.PositionId)).ToList();
 
             // ------------------------------------------------------------
             // 4) 이번 사이클에서 이미 Job 계획된 Subscribe_Worker / 충전기를 추적하기 위한 Set
@@ -574,7 +589,6 @@ namespace JOB.Services
                     EventLogger.Warn($"[CHARGE][CROSS][SKIP] charging worker already planned in cycle: workerId={chargingWorker.id}, workerName={chargingWorker.name}");
                     continue;
                 }
-
 
                 // 2-3) 충전 중 Worker가 crossCharge 이상 이고 충전 완료 배터리 이상이어야 양보 가능
                 if (chargingWorker.batteryPercent < crossCharge || chargingWorker.batteryPercent < chargeEnd)

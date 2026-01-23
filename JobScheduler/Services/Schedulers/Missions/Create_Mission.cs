@@ -202,83 +202,49 @@ namespace JOB.Services
                     switch (node.nodeType.ToUpper())
                     {
                         case nameof(NodeType.WAYPOINT):
-                            if (job.type == nameof(JobType.TRANSPORT))
+                            if (node.positionId == jobSource.positionId)
                             {
-                                if (node.positionId == jobSource.positionId)
-                                {
-                                    seq = template_GroupMission(job, position, worker, seq, nameof(MissionsTemplateGroup.TRANSPORTPICK));
-                                }
-                                else if (node.positionId == jobDestination.positionId)
-                                {
-                                    seq = template_GroupMission(job, position, worker, seq, nameof(MissionsTemplateGroup.TRANSPORTDROP));
-                                }
-                                else
-                                {
-                                    seq = template_SingleMission(job, position, worker, seq, nameof(MissionTemplateType.MOVE), nameof(MissionTemplateSubType.STOPOVERMOVE));
-                                }
+                                if (job.type == nameof(JobType.TRANSPORT)) seq = template_GroupMission(job, position, worker, seq, nameof(MissionsTemplateGroup.TRANSPORTPICK));
+                                else seq = template_GroupMission(job, position, worker, seq, nameof(MissionsTemplateGroup.MANUALTRANSPORTPICK));
+                            }
+                            else if (node.positionId == jobDestination.positionId)
+                            {
+                                if (job.type == nameof(JobType.TRANSPORT)) seq = template_GroupMission(job, position, worker, seq, nameof(MissionsTemplateGroup.TRANSPORTDROP));
+                                else seq = template_GroupMission(job, position, worker, seq, nameof(MissionsTemplateGroup.MANUALTRANSPORTDROP));
                             }
                             else
                             {
-                                if (node.positionId == jobSource.positionId)
-                                {
-                                    seq = template_GroupMission(job, position, worker, seq, nameof(MissionsTemplateGroup.MANUALTRANSPORTPICK));
-                                }
-                                else if (node.positionId == jobDestination.positionId)
-                                {
-                                    seq = template_GroupMission(job, position, worker, seq, nameof(MissionsTemplateGroup.MANUALTRANSPORTDROP));
-                                }
-                                else
-                                {
-                                    seq = template_SingleMission(job, position, worker, seq, nameof(MissionTemplateType.MOVE), nameof(MissionTemplateSubType.STOPOVERMOVE));
-                                }
+                                seq = template_SingleMission(job, position, worker, seq, nameof(MissionTemplateType.MOVE), nameof(MissionTemplateSubType.STOPOVERMOVE));
                             }
                             break;
 
                         case nameof(NodeType.TRAFFIC):
-                            if (job.type == nameof(JobType.TRANSPORT))
+
+                            if (node.positionId == jobSource.positionId)
                             {
-                                if (node.positionId == jobSource.positionId)
-                                {
-                                    seq = template_GroupMission(job, position, worker, seq, nameof(MissionsTemplateGroup.TRANSPORTPICK));
-                                    seq = template_SingleMission(job, position, worker, seq, nameof(MissionTemplateType.ACTION), nameof(MissionTemplateSubType.TRAFFIC));
-                                }
-                                else if (node.positionId == jobDestination.positionId)
-                                {
-                                    seq = template_GroupMission(job, position, worker, seq, nameof(MissionsTemplateGroup.TRANSPORTDROP));
-                                }
-                                else
-                                {
-                                    seq = template_SingleMission(job, position, worker, seq, nameof(MissionTemplateType.MOVE), nameof(MissionTemplateSubType.STOPOVERMOVE));
-                                    seq = template_SingleMission(job, position, worker, seq, nameof(MissionTemplateType.ACTION), nameof(MissionTemplateSubType.TRAFFIC));
-                                }
+                                if (job.type == nameof(JobType.TRANSPORT)) seq = template_GroupMission(job, position, worker, seq, nameof(MissionsTemplateGroup.TRANSPORTPICK));
+                                else seq = template_GroupMission(job, position, worker, seq, nameof(MissionsTemplateGroup.MANUALTRANSPORTPICK));
+
+                                seq = template_SingleMission(job, position, worker, seq, nameof(MissionTemplateType.ACTION), nameof(MissionTemplateSubType.TRAFFIC));
+                            }
+                            else if (node.positionId == jobDestination.positionId)
+                            {
+                                if (job.type == nameof(JobType.TRANSPORT)) seq = template_GroupMission(job, position, worker, seq, nameof(MissionsTemplateGroup.TRANSPORTDROP));
+                                else seq = template_GroupMission(job, position, worker, seq, nameof(MissionsTemplateGroup.MANUALTRANSPORTDROP));
                             }
                             else
                             {
-                                if (node.positionId == jobSource.positionId)
-                                {
-                                    seq = template_GroupMission(job, position, worker, seq, nameof(MissionsTemplateGroup.MANUALTRANSPORTPICK));
-                                }
-                                else if (node.positionId == jobDestination.positionId)
-                                {
-                                    seq = template_GroupMission(job, position, worker, seq, nameof(MissionsTemplateGroup.MANUALTRANSPORTDROP));
-                                }
-                                else
-                                {
-                                    seq = template_SingleMission(job, position, worker, seq, nameof(MissionTemplateType.MOVE), nameof(MissionTemplateSubType.STOPOVERMOVE));
-                                    seq = template_SingleMission(job, position, worker, seq, nameof(MissionTemplateType.ACTION), nameof(MissionTemplateSubType.TRAFFIC));
-                                }
+                                seq = template_GroupMission(job, position, worker, seq, nameof(MissionsTemplateGroup.TRAFFIC));
                             }
 
                             break;
 
-                        case nameof(NodeType.AUTODOOROPENREQUEST):
-                            seq = template_SingleMission(job, position, worker, seq, nameof(MissionTemplateType.MOVE), nameof(MissionTemplateSubType.STOPOVERMOVE));
-                            seq = template_SingleMission(job, position, worker, seq, nameof(MissionTemplateType.ACTION), nameof(MissionTemplateSubType.AUTODOOROPENREQUEST));
+                        case nameof(NodeType.AUTODOOROPEN):
+                            seq = template_GroupMission(job, position, worker, seq, nameof(MissionsTemplateGroup.AUTODOOROPEN));
                             break;
 
-                        case nameof(NodeType.AUTODOORCLOSEREQUEST):
-                            seq = template_SingleMission(job, position, worker, seq, nameof(MissionTemplateType.MOVE), nameof(MissionTemplateSubType.STOPOVERMOVE));
-                            seq = template_SingleMission(job, position, worker, seq, nameof(MissionTemplateType.ACTION), nameof(MissionTemplateSubType.AUTODOORCLOSEREQUEST));
+                        case nameof(NodeType.AUTODOORCLOSE):
+                            seq = template_GroupMission(job, position, worker, seq, nameof(MissionsTemplateGroup.AUTODOORCLOSE));
                             break;
 
                         case nameof(NodeType.ELEVATOR):
@@ -337,74 +303,48 @@ namespace JOB.Services
                 switch (node.nodeType.ToUpper())
                 {
                     case nameof(NodeType.WAYPOINT):
-                        if (job.type == nameof(JobType.TRANSPORT))
+                        if (node.positionId == jobSource.positionId)
                         {
-                            if (node.positionId == jobSource.positionId)
-                            {
-                                seq = template_GroupMission(job, position, worker, seq, nameof(MissionsTemplateGroup.TRANSPORTPICK));
-                            }
-                            else if (node.positionId == jobDestination.positionId)
-                            {
-                                seq = template_GroupMission(job, position, worker, seq, nameof(MissionsTemplateGroup.TRANSPORTDROP));
-                            }
-                            else
-                            {
-                                seq = template_SingleMission(job, position, worker, seq, nameof(MissionTemplateType.MOVE), nameof(MissionTemplateSubType.STOPOVERMOVE));
-                            }
+                            if (job.type == nameof(JobType.TRANSPORT)) seq = template_GroupMission(job, position, worker, seq, nameof(MissionsTemplateGroup.TRANSPORTPICK));
+                            else seq = template_GroupMission(job, position, worker, seq, nameof(MissionsTemplateGroup.MANUALTRANSPORTPICK));
+                        }
+                        else if (node.positionId == jobDestination.positionId)
+                        {
+                            if (job.type == nameof(JobType.TRANSPORT)) seq = template_GroupMission(job, position, worker, seq, nameof(MissionsTemplateGroup.TRANSPORTDROP));
+                            else seq = template_GroupMission(job, position, worker, seq, nameof(MissionsTemplateGroup.MANUALTRANSPORTDROP));
                         }
                         else
                         {
-                            if (node.positionId == jobSource.positionId)
-                            {
-                                seq = template_GroupMission(job, position, worker, seq, nameof(MissionsTemplateGroup.MANUALTRANSPORTPICK));
-                            }
-                            else if (node.positionId == jobDestination.positionId)
-                            {
-                                seq = template_GroupMission(job, position, worker, seq, nameof(MissionsTemplateGroup.MANUALTRANSPORTDROP));
-                            }
-                            else
-                            {
-                                seq = template_SingleMission(job, position, worker, seq, nameof(MissionTemplateType.MOVE), nameof(MissionTemplateSubType.STOPOVERMOVE));
-                            }
+                            seq = template_SingleMission(job, position, worker, seq, nameof(MissionTemplateType.MOVE), nameof(MissionTemplateSubType.STOPOVERMOVE));
                         }
                         break;
 
                     case nameof(NodeType.TRAFFIC):
-                        if (job.type == nameof(JobType.TRANSPORT))
+
+                        if (node.positionId == jobSource.positionId)
                         {
-                            if (node.positionId == jobSource.positionId)
-                            {
-                                seq = template_GroupMission(job, position, worker, seq, nameof(MissionsTemplateGroup.TRANSPORTPICK));
-                                seq = template_SingleMission(job, position, worker, seq, nameof(MissionTemplateType.ACTION), nameof(MissionTemplateSubType.TRAFFIC));
-                            }
-                            else if (node.positionId == jobDestination.positionId)
-                            {
-                                seq = template_GroupMission(job, position, worker, seq, nameof(MissionsTemplateGroup.TRANSPORTDROP));
-                            }
-                            else
-                            {
-                                seq = template_SingleMission(job, position, worker, seq, nameof(MissionTemplateType.MOVE), nameof(MissionTemplateSubType.STOPOVERMOVE));
-                                seq = template_SingleMission(job, position, worker, seq, nameof(MissionTemplateType.ACTION), nameof(MissionTemplateSubType.TRAFFIC));
-                            }
+                            if (job.type == nameof(JobType.TRANSPORT)) seq = template_GroupMission(job, position, worker, seq, nameof(MissionsTemplateGroup.TRANSPORTPICK));
+                            else seq = template_GroupMission(job, position, worker, seq, nameof(MissionsTemplateGroup.MANUALTRANSPORTPICK));
+
+                            seq = template_SingleMission(job, position, worker, seq, nameof(MissionTemplateType.ACTION), nameof(MissionTemplateSubType.TRAFFIC));
+                        }
+                        else if (node.positionId == jobDestination.positionId)
+                        {
+                            if (job.type == nameof(JobType.TRANSPORT)) seq = template_GroupMission(job, position, worker, seq, nameof(MissionsTemplateGroup.TRANSPORTDROP));
+                            else seq = template_GroupMission(job, position, worker, seq, nameof(MissionsTemplateGroup.MANUALTRANSPORTDROP));
                         }
                         else
                         {
-                            if (node.positionId == jobSource.positionId)
-                            {
-                                seq = template_GroupMission(job, position, worker, seq, nameof(MissionsTemplateGroup.MANUALTRANSPORTPICK));
-                                seq = template_SingleMission(job, position, worker, seq, nameof(MissionTemplateType.ACTION), nameof(MissionTemplateSubType.TRAFFIC));
-                            }
-                            else if (node.positionId == jobDestination.positionId)
-                            {
-                                seq = template_GroupMission(job, position, worker, seq, nameof(MissionsTemplateGroup.MANUALTRANSPORTDROP));
-                            }
-                            else
-                            {
-                                seq = template_SingleMission(job, position, worker, seq, nameof(MissionTemplateType.MOVE), nameof(MissionTemplateSubType.STOPOVERMOVE));
-                                seq = template_SingleMission(job, position, worker, seq, nameof(MissionTemplateType.ACTION), nameof(MissionTemplateSubType.TRAFFIC));
-                            }
+                            seq = template_GroupMission(job, position, worker, seq, nameof(MissionsTemplateGroup.TRAFFIC));
                         }
+                        break;
 
+                    case nameof(NodeType.AUTODOOROPEN):
+                        seq = template_GroupMission(job, position, worker, seq, nameof(MissionsTemplateGroup.AUTODOOROPEN));
+                        break;
+
+                    case nameof(NodeType.AUTODOORCLOSE):
+                        seq = template_GroupMission(job, position, worker, seq, nameof(MissionsTemplateGroup.AUTODOORCLOSE));
                         break;
 
                     case nameof(NodeType.ELEVATOR):
@@ -497,10 +437,16 @@ namespace JOB.Services
                         }
                         else
                         {
-                            seq = template_SingleMission(job, position, worker, seq, nameof(MissionTemplateType.MOVE), nameof(MissionTemplateSubType.STOPOVERMOVE));
-                            seq = template_SingleMission(job, position, worker, seq, nameof(MissionTemplateType.ACTION), nameof(MissionTemplateSubType.TRAFFIC));
+                            seq = template_GroupMission(job, position, worker, seq, nameof(MissionsTemplateGroup.TRAFFIC));
                         }
+                        break;
 
+                    case nameof(NodeType.AUTODOOROPEN):
+                        seq = template_GroupMission(job, position, worker, seq, nameof(MissionsTemplateGroup.AUTODOOROPEN));
+                        break;
+
+                    case nameof(NodeType.AUTODOORCLOSE):
+                        seq = template_GroupMission(job, position, worker, seq, nameof(MissionsTemplateGroup.AUTODOORCLOSE));
                         break;
 
                     case nameof(NodeType.ELEVATOR):

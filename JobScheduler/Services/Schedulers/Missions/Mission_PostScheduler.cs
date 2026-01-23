@@ -43,10 +43,8 @@ namespace JOB.Services
                 if (c1 && c2)
                 {
                     //[조건] 전송 실패시 재전송 또는 대기중인 미션전송
-                    var mission = missions.Where(m => (m.state == nameof(MissionState.WAITING))
-                                                 || (m.state == nameof(MissionState.FAILED))
-                                                 || (m.state == nameof(MissionState.COMMANDREQUEST))
-                                                    ).FirstOrDefault();
+                    var mission = missions.Where(m => m.jobId != null
+                                             && (m.state == nameof(MissionState.WAITING) || m.state == nameof(MissionState.FAILED) || m.state == nameof(MissionState.COMMANDREQUEST))).FirstOrDefault();
                     if (mission != null)
                     {
                         //[조건] 충전중일경우 Cancel 진행[구현 필요]

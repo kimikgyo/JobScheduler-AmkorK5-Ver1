@@ -7,6 +7,7 @@ namespace Common.Models.Jobs
 {
     public enum Service
     {
+        RESOURCE,
         WORKER,
         ELEVATOR,
         MIDDLEWARE,

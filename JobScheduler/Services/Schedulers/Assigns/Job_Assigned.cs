@@ -669,7 +669,7 @@ namespace JOB.Services
         {
             lock (_lock)
             {
-                var Templates = _repository.MissionTemplates_Group.GetByGroup(templateGroup);
+                var Templates = _repository.MissionTemplates_Group.GetByGroup(templateGroup).OrderBy(r=>r.seq);
                 foreach (var template in Templates)
                 {
                     var missionTemplate = _mapping.MissionTemplates.Create(template);

@@ -47,7 +47,7 @@ namespace JobScheduler.Services
                     ApiClient();
                     foreach (var serviceApi in _repository.ServiceApis.GetAll())
                     {
-                        if (serviceApi.type == "Resource")
+                        if (serviceApi.type == nameof(Service.RESOURCE))
                         {
                             _repository.Workers.Delete();
                             _repository.Maps.Delete();
@@ -252,7 +252,7 @@ namespace JobScheduler.Services
                 {
                     foreach (var serviceApi in _repository.ServiceApis.GetAll())
                     {
-                        if (serviceApi.type == "Resource")
+                        if (serviceApi.type == nameof(Service.RESOURCE))
                         {
                             var getReloadWorkers = await serviceApi.Api.Get_Worker_Async();
                             var getReloadMaps = await serviceApi.Api.Get_Map_Async();

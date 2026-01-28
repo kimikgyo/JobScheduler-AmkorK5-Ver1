@@ -87,7 +87,7 @@ namespace Common.Models.Queues
         private static readonly ConcurrentQueue<MqttSubscribeMessageDto> mqttSubscribeCarrier = new ConcurrentQueue<MqttSubscribeMessageDto>();
         private static readonly ConcurrentQueue<MqttSubscribeMessageDto> mqttSubscribeElevator = new ConcurrentQueue<MqttSubscribeMessageDto>();
         private static readonly ConcurrentQueue<MqttSubscribeMessageDto> mqttSubscribeTraffic = new ConcurrentQueue<MqttSubscribeMessageDto>();
-        private static readonly ConcurrentQueue<MqttSubscribeMessageDto> mqttSubscribeDevice = new ConcurrentQueue<MqttSubscribeMessageDto>();
+        private static readonly ConcurrentQueue<MqttSubscribeMessageDto> mqttSubscribeIot = new ConcurrentQueue<MqttSubscribeMessageDto>();
 
 
 
@@ -200,16 +200,16 @@ namespace Common.Models.Queues
             //실행하면 순차적으로 하나씩 Return한다
             return mqttSubscribeTraffic.TryDequeue(out item);
         }
-        public static void MqttEnqueueSubscribeDevice(MqttSubscribeMessageDto item)
+        public static void MqttEnqueueSubscribeIot(MqttSubscribeMessageDto item)
         {
             //미션 및 Queue 를 실행한부분을 순차적으로 추가시킨다
-            mqttSubscribeDevice.Enqueue(item);
+            mqttSubscribeIot.Enqueue(item);
         }
 
-        public static bool MqttTryDequeueSubscribeDevice(out MqttSubscribeMessageDto item)
+        public static bool MqttTryDequeueSubscribeIot(out MqttSubscribeMessageDto item)
         {
             //실행하면 순차적으로 하나씩 Return한다
-            return mqttSubscribeDevice.TryDequeue(out item);
+            return mqttSubscribeIot.TryDequeue(out item);
         }
 
         public static void MqttEnqueueSubscribe(MqttSubscribeMessageDto item)

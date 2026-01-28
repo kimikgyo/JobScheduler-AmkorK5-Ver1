@@ -45,17 +45,19 @@ namespace JOB.Services
                     case nameof(Service.IOT):
                         CommandRequst = IOTPostMission(serviceApi, mission);
                         break;
-
-                    case nameof(Service.JOBSCHEDULER):
-                        CommandRequst = JobSchedulerPostMission(serviceApi, mission);
-                        break;
                 }
             }
             else
             {
-                EventLogger.Warn($"[PostMission][WORKER][API_IsNull] MissionName = {mission.name}, MissionSubType = {mission.subType}" +
-                                 $", MissionId = {mission.guid}, AssignedWorkerId = {mission.assignedWorkerId}, AssignedWorkerName = {mission.assignedWorkerName}");
-                return CommandRequst;
+                if (mission.service == nameof(Service.JOBSCHEDULER))
+                {
+                    CommandRequst = JobSchedulerPostMission(serviceApi, mission);
+                }
+                else
+                {
+                    EventLogger.Warn($"[PostMission][API_IsNull] MissionName = {mission.name}, MissionSubType = {mission.subType}" +
+                                     $", MissionId = {mission.guid}, AssignedWorkerId = {mission.assignedWorkerId}, AssignedWorkerName = {mission.assignedWorkerName}");
+                }
             }
             if (CommandRequst)
             {

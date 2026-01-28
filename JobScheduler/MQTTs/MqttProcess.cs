@@ -37,7 +37,6 @@ namespace JOB.MQTTs
                     if (string.IsNullOrWhiteSpace(message.Payload)) return;     // 페이로드 null check
                     if (!message.Payload.IsValidJson()) return;                 // 페이로드 json check
                     string[] topic = message.topic.Split('/');
-
                     message.type = topic[1];
                     message.id = topic[2];
                     message.subType = topic[3];

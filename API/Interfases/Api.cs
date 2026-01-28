@@ -374,7 +374,7 @@ namespace RestApi.Interfases
             try
             {
                 //수정본
-                var response = await _httpClient.PostAsJsonAsync("api/missions", value);
+                var response = await _httpClient.PostAsJsonAsync("missions/iot", value);
                 var jsonResponse = await response.Content.ReadAsStringAsync();
 
                 var missionQueueResponse = new ResponseDto

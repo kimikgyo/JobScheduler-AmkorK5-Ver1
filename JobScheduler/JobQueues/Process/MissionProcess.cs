@@ -202,7 +202,7 @@ namespace JOB.JobQueues.Process
                                 {
                                     if (device == null) continue;
 
-                                    var id = device.id;
+                                    var id = device;
                                     if (string.IsNullOrWhiteSpace(id)) continue;
 
                                     ids.Add(id);

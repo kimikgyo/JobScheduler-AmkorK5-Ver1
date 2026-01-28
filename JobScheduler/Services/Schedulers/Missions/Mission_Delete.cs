@@ -43,6 +43,19 @@ namespace JOB.Services
                         break;
                 }
             }
+            else
+            {
+                if (mission.service == nameof(Service.JOBSCHEDULER))
+                {
+                    updateStateMission(mission, nameof(MissionState.CANCELED), true);
+                    completed = true;
+                }
+                else
+                {
+                    EventLogger.Warn($"[DeleteMission][API_IsNull] MissionName = {mission.name}, MissionSubType = {mission.subType}" +
+                                     $", MissionId = {mission.guid}, AssignedWorkerId = {mission.assignedWorkerId}, AssignedWorkerName = {mission.assignedWorkerName}");
+                }
+            }
             return completed;
         }
 

@@ -16,9 +16,6 @@ namespace JOB.Services
             terminateState_Executing(jobs);
         }
 
-
-      
-
         /// <summary>
         /// Terminate_Init으로 상태 변경
         /// </summary>
@@ -374,20 +371,6 @@ namespace JOB.Services
         }
 
         /// <summary>
-        /// MissionState가 "진행중(active)" 으로 판단되는지 검사
-        /// - HashSet 사용 안함
-        /// - deleteMission 대상으로 판단할 상태만 true
-        /// </summary>
-        private bool IsActiveMissionState(string state)
-        {
-            if (string.IsNullOrEmpty(state)) return false;
-
-            return state == nameof(MissionState.PENDING)
-                || state == nameof(MissionState.EXECUTING)
-                || state == nameof(MissionState.COMMANDREQUESTCOMPLETED);
-        }
-
-        /// <summary>
         /// JobGuid로 Mission을 조회하고 sequence 기준으로 정렬해서 반환
         /// - null 방어 포함
         /// </summary>
@@ -409,7 +392,7 @@ namespace JOB.Services
             if (ordered == null) return null;
             if (ordered.Count == 0) return null;
 
-            return ordered.FirstOrDefault(m => IsActiveMissionState(m.state));
+            return _repository.Missions.GetByRunMissions(ordered).FirstOrDefault();
         }
 
         /// <summary>

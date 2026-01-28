@@ -9,38 +9,43 @@ namespace JOB.MQTTs
 {
     public partial class MqttProcess
     {
-        public void Subscribe_Device()
+        public void Subscribe_Iot()
         {
-            while (QueueStorage.MqttTryDequeueSubscribeWorker(out MqttSubscribeMessageDto subscribe))
+            while (QueueStorage.MqttTryDequeueSubscribeIot(out MqttSubscribeMessageDto subscribe))
             {
                 try
                 {
-                        //Console.WriteLine(string.Format("Process Message: [{0}] {1} at {2:yyyy-MM-dd HH:mm:ss,fff}", subscribe.topic, subscribe.Payload, subscribe.Timestamp));
-
-                        switch (subscribe.subType)
+                    if (subscribe.id == "mission" && subscribe.subType == "report")
+                    {
+                        var missionStateDto = JsonSerializer.Deserialize<Subscribe_MissionDto>(subscribe.Payload!);
+                        var mission = _repository.Missions.GetById(missionStateDto.acsMissionId);
+                        if (mission != null)
                         {
-                            case nameof(TopicSubType.state):
-                                var state = JsonSerializer.Deserialize<Subscribe_WorkerStatusDto>(subscribe.Payload!);
-                                break;
+                            string missionstate = missionStateDto.state.Replace(" ", "").ToUpper();
 
-                            case nameof(TopicSubType.mission):
-                                var missionStateDto = JsonSerializer.Deserialize<Subscribe_MissionDto>(subscribe.Payload!);
-                                var mission = _repository.Missions.GetById(missionStateDto.acsMissionId);
-                                if (mission != null)
-                                {
-                                    string missionstate = missionStateDto.state.Replace(" ", "").ToUpper();
-
-                                    if (missionstate != nameof(MissionState.COMPLETED))
-                                    {
-                                        updateStateMission(mission, missionstate, true);
-                                    }
-                                    else
-                                    {
-                                        updateStateMission(mission, missionstate);
-                                    }
-                                }
-                                break;
+                            if (missionstate != nameof(MissionState.COMPLETED))
+                            {
+                                updateStateMission(mission, missionstate, true);
+                            }
+                            else
+                            {
+                                updateStateMission(mission, missionstate);
+                            }
                         }
+                    }
+
+                    //Console.WriteLine(string.Format("Process Message: [{0}] {1} at {2:yyyy-MM-dd HH:mm:ss,fff}", subscribe.topic, subscribe.Payload, subscribe.Timestamp));
+
+                    //switch (subscribe.subType)
+                    //{
+                    //    case nameof(TopicSubType.state):
+                    //        var state = JsonSerializer.Deserialize<Subscribe_WorkerStatusDto>(subscribe.Payload!);
+                    //        break;
+
+                    //    case nameof(TopicSubType.mission):
+
+                    //        break;
+                    //}
                 }
                 catch (Exception ex)
                 {
@@ -49,5 +54,4 @@ namespace JOB.MQTTs
             }
         }
     }
-    
 }

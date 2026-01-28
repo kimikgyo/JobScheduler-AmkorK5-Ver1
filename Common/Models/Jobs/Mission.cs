@@ -37,6 +37,8 @@ namespace Common.Models.Jobs
         COMMANDREQUESTCOMPLETED,     // Scheduler Post진행시
         PENDING,                    // WorkerService 대기중
         EXECUTING,                 // Worker 작업중
+        WAITINGUSER,
+        USERCONFIRMED,
         CANCELED,                   // Worker 작업취소
         FAILED,                     // Worker에서 실패했을경우
         COMPLETED,                  // Worker에서 성공 완료

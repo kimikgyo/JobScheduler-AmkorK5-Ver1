@@ -11,7 +11,8 @@
         carrier,
         elevator,
         ui,
-        traffic
+        traffic,
+        iot
     }
 
     public enum TopicSubType

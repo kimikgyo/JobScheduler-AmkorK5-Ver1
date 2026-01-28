@@ -48,7 +48,7 @@ namespace JOB.Services
             int seq = 1;
 
             // 1) 외부 Route API 핸들
-            var resource = _repository.ServiceApis.GetAll().FirstOrDefault(s => s.type == "Resource");
+            var resource = _repository.ServiceApis.GetAll().FirstOrDefault(s => s.type == nameof(Service.RESOURCE));
             // 외부 핸들 없음
             if (resource == null) return CreateMission;
 
@@ -247,6 +247,18 @@ namespace JOB.Services
                             seq = template_GroupMission(job, position, worker, seq, nameof(MissionsTemplateGroup.AUTODOORCLOSE));
                             break;
 
+                        case nameof(NodeType.AUTODOOROPENREQUEST):
+                            seq = template_GroupMission(job, position, worker, seq, nameof(MissionsTemplateGroup.AUTODOOROPENREQUEST));
+                            break;
+
+                        case nameof(NodeType.AUTODOORCLOSEREQUEST):
+                            seq = template_GroupMission(job, position, worker, seq, nameof(MissionsTemplateGroup.AUTODOORCLOSEREQUEST));
+                            break;
+
+                        case nameof(NodeType.AIRSHOWER):
+                            seq = template_GroupMission(job, position, worker, seq, nameof(MissionsTemplateGroup.AIRSHOWER));
+                            break;
+
                         case nameof(NodeType.ELEVATOR):
                             if (Segment_A_ElevatorSource == null)
                             {
@@ -345,6 +357,18 @@ namespace JOB.Services
 
                     case nameof(NodeType.AUTODOORCLOSE):
                         seq = template_GroupMission(job, position, worker, seq, nameof(MissionsTemplateGroup.AUTODOORCLOSE));
+                        break;
+
+                    case nameof(NodeType.AUTODOOROPENREQUEST):
+                        seq = template_GroupMission(job, position, worker, seq, nameof(MissionsTemplateGroup.AUTODOOROPENREQUEST));
+                        break;
+
+                    case nameof(NodeType.AUTODOORCLOSEREQUEST):
+                        seq = template_GroupMission(job, position, worker, seq, nameof(MissionsTemplateGroup.AUTODOORCLOSEREQUEST));
+                        break;
+
+                    case nameof(NodeType.AIRSHOWER):
+                        seq = template_GroupMission(job, position, worker, seq, nameof(MissionsTemplateGroup.AIRSHOWER));
                         break;
 
                     case nameof(NodeType.ELEVATOR):
@@ -447,6 +471,18 @@ namespace JOB.Services
 
                     case nameof(NodeType.AUTODOORCLOSE):
                         seq = template_GroupMission(job, position, worker, seq, nameof(MissionsTemplateGroup.AUTODOORCLOSE));
+                        break;
+
+                    case nameof(NodeType.AUTODOOROPENREQUEST):
+                        seq = template_GroupMission(job, position, worker, seq, nameof(MissionsTemplateGroup.AUTODOOROPENREQUEST));
+                        break;
+
+                    case nameof(NodeType.AUTODOORCLOSEREQUEST):
+                        seq = template_GroupMission(job, position, worker, seq, nameof(MissionsTemplateGroup.AUTODOORCLOSEREQUEST));
+                        break;
+
+                    case nameof(NodeType.AIRSHOWER):
+                        seq = template_GroupMission(job, position, worker, seq, nameof(MissionsTemplateGroup.AIRSHOWER));
                         break;
 
                     case nameof(NodeType.ELEVATOR):

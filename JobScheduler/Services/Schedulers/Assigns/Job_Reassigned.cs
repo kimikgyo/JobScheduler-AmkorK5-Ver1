@@ -94,11 +94,17 @@ namespace JOB.Services
                 // (B) 엘리베이터 이동 중인지 여부
                 // =======================================================
 
-                var hasExecutingElevator = workerMissions.FirstOrDefault(m => m.state == nameof(MissionState.EXECUTING)
-                                                                       && (m.type == nameof(MissionSubType.ELEVATORENTERMOVE)
+                var runmission = _repository.Missions.GetByRunMissions(workerMissions);
+                var hasExecutingElevator = runmission.FirstOrDefault(m=>m.type == nameof(MissionSubType.ELEVATORENTERMOVE)
                                                                        || m.type == nameof(MissionSubType.ELEVATOREXITMOVE)
                                                                        || m.type == nameof(MissionSubType.ELEVATORSOURCEFLOOR)
-                                                                       || m.type == nameof(MissionSubType.ELEVATORDESTINATIONFLOOR)));
+                                                                       || m.type == nameof(MissionSubType.ELEVATORDESTINATIONFLOOR));
+
+                //var hasExecutingElevator = workerMissions.FirstOrDefault(m => m.state == nameof(MissionState.EXECUTING)
+                //                                                       && (m.type == nameof(MissionSubType.ELEVATORENTERMOVE)
+                //                                                       || m.type == nameof(MissionSubType.ELEVATOREXITMOVE)
+                //                                                       || m.type == nameof(MissionSubType.ELEVATORSOURCEFLOOR)
+                //                                                       || m.type == nameof(MissionSubType.ELEVATORDESTINATIONFLOOR)));
 
                 if (hasExecutingElevator != null)
                 {
@@ -482,28 +488,8 @@ namespace JOB.Services
             // ------------------------------------------------------------
             // [7-1] "지금 실행 중인 미션" 찾기
             // ------------------------------------------------------------
-            Mission currentFirstMission = null;
 
-            foreach (var item in firstMissions)
-            {
-                if (item.state == nameof(MissionState.EXECUTING))
-                {
-                    currentFirstMission = item;
-                    break;
-                }
-            }
-
-            if (currentFirstMission == null)
-            {
-                foreach (var item in firstMissions)
-                {
-                    if (item.guid == completedMission.guid)
-                    {
-                        currentFirstMission = item;
-                        break;
-                    }
-                }
-            }
+            var currentFirstMission = _repository.Missions.GetByRunMissions(firstMissions).FirstOrDefault();
 
             if (currentFirstMission == null)
             {

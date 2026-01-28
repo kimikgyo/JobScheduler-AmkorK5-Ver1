@@ -22,7 +22,7 @@ namespace Common.DTOs.MQTTs.Positions
         [JsonPropertyOrder(15)] public string linkedZone { get; set; }
         [JsonPropertyOrder(16)] public string linkedFacility { get; set; }
         [JsonPropertyOrder(17)] public string linkedRobotId { get; set; }
-        [JsonPropertyOrder(18)] public List<linkedDevice> linkedDevices { get; set; }
+        [JsonPropertyOrder(18)] public List<string> linkedDevices { get; set; }
         [JsonPropertyOrder(18)] public bool hasCharger { get; set; }
         [JsonPropertyOrder(19)] public DateTime updatedAt { get; set; }
         [JsonPropertyOrder(20)] public string updatedBy { get; set; }
@@ -35,7 +35,7 @@ namespace Common.DTOs.MQTTs.Positions
             {
                 // 리스트 안의 Parameter 각각을 { ... } 모양으로 변환
                 var items = linkedDevices
-                    .Select(p => $"{{ id={p.id}}}");
+                    .Select(p => p);
 
                 // 여러 개 항목을 ", " 로 이어붙임
                 linkedDevicesStr = string.Join(", ", items);

@@ -103,7 +103,7 @@ namespace JOB.MQTTs.Interfaces
                     break;
 
                 case nameof(TopicType.ui):
-                    if (subscribe.id == "elevator")
+                    if (subscribe.id == "elevatorMode")
                     {
                         QueueStorage.MqttEnqueueSubscribeElevator(subscribe);
                     }
@@ -113,6 +113,10 @@ namespace JOB.MQTTs.Interfaces
 
                     QueueStorage.MqttEnqueueSubscribeTraffic(subscribe);
                     break;
+                case nameof(TopicType.iot):
+                    QueueStorage.MqttEnqueueSubscribeIot(subscribe);
+                    break;
+
             }
         }
 
@@ -124,7 +128,7 @@ namespace JOB.MQTTs.Interfaces
             _mqttProcess.Subscribe_Carrier();
             _mqttProcess.Subscribe_Elevator();
             _mqttProcess.Subscribe_Trffic();
-            _mqttProcess.Subscribe_Device();
+            _mqttProcess.Subscribe_Iot();
         }
     }
 }

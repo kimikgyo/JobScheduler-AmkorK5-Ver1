@@ -24,7 +24,10 @@ namespace Common.Models.Jobs
         ELEVATOR,
         CHARGER,
         AUTODOOROPEN,
-        AUTODOORCLOSE
+        AUTODOORCLOSE,
+        AUTODOOROPENREQUEST,
+        AUTODOORCLOSEREQUEST,
+        AIRSHOWER,
     }
 
     public class Position
@@ -47,7 +50,7 @@ namespace Common.Models.Jobs
         [JsonPropertyOrder(16)] public string linkedZone { get; set; }          //포지션 관련 Area
         [JsonPropertyOrder(17)] public string linkedFacility { get; set; }      //포지션 관련 장비
         [JsonPropertyOrder(18)] public string linkedRobotId { get; set; }       //포지션 지정 Robot
-        [JsonPropertyOrder(19)] public List<linkedDevice> linkedDevices { get; set; } //포지션에서 디바이스 정리
+        [JsonPropertyOrder(19)] public List<string> linkedDevices { get; set; }//포지션에서 디바이스 정리 
         [JsonPropertyOrder(20)] public bool hasCharger { get; set; }            //충전기에 대한 포지션인지
         [JsonPropertyOrder(21)] public string nodeType { get; set; }            //포지션 로드타입
         [JsonPropertyOrder(22)] public DateTime occupiedHoldTime { get; set; }  //포지션 로드타입
@@ -60,7 +63,7 @@ namespace Common.Models.Jobs
             {
                 // 리스트 안의 Parameter 각각을 { ... } 모양으로 변환
                 var items = linkedDevices
-                    .Select(p => $"{{ id={p.id}}}");
+                    .Select(p=>p.ToString());
 
                 // 여러 개 항목을 ", " 로 이어붙임
                 linkedDevicesStr = string.Join(", ", items);

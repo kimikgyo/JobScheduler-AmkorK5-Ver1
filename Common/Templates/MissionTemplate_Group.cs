@@ -12,6 +12,9 @@ namespace Common.Templates
         TRAFFIC,
         AUTODOOROPEN,
         AUTODOORCLOSE,
+        AUTODOOROPENREQUEST,
+        AUTODOORCLOSEREQUEST,
+        AIRSHOWER,
         ELEVATORSOURCE,
         ELEVATORDEST,
         CHARGE

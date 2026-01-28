@@ -3,14 +3,6 @@ using System.Text.Json.Serialization;
 
 namespace Common.Templates
 {
-    public enum Service
-    {
-        WORKER,
-        ELEVATOR,
-        MIDDLEWARE,
-        TRAFFIC
-    }
-
     public enum MissionTemplateSubType
     {
         //Move

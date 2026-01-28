@@ -273,7 +273,8 @@ namespace Data.Repositorys.Jobs
         {
             lock (_lock)
             {
-                return missions.Where(m => m.state == nameof(MissionState.PENDING) || m.state == nameof(MissionState.EXECUTING) || m.state == nameof(MissionState.COMMANDREQUESTCOMPLETED)).ToList();
+                return missions.Where(m => m.state == nameof(MissionState.PENDING) || m.state == nameof(MissionState.EXECUTING) 
+                                   || m.state == nameof(MissionState.COMMANDREQUESTCOMPLETED) || m.state == nameof(MissionState.WAITINGUSER) || m.state == nameof(MissionState.USERCONFIRMED)).ToList();
             }
         }
 

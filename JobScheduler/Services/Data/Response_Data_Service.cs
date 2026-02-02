@@ -146,7 +146,7 @@ namespace JobScheduler.Services
 
         private void publishesMissionTopicsAdd()
         {
-            var oldMissionTopics = ConfigData.PublishTopics.Where(r => r.type == nameof(TopicType.mission));
+            var oldMissionTopics = ConfigData.PublishTopics.Where(r => r.type == nameof(TopicType.mission)).ToList();
 
             foreach (var oldMissionTopic in oldMissionTopics)
             {

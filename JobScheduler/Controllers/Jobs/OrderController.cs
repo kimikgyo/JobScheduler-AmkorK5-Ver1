@@ -281,17 +281,17 @@ namespace JobScheduler.Controllers.Jobs
         {
             string massage = null;
             //[조건1] order Id 가 null이거나 빈문자 이고 type이 트랜스포트일경우
-            if (IsInvalid(RequestDto.id)) return massage = $"Check Order Id";
+            if (IsInvalid(RequestDto.id)) return massage = $"Order id is null or empty";
             //orderId 조회
             var order = _repository.Orders.GetByid(RequestDto.id);
-            if (order != null) massage = $"Check Order Id";
+            if (order != null) massage = $"Order id already exists.";
 
             //[조건2]도착자Id가 null이거나 빈문자일경우
-            if (IsInvalid(RequestDto.destinationId)) return massage = $"Check Order destinationId";
+            if (IsInvalid(RequestDto.destinationId)) return massage = $"Order destinationId is null or empty";
             else
             {
                 var destination = _repository.Positions.MiR_GetById_Name_linkedFacility(RequestDto.destinationId);
-                if (destination == null) return massage = $"Check Order destinationId";
+                if (destination == null) return massage = $"Invalid destination. No matching position found.";
             }
 
             ////[조건3]타입이 null이거나 빈문자일경우
@@ -303,7 +303,7 @@ namespace JobScheduler.Controllers.Jobs
             //if (!existTypes) return massage = $"Check Order Type";
 
             //[조건4]서브타입이 null이거나 빈문자일경우
-            if (IsInvalid(RequestDto.subType)) return massage = $"Check Order subType";
+            if (IsInvalid(RequestDto.subType)) return massage = $"SubType is null or empty";
             //orderSubType 빈문자를제외후 대문자로 변환
             RequestDto.subType = RequestDto.subType.Replace(" ", "").ToUpper();
             // Enum에 값이 존재하는지 확인
@@ -314,12 +314,12 @@ namespace JobScheduler.Controllers.Jobs
             {
                 case nameof(JobSubType.SIMPLEMOVE):
                     //워커를 지정하여 보내지 않는경우
-                    if (IsInvalid(RequestDto.specifiedWorkerId)) massage = $"Check Order SpecifiedWorkerId ";
+                    if (IsInvalid(RequestDto.specifiedWorkerId)) massage = $"SpecifiedWorkerId is null or empty";
                     else
                     {
                         //워커를 지정 하였지만 worker가 List에 없는경우
                         var worker = _repository.Workers.MiR_GetById(RequestDto.specifiedWorkerId);
-                        if (worker == null) massage = $"Check Order SpecifiedWorkerId ";
+                        if (worker == null) massage = $"Invalid SpecifiedWorkerId. No matching Worker found.";
                     }
                     break;
 
@@ -328,9 +328,9 @@ namespace JobScheduler.Controllers.Jobs
                 case nameof(JobSubType.DROPONLY):
                     //같은 출발지와 목적지가 있는경우
                     var findSource_dest = _repository.Orders.GetBySource_Dest(RequestDto.sourceId, RequestDto.destinationId);
-                    if (findSource_dest != null) massage = $"Check sourceId And DestinationId";
+                    if (findSource_dest != null) massage = $"There is a common source and destination";
                     //carrier Id 가 없는경우 [자재 이송이기때문에 carrier이 존재해야함]
-                    else if (IsInvalid(RequestDto.carrierId)) massage = $"Check Order carrierId ";
+                    else if (IsInvalid(RequestDto.carrierId)) massage = $"CarrierId is null or empty";
                     else if (RequestDto.subType == nameof(JobSubType.PICKONLY) || RequestDto.subType == nameof(JobSubType.DROPONLY))
                     {
                         //워커를 지정 하였지만 worker가 List에 없는경우

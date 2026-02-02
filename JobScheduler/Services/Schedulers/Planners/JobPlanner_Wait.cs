@@ -265,7 +265,7 @@ namespace JOB.Services
             //    - linkedRobotId 가 worker.id 인 WAIT 포지션이 있으면 그걸 사용
             // ------------------------------------------------------------
 
-            var sameMapId = _repository.Positions.FindNearestWayPoint(worker, waitCandidates).FirstOrDefault(p => p.mapId == worker.mapId);
+            var sameMapId = _repository.Positions.FindNearestWayPoint(worker, waitCandidates).FirstOrDefault(p => p.mapId == worker.mapId && string.IsNullOrWhiteSpace(p.linkedRobotId));
             if (sameMapId != null)
             {
                 EventLogger.Info($"[WAIT][FIND] sameMapId wait selected: workerId={worker.id}, workerName={worker.name}, waitPOSId={sameMapId.id}, waitPOSName={sameMapId.name}" +
@@ -277,7 +277,7 @@ namespace JOB.Services
             // ------------------------------------------------------------
             // 5) 가까운 WAIT 선택 다른층
             // ------------------------------------------------------------
-            var AnotherMapId = _repository.Positions.FindNearestWayPoint(worker, waitCandidates).FirstOrDefault(p => p.mapId != worker.mapId);
+            var AnotherMapId = _repository.Positions.FindNearestWayPoint(worker, waitCandidates).FirstOrDefault(p => p.mapId != worker.mapId && string.IsNullOrWhiteSpace(p.linkedRobotId));
             if (AnotherMapId == null)
             {
                 EventLogger.Warn($"[WAIT][FIND][SKIP] AnotherMap wait list empty: workerId={worker.id}, workerName={worker.name}, group={worker.group}, mapId={worker.mapId}");

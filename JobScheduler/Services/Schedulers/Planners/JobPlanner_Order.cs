@@ -9,8 +9,8 @@ namespace JOB.Services
         private void JobPlanner()
         {
             OrderJobs();
-            ChargeJobs();
-            WaitJobs();
+            //ChargeJobs();
+            //WaitJobs();
         }
 
         //Job생성

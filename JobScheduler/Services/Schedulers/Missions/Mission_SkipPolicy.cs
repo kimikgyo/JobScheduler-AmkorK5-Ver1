@@ -29,23 +29,23 @@ namespace JOB.Services
                     break;
 
                 case nameof(MissionType.ACTION):
-                    if (mission.subType == nameof(MissionSubType.DOORCLOSE))
-                    {
-                        var elevatorMoveMissions = _repository.Missions.GetAll().Where(r => r.subType == nameof(MissionSubType.ELEVATORWAITMOVE)
-                                                                                        || r.subType == nameof(MissionSubType.ELEVATORENTERMOVE)
-                                                                                        || r.subType == nameof(MissionSubType.ELEVATOREXITMOVE)
-                                                                                        || r.subType == nameof(MissionSubType.RIGHTTURN)
-                                                                                        || r.subType == nameof(MissionSubType.LEFTTURN)
-                                                                                        || r.subType == nameof(MissionSubType.SWITCHINGMAP)).ToList();
-                        var runmission = _repository.Missions.GetByRunMissions(elevatorMoveMissions).FirstOrDefault();
+                    //if (mission.subType == nameof(MissionSubType.DOORCLOSE))
+                    //{
+                    //    var elevatorMoveMissions = _repository.Missions.GetAll().Where(r => r.subType == nameof(MissionSubType.ELEVATORWAITMOVE)
+                    //                                                                    || r.subType == nameof(MissionSubType.ELEVATORENTERMOVE)
+                    //                                                                    || r.subType == nameof(MissionSubType.ELEVATOREXITMOVE)
+                    //                                                                    || r.subType == nameof(MissionSubType.RIGHTTURN)
+                    //                                                                    || r.subType == nameof(MissionSubType.LEFTTURN)
+                    //                                                                    || r.subType == nameof(MissionSubType.SWITCHINGMAP)).ToList();
+                    //    var runmission = _repository.Missions.GetByRunMissions(elevatorMoveMissions).FirstOrDefault();
 
-                        if (runmission != null)
-                        {
-                            updateStateMission(mission, nameof(MissionState.SKIPPED), true);
-                            EventLogger.Info($"[PostMission][{nameof(Service.ELEVATOR)}][SKIPPED], MissionId = {mission.guid}, missionName = {mission.name} ,AssignedWorkerId = {mission.assignedWorkerId}");
-                            completed = true;
-                        }
-                    }
+                    //    if (runmission != null)
+                    //    {
+                    //        updateStateMission(mission, nameof(MissionState.SKIPPED), true);
+                    //        EventLogger.Info($"[PostMission][{nameof(Service.ELEVATOR)}][SKIPPED], MissionId = {mission.guid}, missionName = {mission.name} ,AssignedWorkerId = {mission.assignedWorkerId}");
+                    //        completed = true;
+                    //    }
+                    //}
                     break;
             }
 

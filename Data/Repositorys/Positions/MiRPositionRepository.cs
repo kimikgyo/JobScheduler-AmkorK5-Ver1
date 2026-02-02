@@ -57,7 +57,7 @@ namespace Data.Repositorys.Positions
         {
             lock (_lock)
             {
-                double PositionTolerance = 0.09; // 오차범위 보통 미터 단위이므로 5cm 이면 0.05로 한다
+                double PositionTolerance = 0.05; // 오차범위 보통 미터 단위이므로 5cm 이면 0.05로 한다
                 return _positions.Where(m => m.source == "mir" && m.mapId == mapid && Math.Abs(m.x - x) <= PositionTolerance && Math.Abs(m.y - y) <= PositionTolerance).ToList();
             }
         }

@@ -410,14 +410,14 @@ namespace JOB.Services
 
             if (routesPlanResponse == null)
             {
-                EventLogger.Warn($"[ChargeWait][PLAN][NO_ROUTE] response is null (path not found?) jobId={job?.guid}, from={workerStart?.positionId}, to={jobDestination?.positionId}" +
+                EventLogger.Warn($"[ChargeOrWait][PLAN][NO_ROUTE] response is null (path not found?) jobId={job?.guid}, from={workerStart?.positionId}, to={jobDestination?.positionId}" +
                                  $",WorkerId={worker?.id}, WorkerName={worker.name}");
                 return reValue;
             }
 
             if (routesPlanResponse.nodes == null)
             {
-                EventLogger.Warn($"[ChargeWait][PLAN][NO_ROUTE] nodes is null/empty (path not found) jobId={job?.guid}, from={workerStart?.positionId}, to={jobDestination?.positionId}" +
+                EventLogger.Warn($"[ChargeOrWait][PLAN][NO_ROUTE] nodes is null/empty (path not found) jobId={job?.guid}, from={workerStart?.positionId}, to={jobDestination?.positionId}" +
                                  $",WorkerId={worker?.id}, WorkerName={worker.name}");
 
                 return reValue;

@@ -54,13 +54,15 @@ namespace Common.Models.Jobs
     {
         //MOVE
 
+        //MOVE
+
         NONE,
         CHARGERMOVE,
         SOURCESTOPOVERMOVE,
         DESTINATIONSTOPOVERMOVE,
         WAITMOVE,
         RESETMOVE,
-        POSITIONMOVE,   
+        POSITIONMOVE,
         SOURCEMOVE,
         STOPOVERMOVE,
         ELEVATORWAITMOVE,
@@ -88,9 +90,10 @@ namespace Common.Models.Jobs
         RESET,
         CANCEL,
         CALL,
-        DOOROPEN,
+        ELEVATORDOOROPEN,
         ENTERCOMPLETE,
-        DOORCLOSE,
+        ELEVATORENTERDOORCLOSE,
+        ELEVATOREXITDOORCLOSE,
         EXITCOMPLETE,
     }
 

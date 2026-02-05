@@ -77,14 +77,26 @@ namespace JOB.Services
                 case nameof(JobType.TRANSPORT_CHEMICAL_RECOVERY):
                 case nameof(JobType.TRANSPORT_AICERO_SUPPLY):
                 case nameof(JobType.TRANSPORT_AICERO_RESOVERY):
-
-                    CreateMission = BuildTransportMissions(job, worker, resource, workerStart, jobSource, jobDestination, seq);
+                    if (workerStart.positionId == jobDestination.positionId)
+                    {
+                        CreateMission = BuildTransportMission_WorkerStartPOSSamejobDestination(job, worker, resource, workerStart, jobSource, jobDestination, seq);
+                    }
+                    else
+                    {
+                        CreateMission = BuildTransportMissions(job, worker, resource, workerStart, jobSource, jobDestination, seq);
+                    }
                     break;
 
                 case nameof(JobType.CHARGE):
                 case nameof(JobType.WAIT):
-
-                    CreateMission = BuildChargeWaitMissions(job, worker, resource, workerStart, jobDestination, seq);
+                    if (workerStart.positionId == jobDestination.positionId)
+                    {
+                        CreateMission = BuildChargeWaitMissions_WorkerStartPOSSamejobDestination(job, worker, resource, workerStart, jobSource, jobDestination, seq);
+                    }
+                    else
+                    {
+                        CreateMission = BuildChargeWaitMissions(job, worker, resource, workerStart, jobDestination, seq);
+                    }
                     break;
             }
             if (CreateMission)
@@ -112,31 +124,62 @@ namespace JOB.Services
         //    - (나중에 재할당 시에는 별도 인자나 WorkerState에서 현재 위치를 가져오도록 확장 가능)
         private Position GetWorkerStartPosition(Worker worker)
         {
-            Position nearest = null;
             if (worker == null) return null;
-            // 해당 워커가 있는 맵의 모든 포지션 가져오기
-            var positions = _repository.Positions.MiR_GetByMapId(worker.mapId)
-                            .Where(r => r.nodeType != nameof(NodeType.WORK) && r.nodeType != nameof(NodeType.ELEVATOR) && r.nodeType != nameof(NodeType.CHARGER)).ToList();
+
+            // ------------------------------------------------------------
+            // 1) 대상 포지션 로드 (worker.mapId 기준, 제외 nodeType 필터)
+            // ------------------------------------------------------------
+            var positions = _repository.Positions.MiR_GetByMapId(worker.mapId).Where(p => p != null && p.nodeType != nameof(NodeType.WORK) && p.nodeType != nameof(NodeType.ELEVATOR)
+                                                                                    && p.nodeType != nameof(NodeType.CHARGER)).ToList();
+
             if (positions == null || positions.Count == 0) return null;
 
+            // ------------------------------------------------------------
+            // 2) worker.PositionId가 유효하면, 그 포지션을 우선 반환 (단, 제외 타입이면 무시)
+            // ------------------------------------------------------------
             if (!IsInvalid(worker.PositionId))
             {
-                var workerPosition = _repository.Positions.GetById(worker.PositionId);
-                if (workerPosition.nodeType != nameof(NodeType.WORK) && workerPosition.nodeType != nameof(NodeType.ELEVATOR) && workerPosition.nodeType != nameof(NodeType.CHARGER))
+                var workerPos = _repository.Positions.GetById(worker.PositionId);
+
+                if (workerPos != null &&
+                    workerPos.nodeType != nameof(NodeType.WORK) &&
+                    workerPos.nodeType != nameof(NodeType.ELEVATOR) &&
+                    workerPos.nodeType != nameof(NodeType.CHARGER))
                 {
-                    nearest = workerPosition;
-                }
-                else
-                {
-                    nearest = _repository.Positions.FindNearestWayPoint(worker, positions).Where(P => P.isOccupied == false).FirstOrDefault();
+                    return workerPos;
                 }
             }
-            else
-            {
-                // 워커 기준 가장 가까운 포지션 선택
-                nearest = _repository.Positions.FindNearestWayPoint(worker, positions).Where(P => P.isOccupied == false).FirstOrDefault();
-            }
-            return nearest;
+
+            // ------------------------------------------------------------
+            // 3) 가장 가까운 후보 리스트(정렬된 리스트라고 가정) 구하기
+            // ------------------------------------------------------------
+            var nearestCandidates = _repository.Positions.FindNearestWayPoint(worker, positions);
+            if (nearestCandidates == null || nearestCandidates.Count == 0) return null;
+
+            // ------------------------------------------------------------
+            // 4) 우선순위 linkedRobotId가 본인인 포지션 (이미 예약/연결된 자리) 이거나 점유 X + linkedRobotId 비어있는 가장 가까운 포지션
+            // ------------------------------------------------------------
+
+            var freeAndLinked = nearestCandidates.FirstOrDefault(p =>
+                    p != null && p.linkedRobotId == worker.id
+                || (p.isOccupied == false && string.IsNullOrWhiteSpace(p.linkedRobotId))
+                );
+            return freeAndLinked;
+            // ------------------------------------------------------------
+            // 4) 우선순위 1: linkedRobotId가 본인인 포지션 (이미 예약/연결된 자리)
+            // ------------------------------------------------------------
+            //var linked = nearestCandidates.FirstOrDefault(p => p != null && p.isOccupied == true && p.linkedRobotId == worker.id);
+            //if (linked != null) return linked;
+
+            // ------------------------------------------------------------
+            // 5) 우선순위 2: 점유 X + linkedRobotId 비어있는 가장 가까운 포지션
+            // ------------------------------------------------------------
+            //var free = nearestCandidates.FirstOrDefault(p =>
+            //    p != null &&
+            //    p.isOccupied == false &&
+            //    string.IsNullOrWhiteSpace(p.linkedRobotId));
+
+            //return free;
         }
 
         // 1) Job 출발지 Position 구하기
@@ -164,6 +207,30 @@ namespace JOB.Services
             return dest;
         }
 
+        private bool BuildTransportMission_WorkerStartPOSSamejobDestination(Job job, Worker worker, ServiceApi resource, Position workerStart, Position jobSource, Position jobDestination
+                                           , int seq)
+        {
+            bool reValue = false;
+            if (jobDestination.nodeType == nameof(NodeType.WAYPOINT))
+            {
+                if (job.type == nameof(JobType.TRANSPORT)) seq = template_GroupMission(job, jobDestination, worker, seq, nameof(MissionsTemplateGroup.TRANSPORTDROP));
+                else seq = template_GroupMission(job, jobDestination, worker, seq, nameof(MissionsTemplateGroup.MANUALTRANSPORTDROP));
+                reValue = true;
+            }
+            return reValue;
+        }
+
+        private bool BuildChargeWaitMissions_WorkerStartPOSSamejobDestination(Job job, Worker worker, ServiceApi resource, Position workerStart, Position jobSource, Position jobDestination
+                                          , int seq)
+        {
+            bool reValue = false;
+            if (jobDestination.nodeType == nameof(NodeType.WAYPOINT))
+            {
+                seq = template_SingleMission(job, jobDestination, worker, seq, nameof(MissionTemplateType.MOVE), nameof(MissionTemplateSubType.DESTINATIONMOVE));
+            }
+            return reValue;
+        }
+
         // TRANSPORT 계열 Job 미션 구성
         // Segment A: WorkerStart → JobSource (MOVE만)
         // Segment B: JobSource   → JobDestination (PICK / DROP / ELEVATOR / TRAFFIC / MOVE)
@@ -180,14 +247,14 @@ namespace JOB.Services
 
                 if (routesPlanResponse_A == null)
                 {
-                    EventLogger.Warn($"[ROUTE_A][PLAN][NO_ROUTE] response is null (path not found?), jobId={job?.guid}, from={jobSource?.positionId}, to={jobDestination?.positionId}" +
-                                     $",WorkerId={worker?.id}, WorkerName={worker.name}");
+                    EventLogger.Warn($"[ROUTE_A][PLAN][NO_ROUTE] response is null (path not found?), jobId={job?.guid}, from={workerStart?.positionId}, fromName={workerStart?.name}" +
+                                     $", to={jobSource?.positionId}, toName = {jobSource?.name} ,WorkerId={worker?.id}, WorkerName={worker.name}");
                     return reValue;
                 }
                 if (routesPlanResponse_A.nodes == null)
                 {
-                    EventLogger.Warn($"[ROUTE_A][PLAN][NO_ROUTE] nodes is null/empty (path not found) jobId={job?.guid} from={jobSource?.positionId} to={jobDestination?.positionId}" +
-                                     $",WorkerId={worker?.id}, WorkerName={worker.name}");
+                    EventLogger.Warn($"[ROUTE_A][PLAN][NO_ROUTE] nodes is null/empty (path not found), jobId={job?.guid}, from={workerStart?.positionId}, fromName={workerStart?.name}" +
+                                     $", to={jobSource?.positionId}, toName = {jobSource?.name} ,WorkerId={worker?.id}, WorkerName={worker.name}");
                     return reValue;
                 }
                 Position Segment_A_ElevatorSource = null;
@@ -291,14 +358,14 @@ namespace JOB.Services
 
             if (routesPlanResponse_B == null)
             {
-                EventLogger.Warn($"[ROUTE_B][PLAN][NO_ROUTE] response is null (path not found?) jobId={job?.guid}, from={jobSource?.positionId}, to={jobDestination?.positionId}" +
-                                     $",WorkerId={worker?.id}, WorkerName={worker.name}");
+                EventLogger.Warn($"[ROUTE_B][PLAN][NO_ROUTE] response is null (path not found?) jobId={job?.guid}, from={jobSource?.positionId}, fromName={jobSource?.name}, " +
+                                    $"to={jobDestination?.positionId},toName = {jobDestination?.name} ,WorkerId={worker?.id}, WorkerName={worker.name}");
                 return reValue;
             }
             if (routesPlanResponse_B.nodes == null)
             {
-                EventLogger.Warn($"[ROUTE_B][PLAN][NO_ROUTE] nodes is null/empty (path not found) jobId={job?.guid}, from={jobSource?.positionId}, to={jobDestination?.positionId}" +
-                                     $",WorkerId={worker?.id}, WorkerName={worker.name}");
+                EventLogger.Warn($"[ROUTE_B][PLAN][NO_ROUTE] nodes is null/empty (path not found) jobId={job?.guid}, from={jobSource?.positionId}, fromName={jobSource?.name}, " +
+                                    $"to={jobDestination?.positionId},toName = {jobDestination?.name} ,WorkerId={worker?.id}, WorkerName={worker.name}");
                 return reValue;
             }
 
@@ -410,15 +477,15 @@ namespace JOB.Services
 
             if (routesPlanResponse == null)
             {
-                EventLogger.Warn($"[ChargeOrWait][PLAN][NO_ROUTE] response is null (path not found?) jobId={job?.guid}, from={workerStart?.positionId}, to={jobDestination?.positionId}" +
-                                 $",WorkerId={worker?.id}, WorkerName={worker.name}");
+                EventLogger.Warn($"[ChargeOrWait][PLAN][NO_ROUTE] response is null (path not found?) jobId={job?.guid}, from={workerStart?.positionId}, fromName={workerStart?.name}" +
+                                 $", to={jobDestination?.positionId},toName = {jobDestination?.name} ,WorkerId={worker?.id}, WorkerName={worker.name}");
                 return reValue;
             }
 
             if (routesPlanResponse.nodes == null)
             {
-                EventLogger.Warn($"[ChargeOrWait][PLAN][NO_ROUTE] nodes is null/empty (path not found) jobId={job?.guid}, from={workerStart?.positionId}, to={jobDestination?.positionId}" +
-                                 $",WorkerId={worker?.id}, WorkerName={worker.name}");
+                EventLogger.Warn($"[ChargeOrWait][PLAN][NO_ROUTE] nodes is null/empty (path not found) jobId={job?.guid}, from={workerStart?.positionId}, fromName={workerStart?.name}" +
+                                 $", to={jobDestination?.positionId},toName = {jobDestination?.name} ,WorkerId={worker?.id}, WorkerName={worker.name}");
 
                 return reValue;
             }

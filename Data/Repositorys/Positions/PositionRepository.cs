@@ -2,6 +2,7 @@
 using Dapper;
 using log4net;
 using Microsoft.Data.SqlClient;
+using Newtonsoft.Json.Linq;
 using System.Diagnostics;
 
 namespace Data.Repositorys.Positions
@@ -27,11 +28,11 @@ namespace Data.Repositorys.Positions
                 logger.Info($"Add: {add}");
             }
         }
-        public void update(Position update)
+        public void update(Position update,string Logmsg)
         {
             lock (_lock)
             {
-                logger.Info($"update: {update}");
+                logger.Info($"update: {update},Logmsg = {Logmsg}");
             }
         }
         public void Delete()
@@ -150,7 +151,12 @@ namespace Data.Repositorys.Positions
         {
             lock (_lock)
             {
-                return Math.Sqrt(Math.Pow(waypoint.x - worker.position_X, 2) + Math.Pow(waypoint.y - worker.position_Y, 2));
+                //첫 번째 = 거리의 제곱(√ 없음) → 비교/정렬 최적
+                return  Math.Pow(Math.Abs(worker.position_X - waypoint.x), 2)+ Math.Pow(Math.Abs(worker.position_Y - waypoint.y), 2);
+
+
+                ////두 번째 = 실제 거리(√ 포함) → 실제 단위 필요할 때
+                //return Math.Sqrt(Math.Pow(worker.position_X - waypoint.x, 2) + Math.Pow(worker.position_Y - waypoint.y, 2));
             }
         }
     }

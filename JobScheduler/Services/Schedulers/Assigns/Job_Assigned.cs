@@ -9,7 +9,7 @@ namespace JOB.Services
         private void WorkerAssined()
         {
             JobAssigned_Normal();
-            JobReassigned();
+            //JobReassigned();
         }
 
         /// <summary>
@@ -53,13 +53,13 @@ namespace JOB.Services
                 var crossFloorJobs = unAssignedWorkerJobs.Where(job => IsSameFloorJob(job) == false).ToList();
                 // 2) 같은 층 Job 만 남기기
                 unAssignedWorkerJobs = unAssignedWorkerJobs.Where(job => IsSameFloorJob(job)).ToList();
-                EventLogger.Info($"[ASSIGN][FILTER] Subscribe_Elevator unavailable. Removed {crossFloorJobs.Count} cross-floor jobs. " + $"Remaining={unAssignedWorkerJobs.Count}");
+                //EventLogger.Info($"[ASSIGN][FILTER] Subscribe_Elevator unavailable. Removed {crossFloorJobs.Count} cross-floor jobs. " + $"Remaining={unAssignedWorkerJobs.Count}");
             }
            
 
             if (unAssignedWorkerJobs == null || unAssignedWorkerJobs.Count == 0)
             {
-                EventLogger.Info("[ASSIGN][NORMAL][NO-JOB] After EV filter, no assignable jobs.");
+                //EventLogger.Info("[ASSIGN][NORMAL][NO-JOB] After EV filter, no assignable jobs.");
                 return;
             }
 
@@ -187,7 +187,7 @@ namespace JOB.Services
             var workers = _repository.Workers.MiR_GetByActive();
             if (workers == null || workers.Count == 0)
             {
-                EventLogger.Info("[ASSIGN][NORMAL][DISTANCE], No active workers.");
+                //EventLogger.Info("[ASSIGN][NORMAL][DISTANCE], No active workers.");
                 return;
             }
 

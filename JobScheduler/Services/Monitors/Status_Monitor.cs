@@ -37,8 +37,9 @@ namespace JOB.Services
             foreach (var cancelAbortJob in cancelAbortJobs)
             {
                 var missions = _repository.Missions.GetByJobId(cancelAbortJob.guid);
-                var notFinishMission = missions.FirstOrDefault(m => m.finishedAt == null);
-                if (notFinishMission == null)
+                //Cancel진행시 FinishedAt이 있을경우가 있음 [2026.02.04]
+                //var notFinishMission = missions.FirstOrDefault(m => m.finishedAt == null);
+                //if (notFinishMission == null)
                 {
                     if (cancelAbortJob.terminateState != nameof(TerminateState.COMPLETED))
                     {

@@ -270,7 +270,7 @@ namespace JOB.Services
             }
         }
 
-        public void updateOccupied(Position position, bool flag, double holdTime)
+        public void updateOccupied(Position position, bool flag, double holdTime,string Logmsg)
         {
             lock (_positionLock)
             {
@@ -278,7 +278,7 @@ namespace JOB.Services
                 {
                     position.isOccupied = flag;
                     position.occupiedHoldTime = DateTime.Now.AddSeconds(holdTime);
-                    _repository.Positions.update(position);
+                    _repository.Positions.update(position, Logmsg);
                 }
             }
         }

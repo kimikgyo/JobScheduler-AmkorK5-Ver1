@@ -8,6 +8,7 @@ namespace JOB.Services
         {
             PositionOccupied();
         }
+
         private void PositionOccupied()
         {
             // 0) Positions 전체 로드
@@ -42,13 +43,14 @@ namespace JOB.Services
             occupiedPositionIds.AddRange(runMissionTargetIds);
             occupiedPositionIds.AddRange(notOrderJobPositionIds);
 
-            if (workerOccupied != null && workerOccupied.Count > 0)occupiedPositionIds.AddRange(workerOccupied);
+            if (workerOccupied != null && workerOccupied.Count > 0) occupiedPositionIds.AddRange(workerOccupied);
 
             // (선택) 공백 제거 정도는 해두면 안전
             occupiedPositionIds = occupiedPositionIds.Where(x => string.IsNullOrWhiteSpace(x) == false).ToList();
 
             // 2) 전체 Positions를 돌면서
             //    "있으면 true / 없으면 false" 판단 후 update
+
             foreach (var pos in positions)
             {
                 if (pos == null) continue;
@@ -65,24 +67,23 @@ namespace JOB.Services
                 // A_task가 마지막에 올린 점유를 일정시간 유지시키기
                 // 전제: pos.occupiedHoldUntil(DateTime?)가 존재해야 함.
                 // 필드가 없다면 이 블록을 주석 처리하세요.
-                if (shouldBeOccupied == false)
+                // holdUntil이 있고, 아직 만료 전이면 false로 덮어쓰기 금지
+                if (pos.occupiedHoldTime != null && pos.occupiedHoldTime > DateTime.Now)
                 {
-                    // holdUntil이 있고, 아직 만료 전이면 false로 덮어쓰기 금지
-                    if (pos.occupiedHoldTime != null && pos.occupiedHoldTime > DateTime.Now)
-                    {
-                        // 점유 유지(스킵)
-                        continue;
-                    }
+                    // 점유 유지(스킵)
+                    continue;
                 }
 
                 // 2-3) (권장) 변경이 있을 때만 DB 업데이트
                 if (pos.isOccupied == shouldBeOccupied)
                     continue;
 
-                updateOccupied(pos, shouldBeOccupied, 0);
+                // 2-5) 업데이트
+                updateOccupied(pos, shouldBeOccupied, 0, "PositionOccupied");
+
+
             }
         }
-
 
         private List<string> workerPositionOccupied()
         {

@@ -3,6 +3,7 @@ using Common.DTOs.MQTTs.Workers;
 using Common.Models;
 using Common.Models.Jobs;
 using Common.Models.Queues;
+using log4net;
 using System.Text.Json;
 
 namespace JOB.MQTTs
@@ -56,7 +57,7 @@ namespace JOB.MQTTs
             }
         }
 
-
+        private static readonly ILog TestLogger = LogManager.GetLogger("Test");
 
         private void PositionOccupied(Worker worker)
         {
@@ -74,7 +75,6 @@ namespace JOB.MQTTs
                     worker.PositionId = null;
                     worker.PositionName = null;
                     _repository.Workers.Update(worker);
-
                 }
             }
             else
@@ -88,7 +88,6 @@ namespace JOB.MQTTs
                         worker.PositionId = position.id;
                         worker.PositionName = position.name;
                         _repository.Workers.Update(worker);
-
                     }
                 }
             }
@@ -100,7 +99,7 @@ namespace JOB.MQTTs
             {
                 position.isOccupied = flag;
                 position.occupiedHoldTime = DateTime.Now.AddSeconds(holdTime);
-                _repository.Positions.update(position);
+                _repository.Positions.update(position,"MQTT");
             }
         }
     }

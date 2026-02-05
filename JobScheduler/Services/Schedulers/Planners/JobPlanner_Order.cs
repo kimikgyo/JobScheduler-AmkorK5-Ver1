@@ -9,8 +9,8 @@ namespace JOB.Services
         private void JobPlanner()
         {
             OrderJobs();
-            //ChargeJobs();
-            //WaitJobs();
+            ChargeJobs();
+            WaitJobs();
         }
 
         //Job생성
@@ -71,7 +71,7 @@ namespace JOB.Services
                 _Queue.Create_Job(destination.group, order.id, order.type, order.subType, order.carrierId, order.priority, order.drumKeyCode
                                     , null, null, null, destination.id, destination.name, destination.linkedFacility
                                     , order.specifiedWorkerId);
-                updateOccupied(destination, true, 0.5);
+                updateOccupied(destination, true, 0.5,"Order1");
 
                 // --------------------------------------------------------
                 // 3) 생성 요청 성공 로그
@@ -85,8 +85,8 @@ namespace JOB.Services
                 _Queue.Create_Job(source.group, order.id, order.type, order.subType, order.carrierId, order.priority, order.drumKeyCode
                             , source.id, source.name, source.linkedFacility, destination.id, destination.name, destination.linkedFacility
                             , order.specifiedWorkerId);
-                updateOccupied(source, true, 0.5);
-                updateOccupied(destination, true, 0.5);
+                updateOccupied(source, true, 0.5, "Order2");
+                updateOccupied(destination, true, 0.5, "Order3");
 
                 // --------------------------------------------------------
                 // 3) 생성 요청 성공 로그

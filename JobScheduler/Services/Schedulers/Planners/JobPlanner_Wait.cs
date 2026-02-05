@@ -322,7 +322,7 @@ namespace JOB.Services
                                  , null, null, null
                                  , waitPosition.id, waitPosition.name, waitPosition.linkedFacility
                                  , worker.id);
-                updateOccupied(waitPosition, true, 0.5);
+                updateOccupied(waitPosition, true, 0.5, "Wait");
                 // --------------------------------------------------------
                 // 3) 생성 요청 성공 로그
                 // --------------------------------------------------------

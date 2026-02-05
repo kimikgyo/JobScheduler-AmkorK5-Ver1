@@ -1,4 +1,5 @@
-﻿using Common.Models.Jobs;
+﻿using Common.Models.Bases;
+using Common.Models.Jobs;
 
 namespace JOB.Services
 {
@@ -10,46 +11,50 @@ namespace JOB.Services
             ElevatorModeChange();
         }
 
-        /// <summary>
-        /// 엘리베이터가 비활성(elevatorActive=false)일 때,
-        /// "층이 다른 Job(cross-floor)" 중에서
-        /// - terminator == null (아직 종료 처리 안됨)
-        /// - state != INPROGRESS (이미 주행/실행 중이 아닌 것만)
-        /// 을 전부 CANCEL 처리(terminateState=INITED)한다.
-        /// </summary>
-        private void CancelCrossFloorJobsWhenElevatorDown(string elevatorNo)
-        {
-            // 0) 엘리베이터 상태 확인
-            bool elevatorActive = _repository.Elevator.Active(elevatorNo);
-            if (elevatorActive) return;
+        ///// <summary>
+        ///// 엘리베이터가 비활성(elevatorActive=false)일 때,
+        ///// "층이 다른 Job(cross-floor)" 중에서
+        ///// - terminator == null (아직 종료 처리 안됨)
+        ///// - state != INPROGRESS (이미 주행/실행 중이 아닌 것만)
+        ///// 을 전부 CANCEL 처리(terminateState=INITED)한다.
+        ///// </summary>
+        //private void CancelCrossFloorJobsWhenElevatorDown()
+        //{
 
-            // 1) 취소 대상 Job 후보 수집
-            var allJobs = _repository.Jobs.GetAll();
-            if (allJobs == null || !allJobs.Any()) return;
+        //    var elevators = _repository.Elevator.GetAll();
+        //    if (elevators == null || elevators.Count == 0) return;
 
-            // ※ "층이 다른 Job" 판정은 기존에 사용 중인 IsSameFloorJob(job)을 그대로 사용
-            //    IsSameFloorJob(job) == false  => cross-floor
-            var cancelTargets = allJobs
-                .Where(job => job != null && job.terminator == null && job.state != nameof(JobState.INPROGRESS) && IsSameFloorJob(job) == false).ToList();
+        //    var elevatorNotActives = elevators.Where(e => e.mode == "NOTAGVMODE" || e.mode == "NOTAGVMODE_CHANGING_AGVMODE" || e.state == "PROTOCOLERROR").ToList();
+        //    if (elevatorNotActives == null || elevatorNotActives.Count == 0) return;
 
-            if (cancelTargets.Count == 0)
-                return;
+        //    // 1) 취소 대상 Job 후보 수집
+        //    var allJobs = _repository.Jobs.GetAll();
+        //    if (allJobs == null || !allJobs.Any()) return;
 
-            // 2) 일괄 Cancel 처리
-            //    - message는 로그 태그용 (원하는 포맷으로 바꿔도 됨)
-            foreach (var job in cancelTargets)
-            {
-                // 안전상 null 재확인
-                if (job == null) continue;
+        //    // ※ "층이 다른 Job" 판정은 기존에 사용 중인 IsSameFloorJob(job)을 그대로 사용
+        //    //    IsSameFloorJob(job) == false  => cross-floor
+        //    var cancelTargets = allJobs
+        //        .Where(job => job != null && job.terminator == null && job.state != nameof(JobState.INPROGRESS) && IsSameFloorJob(job) == false).ToList();
 
-                // Cancel 처리 (terminateState=INITED / terminator / terminationType / terminatedAt 업데이트)
-                jobTerminateState_Change_Inited(job, message: $"[ELEVATOR][{elevatorNo}]"
-                );
-            }
 
-            // 3) 요약 로그
-            EventLogger.Info($"[ELEVATOR][{elevatorNo}][DOWN][CANCEL] totalCanceled={cancelTargets.Count}");
-        }
+        //    if (cancelTargets.Count == 0)
+        //        return;
+
+        //    // 2) 일괄 Cancel 처리
+        //    //    - message는 로그 태그용 (원하는 포맷으로 바꿔도 됨)
+        //    foreach (var job in cancelTargets)
+        //    {
+        //        // 안전상 null 재확인
+        //        if (job == null) continue;
+
+        //        // Cancel 처리 (terminateState=INITED / terminator / terminationType / terminatedAt 업데이트)
+        //        jobTerminateState_Change_Inited(job, message: $"[ELEVATOR][{elevatorNo}]"
+        //        );
+        //    }
+
+        //    // 3) 요약 로그
+        //    EventLogger.Info($"[ELEVATOR][{elevatorNo}][DOWN][CANCEL] totalCanceled={cancelTargets.Count}");
+        //}
 
         /// <summary>
         /// ELEVATOR 서비스의 MODECHANGE 미션을 "안전 조건"이 만족될 때만 실행한다.
@@ -64,6 +69,7 @@ namespace JOB.Services
         ///       d) 모든 Job의 MapId가 서로 동일해야 한다.
         ///     - 위 조건 중 1개라도 깨지면 절대 모드체인지 미션을 보내면 안 된다.
         /// </summary>
+       
         private void ElevatorModeChange()
         {
             // -----------------------------

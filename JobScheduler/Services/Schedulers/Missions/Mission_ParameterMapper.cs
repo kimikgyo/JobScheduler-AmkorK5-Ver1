@@ -164,7 +164,7 @@ namespace JOB.Services
             completed = true;
 
             // 점유 업데이트(hold 포함)
-            updateOccupied(selected, true, 0.5);
+            updateOccupied(selected, true, 0.5, "elevatorParameterMapping");
 
             //EventLogger.Info($"[ELEV][OCC][HOLD] occupied set.  missionguId={mission.guid} subType={mission.subType}, missionName={mission.name}" +
             //                 $", workerId={worker.id},WorkerName={worker.name}, mapId={worker.mapId}, posId={selected.id}, posName={selected.name}, holdSec=0.5");
@@ -227,7 +227,7 @@ namespace JOB.Services
                         //직접 파라메타를 변경하는것이기때문에 포지션점유를 업데이트한다
                     }
                     completed = true;
-                    updateOccupied(mapSwitchPosition, true, 0.5);
+                    updateOccupied(mapSwitchPosition, true, 0.5, "MapSwitch");
                 }
             }
 

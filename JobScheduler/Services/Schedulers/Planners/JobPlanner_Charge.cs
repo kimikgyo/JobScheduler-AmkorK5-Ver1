@@ -354,7 +354,7 @@ namespace JOB.Services
 
             if (normalChargers == null || normalChargers.Count == 0)
             {
-                EventLogger.Info($"[CHARGE][NORMAL] no normal chargers (linkedRobotId empty) → skip");
+                //EventLogger.Info($"[CHARGE][NORMAL] no normal chargers (linkedRobotId empty) → skip");
                 return;
             }
 
@@ -512,7 +512,7 @@ namespace JOB.Services
             _Queue.Create_Job(worker.group, null, nameof(JobType.CHARGE), nameof(JobSubType.CHARGE), null, 0, null,
                              null, null, null, chargerPosition.id, chargerPosition.name, chargerPosition.linkedFacility
                              , worker.id);
-            updateOccupied(chargerPosition, true, 0.5);
+            updateOccupied(chargerPosition, true, 0.5,"Change");
 
             // --------------------------------------------------------
             // 3) 생성 요청 성공 로그

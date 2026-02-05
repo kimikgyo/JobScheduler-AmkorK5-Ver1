@@ -227,6 +227,7 @@ namespace JOB.Services
             if (jobDestination.nodeType == nameof(NodeType.WAYPOINT))
             {
                 seq = template_SingleMission(job, jobDestination, worker, seq, nameof(MissionTemplateType.MOVE), nameof(MissionTemplateSubType.DESTINATIONMOVE));
+                reValue = true;
             }
             return reValue;
         }

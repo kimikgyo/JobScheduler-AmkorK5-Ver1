@@ -1,4 +1,5 @@
-﻿using Common.Models.Bases;
+﻿using Common.DTOs.Rests.Elevator;
+using Common.Models.Bases;
 using Common.Models.Jobs;
 
 namespace JOB.Services
@@ -7,219 +8,360 @@ namespace JOB.Services
     {
         public void ElevatorPolicy()
         {
-            //CancelCrossFloorJobsWhenElevatorDown("NO1");
-            ElevatorModeChange();
+            //CancelCrossFloorJobsWhenElevatorDown();
+            //HandleChangingToNotAgvMode();
+            //HandleChangingToAgvMode();
         }
 
-        ///// <summary>
-        ///// 엘리베이터가 비활성(elevatorActive=false)일 때,
-        ///// "층이 다른 Job(cross-floor)" 중에서
-        ///// - terminator == null (아직 종료 처리 안됨)
-        ///// - state != INPROGRESS (이미 주행/실행 중이 아닌 것만)
-        ///// 을 전부 CANCEL 처리(terminateState=INITED)한다.
-        ///// </summary>
-        //private void CancelCrossFloorJobsWhenElevatorDown()
-        //{
+        /// <summary>
+        /// [목적]
+        /// - 엘리베이터가 "사용 불가 상태" (NOTAGVMODE / NOTAGVMODE_CHANGING_AGVMODE / PROTOCOLERROR) 일 때,
+        /// - "층이 다른 Job(cross-floor)" 중 아직 종료처리 안 되었고(terminator==null),
+        /// - 현재 실행중이 아닌(state != INPROGRESS) Job만 골라서,
+        /// - 그 Job이 실제로 해당 엘리베이터를 사용하는지(미션 파라미터 linkedFacility == elevatorId) 확인 후
+        /// - CANCEL 처리(terminateState=INITED) 한다.
+        ///
+        /// [왜 linkedFacility 체크가 필요한가?]
+        /// - cross-floor Job이라고 해서 항상 "모든 엘리베이터"를 쓰는 것은 아니다.
+        /// - 특정 엘리베이터(예: 1호기)만 DOWN인데, 다른 엘리베이터(예: 2호기) 쓰는 Job까지 취소되면 안 된다.
+        /// - 따라서 Job -> Missions -> Parameters에서 linkedFacility 값이 "다운된 엘리베이터 id"와 동일한 Job만 취소한다.
+        /// </summary>
+        private void CancelCrossFloorJobsWhenElevatorDown()
+        {
+            // ============================================================
+            // 1) 엘리베이터 전체 조회
+            // ============================================================
+            var elevators = _repository.Elevator.GetAll();
 
-        //    var elevators = _repository.Elevator.GetAll();
-        //    if (elevators == null || elevators.Count == 0) return;
+            // 엘리베이터 데이터가 없으면 할 일이 없음
+            if (elevators == null || elevators.Count == 0) return;
 
-        //    var elevatorNotActives = elevators.Where(e => e.mode == "NOTAGVMODE" || e.mode == "NOTAGVMODE_CHANGING_AGVMODE" || e.state == "PROTOCOLERROR").ToList();
-        //    if (elevatorNotActives == null || elevatorNotActives.Count == 0) return;
+            // ============================================================
+            // 2) "사용 불가 엘리베이터" 목록 추출
+            //    - mode가 NOTAGVMODE
+            //    - mode가 NOTAGVMODE_CHANGING_AGVMODE
+            //    - 또는 state가 PROTOCOLERROR
+            // ============================================================
+            var elevatorNotActives = elevators
+                .Where(e => e != null && (
+                       e.mode == nameof(ElevatorMode.NOTAGVMODE)
+                    || e.mode == nameof(ElevatorMode.AGVMODE_CHANGING_NOTAGVMODE)
+                    || e.state == nameof(ElevatorState.PROTOCOLERROR)
+                ))
+                .ToList();
 
-        //    // 1) 취소 대상 Job 후보 수집
-        //    var allJobs = _repository.Jobs.GetAll();
-        //    if (allJobs == null || !allJobs.Any()) return;
+            // 다운된 엘리베이터가 하나도 없으면 취소할 이유가 없음
+            if (elevatorNotActives == null || elevatorNotActives.Count == 0) return;
 
-        //    // ※ "층이 다른 Job" 판정은 기존에 사용 중인 IsSameFloorJob(job)을 그대로 사용
-        //    //    IsSameFloorJob(job) == false  => cross-floor
-        //    var cancelTargets = allJobs
-        //        .Where(job => job != null && job.terminator == null && job.state != nameof(JobState.INPROGRESS) && IsSameFloorJob(job) == false).ToList();
+            // ============================================================
+            // 3) Job 전체 조회 후, 취소 후보(cross-floor)만 추출
+            //    조건:
+            //    - job != null
+            //    - terminator == null : 아직 terminate(취소/완료) 처리 안 된 Job만
+            //    - state != INPROGRESS : 이미 실행중(주행/작업중)인 것은 안전상 취소하지 않음
+            //    - IsSameFloorJob(job) == false : 같은 층 Job이 아닌 경우만(= cross-floor)
+            // ============================================================
+            var allJobs = _repository.Jobs.GetAll();
+            if (allJobs == null || allJobs.Count == 0) return;
 
+            var cancelTargets = allJobs
+                .Where(job => job != null
+                           && job.terminator == null
+                           && job.state != nameof(JobState.INPROGRESS)
+                           && IsSameFloorJob(job) == false)
+                .ToList();
 
-        //    if (cancelTargets.Count == 0)
-        //        return;
+            // 취소 대상이 없으면 종료
+            if (cancelTargets == null || cancelTargets.Count == 0) return;
 
-        //    // 2) 일괄 Cancel 처리
-        //    //    - message는 로그 태그용 (원하는 포맷으로 바꿔도 됨)
-        //    foreach (var job in cancelTargets)
-        //    {
-        //        // 안전상 null 재확인
-        //        if (job == null) continue;
+            // ============================================================
+            // 4) 실제 취소 로직
+            //    - 핵심: 각 Job이 "다운된 엘리베이터"를 쓰는지 확인해야 함
+            //
+            //    체크 방법:
+            //    - Job 하나를 잡고,
+            //    - 그 Job에 연결된 Missions를 조회한 뒤,
+            //    - Missions의 parameters를 평탄화해서(SelectMany) linkedFacility를 찾고,
+            //    - linkedFacility 값이 다운된 엘리베이터 id와 같다면 => 그 Job은 그 엘리베이터를 필요로 함
+            //    - 그때만 Cancel 처리한다.
+            // ============================================================
+            foreach (var cancelTarget in cancelTargets)
+            {
+                // --------------------------------------------
+                // 4-1) Job -> Missions 조회
+                // --------------------------------------------
+                // cancelTarget.guid 로 해당 Job에 딸린 미션 목록을 가져온다.
+                // (여기서 missions가 null/empty일 수 있으므로 반드시 방어)
+                var missions = _repository.Missions.GetByJobId(cancelTarget.guid);
+                if (missions == null || missions.Count == 0)
+                {
+                    // 미션이 없으면 이 Job이 엘리베이터를 쓰는지 판정 불가 => 취소하지 않음
+                    continue;
+                }
 
-        //        // Cancel 처리 (terminateState=INITED / terminator / terminationType / terminatedAt 업데이트)
-        //        jobTerminateState_Change_Inited(job, message: $"[ELEVATOR][{elevatorNo}]"
-        //        );
-        //    }
+                // --------------------------------------------
+                // 4-2) Missions -> Parameters 평탄화
+                // --------------------------------------------
+                // GetParametas(missions)는
+                // - parameters가 null인 미션 제외
+                // - 모든 미션의 parameters를 하나의 List<Parameter>로 합쳐서 반환한다.
+                var parameters = _repository.Missions.GetParametas(missions);
+                if (parameters == null || parameters.Count == 0)
+                {
+                    // 파라미터가 없으면 linkedFacility 판정 불가 => 취소하지 않음
+                    continue;
+                }
 
-        //    // 3) 요약 로그
-        //    EventLogger.Info($"[ELEVATOR][{elevatorNo}][DOWN][CANCEL] totalCanceled={cancelTargets.Count}");
-        //}
+                // --------------------------------------------
+                // 4-3) 다운된 엘리베이터 중, 이 Job이 사용하는 엘리베이터가 있는지 확인
+                // --------------------------------------------
+                Elevator matchedElevator = null;
+
+                foreach (var elevatorNotActive in elevatorNotActives)
+                {
+                    if (elevatorNotActive == null) continue;
+
+                    // linkedFacility 파라미터를 찾는다.
+                    // 조건:
+                    // - key == "linkedFacility"
+                    // - value == elevatorNotActive.id
+                    //
+                    // hit != null 이면
+                    //    이 Job은 "해당 엘리베이터"를 사용해야 한다는 뜻
+                    //    (즉, 그 엘리베이터가 다운이면 이 Job을 취소해야 함)
+                    var hit = parameters.FirstOrDefault(p =>
+                        p != null
+                        && p.key == "linkedFacility"
+                        && p.value == elevatorNotActive.id
+                    );
+
+                    if (hit != null)
+                    {
+                        matchedElevator = elevatorNotActive;
+
+                        // 하나라도 매칭되면 더 볼 필요 없음
+                        break;
+                    }
+                }
+
+                // --------------------------------------------
+                // 4-4) 매칭 없으면 취소하면 안 됨
+                // --------------------------------------------
+                // ✅ 다운된 엘리베이터를 "실제로" 사용하는 Job만 취소해야 하므로,
+                //    매칭이 없으면 continue로 넘어간다.
+                if (matchedElevator == null)
+                    continue;
+
+                // --------------------------------------------
+                // 4-5) Cancel 처리 (terminateState=INITED)
+                // --------------------------------------------
+                // 여기서 jobTerminateState_Change_Inited()가 내부적으로
+                // terminator / terminatedAt / terminationType / terminateState 등을 세팅한다고 가정.
+                jobTerminateState_Change_Inited(
+                    cancelTarget,
+                    message: $"[ELEVATOR][{matchedElevator.id}][DOWN]"
+                );
+            }
+
+            // ============================================================
+            // 5) 요약 로그(선택)
+            // - 전체 몇 개를 캔슬했는지 세고 싶으면,
+            //   위에서 카운트 변수(totalCanceled++)를 추가해도 됨
+            // ============================================================
+            // EventLogger.Info($"[ELEVATOR][DOWN][CANCEL] done");
+        }
 
         /// <summary>
-        /// ELEVATOR 서비스의 MODECHANGE 미션을 "안전 조건"이 만족될 때만 실행한다.
-        /// 안전 조건:
-        ///  1) MODECHANGE 미션이 존재하고 WAITING 상태여야 한다.
-        ///  2) INPROGRESS(진행중) Job이 "없으면" -> (정책상) 모드체인지 보내도 된다면 바로 전송 후 종료.
-        ///  3) INPROGRESS Job이 "있으면"
-        ///     - 모든 Job에 대해
-        ///       a) 목적지 Position의 MapId가 존재해야 한다.
-        ///       b) Worker의 MapId가 존재해야 한다.
-        ///       c) 각 Job에서 목적지 MapId == Subscribe_Worker MapId 여야 한다. (같은 층/맵에서 움직이는 상황)
-        ///       d) 모든 Job의 MapId가 서로 동일해야 한다.
-        ///     - 위 조건 중 1개라도 깨지면 절대 모드체인지 미션을 보내면 안 된다.
+        /// [목적]
+        /// - 엘리베이터 목록 중 mode == "AGVMODE_CHANGING_NOTAGVMODE" 인 것이 있을 때만
+        ///   후속 처리(해당 엘리베이터 사용중 Job 여부 확인 -> 없으면 NOTAGVMODE로 변경 미션 생성)를 시작한다.
+        ///
+        /// [정책]
+        /// - mode == AGVMODE_CHANGING_NOTAGVMODE 인 엘리베이터 E에 대해:
+        ///   1) E를 사용하는 INPROGRESS Job이 "있으면" -> 아무 것도 하지 않는다(사용중이므로 위험)
+        ///   2) E를 사용하는 INPROGRESS Job이 "없으면" -> NOTAGVMODE 로 바꾸는 MODECHANGE 미션을 생성할 예정(TODO)
+        ///
+        /// [주의]
+        /// - MODECHANGE 미션 생성은 지금은 주석(TODO) 처리.
+        /// - 반복 루프에서 중복 생성 방지가 필요하므로, 추후 "이미 요청했는지" 체크 로직을 추가하는 것을 권장.
         /// </summary>
-       
-        private void ElevatorModeChange()
+        private void HandleChangingToNotAgvMode()
         {
-            // -----------------------------
-            // 0) MODECHANGE 미션 조회
-            // -----------------------------
+            // ============================================================
+            // 0) 엘리베이터 목록 조회
+            // ============================================================
+            var elevators = _repository.Elevator.GetAll();
+            if (elevators == null || elevators.Count == 0) return;
 
-            // 전체 미션 목록 조회
-            var missions = _repository.Missions.GetAll();
+            // ============================================================
+            // 1) [시작 조건] AGVMODE_CHANGING_NOTAGVMODE 엘리베이터가 있는지 먼저 체크
+            //    - 하나도 없으면 이 함수는 할 일이 없음(바로 종료)
+            // ============================================================
+            var hasChanging = elevators.FirstOrDefault(e => e != null && e.mode == nameof(ElevatorMode.AGVMODE_CHANGING_NOTAGVMODE));
+            if (hasChanging == null) return;
 
-            // 미션이 없으면 할 게 없음
-            if (missions == null || missions.Count == 0) return;
+            // 여기까지 왔다는 것은:
+            // - 최소 1대 이상 "AGVMODE_CHANGING_NOTAGVMODE" 상태의 엘리베이터가 존재한다는 의미
+            // => 이제 후속 처리 시작
+            EventLogger.Info("[HandleChangingToNotAgvMode][BEGIN] found AGVMODE_CHANGING_NOTAGVMODE");
 
-            // ELEVATOR + ACTION + MODECHANGE 미션 1개를 찾음
-            var mission = missions.FirstOrDefault(m => m.service == nameof(Service.ELEVATOR) && m.type == nameof(MissionType.ACTION) && m.subType == nameof(MissionSubType.MODECHANGE));
+            // ============================================================
+            // 2) 엘리베이터 서비스 API 조회
+            // ============================================================
+            var serviceApi = _repository.ServiceApis.GetAll().FirstOrDefault(r => r != null && r.type == nameof(Service.ELEVATOR));
 
-            // MODECHANGE 미션이 없으면 종료
-            if (mission == null) return;
-
-            // 미션 상태가 WAITING이 아니면(이미 요청 중이거나 완료 등) 중복 실행 방지 위해 종료
-            if (mission.state != nameof(MissionState.WAITING)) return;
-
-            // -----------------------------
-            // 1) 진행중(INPROGRESS) Job 조회
-            // -----------------------------
-
-            // terminator == null : 종료 처리되지 않은 Job
-            // state == INPROGRESS : 현재 진행 중인 Job
-            var jobs = _repository.Jobs.GetAll().Where(j => j.terminator == null && j.state == nameof(JobState.INPROGRESS)).ToList();
-            var serviceApi = _repository.ServiceApis.GetAll().FirstOrDefault(r => r.type == mission.service);
             if (serviceApi == null)
             {
-                EventLogger.Warn($"[ElevatorModeChange][ELEVATOR][API_IsNull] MissionName = {mission.name}, MissionSubType = {mission.subType}" +
-                               $", MissionId = {mission.guid}, AssignedWorkerId = {mission.assignedWorkerId}, AssignedWorkerName = {mission.assignedWorkerName}");
-                return;
-            }
-            // -----------------------------
-            // 2) 진행중 Job이 하나도 없을 때 처리
-            // -----------------------------
-            // 정책: 진행중 Job이 없으면 모드체인지 보내도 되는 시나리오라면 여기서 바로 전송하고 종료.
-            // (※ 만약 "진행중 Job이 없을 때는 보내면 안 된다"라면 -> 여기에서 return만 하면 됨)
-            if (jobs == null || jobs.Count == 0)
-            {
-                // 엘리베이터 모드 변경 미션 전송 시도
-                bool sent = ElevatorPostMission(serviceApi, mission);
-
-                // 전송이 성공했으면, 미션 상태를 COMMANDREQUESTCOMPLETED로 변경
-                if (sent)
-                {
-                    updateStateMission(mission, nameof(MissionState.COMMANDREQUESTCOMPLETED), true);
-                }
-
-                // ★중요: 아래 로직으로 내려가면 중복 전송될 수 있으므로 반드시 종료
+                EventLogger.Warn("[HandleChangingToNotAgvMode][API_IsNull] service=ELEVATOR");
                 return;
             }
 
-            // -----------------------------
-            // 3) 안전 조건 검사 (핵심)
-            // -----------------------------
-            // 요구사항:
-            //  - 여러 Job이 존재할 수 있음
-            //  - 단 1개라도 목적지층(MapId)과 워커층(MapId)이 다르면 모드 변경 미션을 보내면 안 됨
-            //
-            // 구현:
-            //  - baseMapId: 첫 번째 Job의 MapId를 기준으로 잡고,
-            //    이후 모든 Job의 destMapId/workerMapId가 이 값과 완전히 같은지 검사
+            // ============================================================
+            // 3) 진행중(INPROGRESS) Job 목록 조회
+            // ============================================================
+            var allJobs = _repository.Jobs.GetAll();
+            if (allJobs == null) return;
 
-            string baseMapId = null; // 모든 Job의 "목적지 MapId" == "워커 MapId" == baseMapId 여야 함
+            var inprogressJobs = allJobs.Where(j => j != null && j.terminator == null && j.state == nameof(JobState.INPROGRESS)).ToList();
 
-            // 진행중인 Job을 모두 검사
-            foreach (var job in jobs)
+            // ============================================================
+            // 4) 실제 처리: mode == AGVMODE_CHANGING_NOTAGVMODE 인 엘리베이터만 골라서 수행
+            // ============================================================
+            foreach (var elevator in elevators)
             {
-                // job 자체가 null이면(비정상 데이터) 안전을 위해 모드체인지 금지 -> 종료
-                if (job == null) return;
+                if (elevator == null) continue;
 
-                // -----------------------------
-                // 3-1) 목적지 Position에서 MapId 얻기
-                // -----------------------------
+                // 이 함수는 "AGVMODE_CHANGING_NOTAGVMODE" 인 엘리베이터만 처리한다.
+                if (elevator.mode != nameof(ElevatorMode.AGVMODE_CHANGING_NOTAGVMODE))
+                    continue;
 
-                // 목적지 ID가 없으면 목적지층(맵)을 알 수 없으므로 안전 조건 불만족 -> 종료
-                if (string.IsNullOrWhiteSpace(job.destinationId)) return;
-
-                // Position 리포지토리에서 목적지 정보 조회
-                var destPos = _repository.Positions.GetById(job.destinationId);
-
-                // 목적지 Position이 없으면 안전 조건 불만족 -> 종료
-                if (destPos == null) return;
-
-                // 목적지 Position의 MapId (프로젝트 필드명: destPos.mapId)
-                var destMapId = destPos.mapId;
-
-                // 목적지 MapId가 비어있으면 비교 불가 -> 종료
-                if (string.IsNullOrWhiteSpace(destMapId)) return;
-
-                // -----------------------------
-                // 3-2) Worker에서 MapId 얻기
-                // -----------------------------
-
-                // 진행중인데 워커가 미할당이면 "전부 동일" 조건 자체가 깨짐 -> 종료
-                if (IsInvalid(job.assignedWorkerId)) return;
-
-                // Subscribe_Worker 리포지토리에서 워커 정보 조회
-                var worker = _repository.Workers.GetById(job.assignedWorkerId);
-
-                // 워커 정보가 없으면 안전 조건 불만족 -> 종료
-                if (worker == null) return;
-
-                // 워커의 MapId (프로젝트 필드명: worker.mapId)
-                var workerMapId = worker.mapId;
-
-                // 워커 MapId가 비어있으면 비교 불가 -> 종료
-                if (string.IsNullOrWhiteSpace(workerMapId)) return;
-
-                // -----------------------------
-                // 3-3) "각 Job에서 목적지층(MapId) == 워커층(MapId)" 검사
-                // -----------------------------
-                // 한 Job이라도 목적지층과 워커층이 다르면,
-                // 지금 엘리베이터 모드 변경을 보내면 다른 층/맵 Job과 충돌할 수 있으므로 절대 보내면 안 됨.
-                if (destMapId != workerMapId) return;
-
-                // -----------------------------
-                // 3-4) "모든 Job이 동일 MapId(baseMapId)를 공유" 검사
-                // -----------------------------
-
-                // 첫 번째 유효 Job이면 기준 MapId 설정
-                if (baseMapId == null)
+                // ------------------------------------------------------------
+                // 4-1) 해당 엘리베이터를 사용하는 진행중 Job이 있는지 확인
+                // ------------------------------------------------------------
+                List<Job> usingJobs = new List<Job>();
+                foreach (var job in inprogressJobs)
                 {
-                    baseMapId = destMapId; // destMapId == workerMapId 이므로 무엇을 넣어도 동일
+                    if (job == null) continue;
+
+                    var missions0 = _repository.Missions.GetByJobId(job.guid);
+                    if (missions0 == null || missions0.Count == 0) continue;
+
+                    var missions = missions0.Where(m => m != null && m.state != nameof(MissionState.COMPLETED) && m.state != nameof(MissionState.CANCELED)).ToList();
+
+                    if (missions.Count == 0) continue;
+
+                    // Missions -> Parameters 평탄화
+                    var parameters = _repository.Missions.GetParametas(missions);
+                    if (parameters == null || parameters.Count == 0) continue;
+
+                    // linkedFacility == elevatorId 이면 이 Job은 해당 엘리베이터 이용 중
+                    var hit = parameters.FirstOrDefault(p => p != null && p.key == "linkedFacility" && p.value == elevator.id);
+                    if (hit != null) usingJobs.Add(job);
                 }
-                else
+
+                // 사용중 Job이 있으면 => 모드 확정 변경( NOTAGVMODE ) 요청을 보내면 위험하므로 스킵
+                if (usingJobs.Count > 0)
                 {
-                    // 기준과 다른 MapId가 하나라도 발견되면 조건 불만족 -> 종료
-                    if (baseMapId != destMapId) return;
+                    EventLogger.Info($"[HandleChangingToNotAgvMode][SKIP] elevatorId={elevator.id} mode={elevator.mode} reason=USING_JOBS_EXIST jobs={usingJobs.Count}");
+                    continue;
                 }
+
+                var Request_Patch = new Request_Patch_ElevatorDto
+                {
+                    elevatorId = elevator.id,
+                    action = "APPLY",
+                    targetMode = nameof(ElevatorMode.NOTAGVMODE)
+                };
+
+                var modeChangePatch = serviceApi.Api.Patch_Elevator_ModeChange_Async(Request_Patch).Result;
+                if (modeChangePatch != null)
+                {
+                    //[조건5] 상태코드 200~300 까지는 완료 처리
+                    if (modeChangePatch.statusCode >= 200 && modeChangePatch.statusCode < 300)
+                    {
+                        EventLogger.Info($"[PatchModeChange][ELEVATOR][Success], Message = {modeChangePatch.statusText}, ElevatorId = {Request_Patch.elevatorId}, Action = {Request_Patch.action}" +
+                                         $", TargetMode = {Request_Patch.targetMode}");
+                    }
+                    else EventLogger.Warn($"[PatchModeChange][ELEVATOR][Success], Message = {modeChangePatch.statusText}, ElevatorId = {Request_Patch.elevatorId}, Action = {Request_Patch.action}" +
+                                         $", TargetMode = {Request_Patch.targetMode}");
+                }
+                else EventLogger.Warn($"[PatchModeChange][ELEVATOR][APIResponseIsNull]  ElevatorId = {Request_Patch.elevatorId}, Action = {Request_Patch.action}" +
+                                         $", TargetMode = {Request_Patch.targetMode}");
             }
 
-            // -----------------------------
-            // 4) 모든 안전 조건 통과 -> MODECHANGE 전송
-            // -----------------------------
-            // 여기까지 도달했다는 것은:
-            //  - 모든 Job이 (destMapId == workerMapId)를 만족했고
-            //  - 모든 Job의 MapId가 baseMapId로 동일했다는 뜻
-            // => 모드 변경 미션을 보내도 안전
+            //EventLogger.Info("[HandleChangingToNotAgvMode][END]");
+        }
 
-            bool commandRequest = ElevatorPostMission(serviceApi, mission);
+        private void HandleChangingToAgvMode()
+        {
+            // ============================================================
+            // 0) 엘리베이터 목록 조회
+            // ============================================================
+            var elevators = _repository.Elevator.GetAll();
+            if (elevators == null || elevators.Count == 0) return;
 
-            // 전송 성공 시 미션 상태 변경
-            if (commandRequest)
+            // ============================================================
+            // 1) [시작 조건] NOTAGVMODE_CHANGING_AGVMODE 엘리베이터가 있는지 먼저 체크
+            //    - 하나도 없으면 이 함수는 할 일이 없음(바로 종료)
+            // ============================================================
+            var hasChanging = elevators.FirstOrDefault(e => e != null && e.mode == nameof(ElevatorMode.NOTAGVMODE_CHANGING_AGVMODE));
+            if (hasChanging == null) return;
+
+            // 여기까지 왔다는 것은:
+            // - 최소 1대 이상 "NOTAGVMODE_CHANGING_AGVMODE" 상태의 엘리베이터가 존재한다는 의미
+            // => 이제 후속 처리 시작
+            EventLogger.Info("[HandleChangingToAgvMode][BEGIN] found NOTAGVMODE_CHANGING_AGVMODE");
+
+            // ============================================================
+            // 2) 엘리베이터 서비스 API 조회
+            // ============================================================
+            var serviceApi = _repository.ServiceApis.GetAll().FirstOrDefault(r => r != null && r.type == nameof(Service.ELEVATOR));
+
+            if (serviceApi == null)
             {
-                updateStateMission(mission, nameof(MissionState.COMMANDREQUESTCOMPLETED), true);
+                EventLogger.Warn("[HandleChangingToAgvMode][API_IsNull] service=ELEVATOR");
+                return;
             }
+
+            // ============================================================
+            // 3) 실제 처리: NOTAGVMODE_CHANGING_AGVMODE 인 엘리베이터만 골라서 AGVMODE로 PATCH
+            //    - 이 루틴은 Job/Mission 확인 없이 "상태가 changing이면 바로 요청"한다는 정책을 반영
+            // ============================================================
+            foreach (var elevator in elevators)
+            {
+                if (elevator == null) continue;
+
+                // 이 함수는 "NOTAGVMODE_CHANGING_AGVMODE" 인 엘리베이터만 처리한다.
+                if (elevator.mode != nameof(ElevatorMode.NOTAGVMODE_CHANGING_AGVMODE))
+                    continue;
+
+                var Request_Patch = new Request_Patch_ElevatorDto
+                {
+                    elevatorId = elevator.id,
+                    action = "APPLY",
+                    targetMode = nameof(ElevatorMode.AGVMODE)
+                };
+
+                // ============================================================
+                // ✅ 사용자 요청: 아래 Patch 결과 처리 코드는 "그대로" 사용
+                // ============================================================
+                var modeChangePatch = serviceApi.Api.Patch_Elevator_ModeChange_Async(Request_Patch).Result;
+                if (modeChangePatch != null)
+                {
+                    //[조건5] 상태코드 200~300 까지는 완료 처리
+                    if (modeChangePatch.statusCode >= 200 && modeChangePatch.statusCode < 300)
+                    {
+                        EventLogger.Info($"[PatchModeChange][ELEVATOR][Success], Message = {modeChangePatch.statusText}, ElevatorId = {Request_Patch.elevatorId}, Action = {Request_Patch.action}" +
+                                         $", TargetMode = {Request_Patch.targetMode}");
+                    }
+                    else EventLogger.Warn($"[PatchModeChange][ELEVATOR][Success], Message = {modeChangePatch.statusText}, ElevatorId = {Request_Patch.elevatorId}, Action = {Request_Patch.action}" +
+                                         $", TargetMode = {Request_Patch.targetMode}");
+                }
+                else EventLogger.Warn($"[PatchModeChange][ELEVATOR][APIResponseIsNull]  ElevatorId = {Request_Patch.elevatorId}, Action = {Request_Patch.action}" +
+                                         $", TargetMode = {Request_Patch.targetMode}");
+            }
+
+            EventLogger.Info("[HandleChangingToAgvMode][END]");
         }
     }
 }

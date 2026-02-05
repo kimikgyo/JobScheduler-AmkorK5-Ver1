@@ -100,7 +100,7 @@ namespace Data.Repositorys.Positions
                 // - rough를 너무 크게 잡으면 후보가 많아져 성능이 떨어질 수 있음
                 // ============================================================
 
-                double rough = 0.07; // 1차 컷용 "사각형 반경"(현장/좌표 스케일에 맞게 튜닝)
+                double rough = 0.1; // 1차 컷용 "사각형 반경"(현장/좌표 스케일에 맞게 튜닝)
                 var candidates = _positions
                     .Where(p => p != null)  // null 방지
                     .Where(p => p.source == "mir" && p.mapId == mapid) // MiR 포지션 + 같은 맵만
@@ -173,7 +173,7 @@ namespace Data.Repositorys.Positions
 
             double robotRadius = 0.03;     // 로봇 반경(예시)
             double positionRadius = 0.01;  // 포지션 스팟 반경(예시)
-            double safety = 0.01;          // 안전 마진(예시)
+            double safety = 0.06;          // 안전 마진(예시)
 
             // 최종 점유 판정 반경(로봇 + 스팟 + 마진)
             double occR = robotRadius + positionRadius + safety;

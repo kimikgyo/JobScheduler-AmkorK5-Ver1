@@ -239,7 +239,7 @@ namespace Data.Repositorys.Elevators
             {
                 var elevator = _elevators.FirstOrDefault(m => m.id == id);
 
-                if (elevator != null && elevator.mode != "NOTAGVMODE" && elevator.state != "PROTOCOLERROR") return true;
+                if (elevator != null && elevator.mode != nameof(ElevatorMode.NOTAGVMODE) && elevator.state != nameof(ElevatorState.PROTOCOLERROR)) return true;
                 else return false;
             }
         }

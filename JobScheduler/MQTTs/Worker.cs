@@ -57,42 +57,39 @@ namespace JOB.MQTTs
             }
         }
 
-        private static readonly ILog TestLogger = LogManager.GetLogger("Test");
-
         private void PositionOccupied(Worker worker)
         {
-            var positions = _repository.Positions.MiR_GetByPosValue(worker.position_X, worker.position_Y, worker.mapId).ToList();
+            var positions = _repository.Positions
+                .MiR_GetByPosValue(worker.position_X, worker.position_Y, worker.mapId)
+                .Where(r => r.nodeType != nameof(NodeType.WORK))
+                .ToList();
 
-            if (positions == null || positions.Count == 0)
+            // 여러 개면 1개만 선택(보통 가장 가까운 것 1개)
+            var picked = _repository.Positions.FindNearestWayPoint(worker, positions).FirstOrDefault();
+
+            if (picked == null)
             {
-                if (worker.PositionId != null)
+                if (!string.IsNullOrWhiteSpace(worker.PositionId))
                 {
-                    var position = _repository.Positions.GetById(worker.PositionId);
-                    if (position != null)
-                    {
-                        updateOccupied(position, false, 0);
-                    }
+                    var prev = _repository.Positions.GetById(worker.PositionId); // ✅ DB id
+                    if (prev != null) updateOccupied(prev, false, 0);
+
                     worker.PositionId = null;
                     worker.PositionName = null;
                     _repository.Workers.Update(worker);
                 }
+                return;
             }
-            else
-            {
-                foreach (var position in positions)
-                {
-                    updateOccupied(position, true, 0);
 
-                    if (position.id != worker.PositionId)
-                    {
-                        worker.PositionId = position.id;
-                        worker.PositionName = position.name;
-                        _repository.Workers.Update(worker);
-                    }
-                }
+            updateOccupied(picked, true, 0);
+
+            if (picked.id != worker.PositionId)
+            {
+                worker.PositionId = picked.id;     // ✅ DB id 저장
+                worker.PositionName = picked.name;
+                _repository.Workers.Update(worker);
             }
         }
-
         private void updateOccupied(Position position, bool flag, double holdTime)
         {
             if (position.isOccupied != flag)

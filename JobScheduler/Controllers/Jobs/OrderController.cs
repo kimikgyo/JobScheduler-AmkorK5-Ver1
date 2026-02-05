@@ -330,7 +330,7 @@ namespace JobScheduler.Controllers.Jobs
                     var findSource_dest = _repository.Orders.GetBySource_Dest(RequestDto.sourceId, RequestDto.destinationId);
                     if (findSource_dest != null) massage = $"There is a common source and destination";
                     //carrier Id 가 없는경우 [자재 이송이기때문에 carrier이 존재해야함]
-                    else if (IsInvalid(RequestDto.carrierId)) massage = $"CarrierId is null or empty";
+                    //else if (IsInvalid(RequestDto.carrierId)) massage = $"CarrierId is null or empty";
                     else if (RequestDto.subType == nameof(JobSubType.PICKONLY) || RequestDto.subType == nameof(JobSubType.DROPONLY))
                     {
                         //워커를 지정 하였지만 worker가 List에 없는경우

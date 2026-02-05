@@ -26,6 +26,8 @@ namespace Common.Interfaces
 
         Task<ResponseDto> Post_Elevator_Mission_Async(object value);
 
+        Task<ResponseDto> Patch_Elevator_ModeChange_Async(object value);
+
         Task<ResponseDto> Post_Middleware_Mission_Async(object value);
 
         Task<ResponseDto> Post_Traffic_Mission_Async(object value);

@@ -26,7 +26,7 @@ namespace JOB.Services
                 case nameof(MissionSubType.ELEVATORWAITMOVE):
 
                     //엘리베이터 대기위치 점유 상황을 판단하여 점유하고있지않은 포지션으로 전달한다.
-                    var waitPositionNotOccupieds = _repository.Positions.MiR_GetNotOccupied(null, nameof(PositionSubType.ELEVATORWAIT));
+                    var waitPositionNotOccupieds = _repository.Positions.MiR_GetBySubType(nameof(PositionSubType.ELEVATORWAIT));
                     if (waitPositionNotOccupieds == null || waitPositionNotOccupieds.Count == 0)
                     {
                         EventLogger.Warn($"[ELEV][WAIT][NO_CANDIDATE] all occupied or none. missionguId={mission.guid}, missionName={mission.name}, workerId={assignedWorker.id},WorkerName={assignedWorker.name}" +

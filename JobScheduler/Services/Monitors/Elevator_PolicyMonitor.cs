@@ -8,9 +8,9 @@ namespace JOB.Services
     {
         public void ElevatorPolicy()
         {
-            //CancelCrossFloorJobsWhenElevatorDown();
-            //HandleChangingToNotAgvMode();
-            //HandleChangingToAgvMode();
+            CancelCrossFloorJobsWhenElevatorDown();
+            HandleChangingToNotAgvMode();
+            HandleChangingToAgvMode();
         }
 
         /// <summary>
@@ -47,6 +47,7 @@ namespace JOB.Services
                        e.mode == nameof(ElevatorMode.NOTAGVMODE)
                     || e.mode == nameof(ElevatorMode.AGVMODE_CHANGING_NOTAGVMODE)
                     || e.state == nameof(ElevatorState.PROTOCOLERROR)
+                    || e.state == nameof(ElevatorState.DISCONNECT)
                 ))
                 .ToList();
 
@@ -174,16 +175,24 @@ namespace JOB.Services
         /// <summary>
         /// [목적]
         /// - 엘리베이터 목록 중 mode == "AGVMODE_CHANGING_NOTAGVMODE" 인 것이 있을 때만
-        ///   후속 처리(해당 엘리베이터 사용중 Job 여부 확인 -> 없으면 NOTAGVMODE로 변경 미션 생성)를 시작한다.
+        ///   후속 처리(해당 엘리베이터 사용중 Job 여부 확인 -> 조건 만족 시 Job 취소 후 NOTAGVMODE 변경 PATCH)를 시작한다.
         ///
-        /// [정책]
+        /// [정책(수정 반영)]
         /// - mode == AGVMODE_CHANGING_NOTAGVMODE 인 엘리베이터 E에 대해:
-        ///   1) E를 사용하는 INPROGRESS Job이 "있으면" -> 아무 것도 하지 않는다(사용중이므로 위험)
-        ///   2) E를 사용하는 INPROGRESS Job이 "없으면" -> NOTAGVMODE 로 바꾸는 MODECHANGE 미션을 생성할 예정(TODO)
+        ///   1) E를 사용하는 INPROGRESS Job이 있는지 찾는다.
+        ///   2) 그 Job의 엘리베이터 단계(subType) 중 아래 목록에 해당하는 것들을 검사한다.
+        ///      - 하나라도 WAITING이 아니면 => 절대 취소/모드변경 하면 안 됨(스킵)
+        ///      - 전부 WAITING이면 => Job을 취소(terminate inited)한 뒤, NOTAGVMODE 변경 PATCH를 보낸다.
         ///
-        /// [주의]
-        /// - MODECHANGE 미션 생성은 지금은 주석(TODO) 처리.
-        /// - 반복 루프에서 중복 생성 방지가 필요하므로, 추후 "이미 요청했는지" 체크 로직을 추가하는 것을 권장.
+        /// [엘리베이터 단계 목록]
+        ///  ELEVATORWAITMOVE
+        ///  ELEVATORSOURCEFLOOR
+        ///  ELEVATORENTERMOVE
+        ///  ELEVATORENTERDOORCLOSE
+        ///  ELEVATORDESTINATIONFLOOR
+        ///  SWITCHINGMAP
+        ///  ELEVATOREXITMOVE
+        ///  ELEVATOREXITDOORCLOSE
         /// </summary>
         private void HandleChangingToNotAgvMode()
         {
@@ -200,15 +209,13 @@ namespace JOB.Services
             var hasChanging = elevators.FirstOrDefault(e => e != null && e.mode == nameof(ElevatorMode.AGVMODE_CHANGING_NOTAGVMODE));
             if (hasChanging == null) return;
 
-            // 여기까지 왔다는 것은:
-            // - 최소 1대 이상 "AGVMODE_CHANGING_NOTAGVMODE" 상태의 엘리베이터가 존재한다는 의미
-            // => 이제 후속 처리 시작
             EventLogger.Info("[HandleChangingToNotAgvMode][BEGIN] found AGVMODE_CHANGING_NOTAGVMODE");
 
             // ============================================================
             // 2) 엘리베이터 서비스 API 조회
             // ============================================================
-            var serviceApi = _repository.ServiceApis.GetAll().FirstOrDefault(r => r != null && r.type == nameof(Service.ELEVATOR));
+            var serviceApi = _repository.ServiceApis.GetAll()
+                .FirstOrDefault(r => r != null && r.type == nameof(Service.ELEVATOR));
 
             if (serviceApi == null)
             {
@@ -222,7 +229,9 @@ namespace JOB.Services
             var allJobs = _repository.Jobs.GetAll();
             if (allJobs == null) return;
 
-            var inprogressJobs = allJobs.Where(j => j != null && j.terminator == null && j.state == nameof(JobState.INPROGRESS)).ToList();
+            var inprogressJobs = allJobs
+                .Where(j => j != null && j.terminator == null && j.state == nameof(JobState.INPROGRESS))
+                .ToList();
 
             // ============================================================
             // 4) 실제 처리: mode == AGVMODE_CHANGING_NOTAGVMODE 인 엘리베이터만 골라서 수행
@@ -231,22 +240,33 @@ namespace JOB.Services
             {
                 if (elevator == null) continue;
 
-                // 이 함수는 "AGVMODE_CHANGING_NOTAGVMODE" 인 엘리베이터만 처리한다.
                 if (elevator.mode != nameof(ElevatorMode.AGVMODE_CHANGING_NOTAGVMODE))
                     continue;
 
                 // ------------------------------------------------------------
-                // 4-1) 해당 엘리베이터를 사용하는 진행중 Job이 있는지 확인
+                // 4-1) 해당 엘리베이터를 사용하는 진행중 Job 중에서
+                //      "엘리베이터 관련 단계가 전부 WAITING인 Job"만 취소 대상으로 잡는다.
+                //
+                //      - 하나라도 WAITING이 아닌 단계가 있으면 => 해당 Job은 취소하면 안 됨
+                //      - 전부 WAITING이면 => 취소 가능
                 // ------------------------------------------------------------
-                List<Job> usingJobs = new List<Job>();
+                List<Job> cancelableJobs = new List<Job>(); // ✅ 전부 WAITING인 Job만 담는다
+                bool hasBlockedJob = false;                 // ✅ 하나라도 WAITING이 아닌 Job이 있으면 true (전체 차단 정책이면 사용)
+
                 foreach (var job in inprogressJobs)
                 {
                     if (job == null) continue;
 
+                    // Job에 연결된 미션 조회
                     var missions0 = _repository.Missions.GetByJobId(job.guid);
                     if (missions0 == null || missions0.Count == 0) continue;
 
-                    var missions = missions0.Where(m => m != null && m.state != nameof(MissionState.COMPLETED) && m.state != nameof(MissionState.CANCELED)).ToList();
+                    // 완료/취소 제외
+                    var missions = missions0
+                        .Where(m => m != null
+                                 && m.state != nameof(MissionState.COMPLETED)
+                                 && m.state != nameof(MissionState.CANCELED))
+                        .ToList();
 
                     if (missions.Count == 0) continue;
 
@@ -254,18 +274,87 @@ namespace JOB.Services
                     var parameters = _repository.Missions.GetParametas(missions);
                     if (parameters == null || parameters.Count == 0) continue;
 
-                    // linkedFacility == elevatorId 이면 이 Job은 해당 엘리베이터 이용 중
+                    // linkedFacility == elevator.id 인 Job만 "이 엘리베이터 사용 Job"으로 판단
                     var hit = parameters.FirstOrDefault(p => p != null && p.key == "linkedFacility" && p.value == elevator.id);
-                    if (hit != null) usingJobs.Add(job);
+                    if (hit == null) continue;
+
+                    // ✅ 엘리베이터 단계 목록 중 "전부 WAITING인지" 검사
+                    bool hasAnyElevatorStep = false;
+                    bool allElevatorStepsAreWaiting = true;
+
+                    foreach (var m in missions)
+                    {
+                        if (m == null) continue;
+
+                        bool isElevatorStep =
+                            m.subType == "ELEVATORWAITMOVE" ||
+                            m.subType == "ELEVATORSOURCEFLOOR" ||
+                            m.subType == "ELEVATORENTERMOVE" ||
+                            m.subType == "ELEVATORENTERDOORCLOSE" ||
+                            m.subType == "ELEVATORDESTINATIONFLOOR" ||
+                            m.subType == "SWITCHINGMAP" ||
+                            m.subType == "ELEVATOREXITMOVE" ||
+                            m.subType == "ELEVATOREXITDOORCLOSE";
+
+                        if (!isElevatorStep) continue;
+
+                        hasAnyElevatorStep = true;
+
+                        // 하나라도 WAITING이 아니면 취소 불가
+                        if (m.state != nameof(MissionState.WAITING))
+                        {
+                            allElevatorStepsAreWaiting = false;
+                            break;
+                        }
+                    }
+
+                    // 엘리베이터 단계가 하나도 없으면 안전하게 취소 대상에서 제외
+                    if (!hasAnyElevatorStep) continue;
+
+                    // 전부 WAITING이면 취소 가능
+                    if (allElevatorStepsAreWaiting)
+                    {
+                        cancelableJobs.Add(job);
+                    }
+                    else
+                    {
+                        // WAITING이 아닌 단계가 하나라도 존재 -> 취소/모드변경하면 안 됨
+                        hasBlockedJob = true;
+
+                        // “아래 목록중 하나라도 Wait과 다른게 있으면 취소하면 안된다” 조건을 강하게 적용하려면
+                        // 여기서 즉시 break하고, 아래에서 elevator 단위로 continue(스킵)하면 됨.
+                        break;
+                    }
                 }
 
-                // 사용중 Job이 있으면 => 모드 확정 변경( NOTAGVMODE ) 요청을 보내면 위험하므로 스킵
-                if (usingJobs.Count > 0)
+                // ------------------------------------------------------------
+                // 4-2) 하나라도 WAITING이 아닌 엘리베이터 단계가 발견되면
+                //      -> 취소/모드변경 절대 금지 (스킵)
+                // ------------------------------------------------------------
+                if (hasBlockedJob)
                 {
-                    EventLogger.Info($"[HandleChangingToNotAgvMode][SKIP] elevatorId={elevator.id} mode={elevator.mode} reason=USING_JOBS_EXIST jobs={usingJobs.Count}");
+                    EventLogger.Info($"[HandleChangingToNotAgvMode][SKIP] elevatorId={elevator.id} mode={elevator.mode} reason=ELEVATOR_STEP_NOT_WAITING");
                     continue;
                 }
 
+                // ------------------------------------------------------------
+                // 4-3) 전부 WAITING인 Job이 있으면 -> Job을 취소한다
+                // ------------------------------------------------------------
+                if (cancelableJobs.Count > 0)
+                {
+                    foreach (var job in cancelableJobs)
+                    {
+                        if (job == null) continue;
+
+                        // ✅ Job 취소(terminateState=INITED) - 너 프로젝트 취소 함수로 유지/교체
+                        jobTerminateState_Change_Inited(job, message: $"[ELEVATOR][{elevator.id}][ALL_WAITING_CANCEL]");
+                    }
+                }
+
+                // ------------------------------------------------------------
+                // 4-4) 취소가 끝났으면 -> NOTAGVMODE 변경 PATCH 전송
+                //      (너가 고정하겠다고 한 Patch 코드는 그대로 사용)
+                // ------------------------------------------------------------
                 var Request_Patch = new Request_Patch_ElevatorDto
                 {
                     elevatorId = elevator.id,
@@ -291,6 +380,7 @@ namespace JOB.Services
 
             //EventLogger.Info("[HandleChangingToNotAgvMode][END]");
         }
+
 
         private void HandleChangingToAgvMode()
         {

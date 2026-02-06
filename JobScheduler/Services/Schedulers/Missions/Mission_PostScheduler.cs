@@ -33,13 +33,6 @@ namespace JOB.Services
 
                 bool c2 = worker.state == nameof(WorkerState.IDLE) && runmission == null;
 
-                //bool c3 = /*worker.state != nameof(WorkerState.IDLE) && */ChargeEquest != null && worker.batteryPercent > batterySetting.minimum;
-
-                //if (c3)
-                //{
-                //    //충전중일경우
-                //    deleteMission(runmission);
-                //}
                 if (c1 && c2)
                 {
                     //[조건] 전송 실패시 재전송 또는 대기중인 미션전송
@@ -47,13 +40,13 @@ namespace JOB.Services
                                              && (m.state == nameof(MissionState.WAITING) || m.state == nameof(MissionState.FAILED) || m.state == nameof(MissionState.COMMANDREQUEST))).FirstOrDefault();
                     if (mission != null)
                     {
-                        //[조건] 충전중일경우 Cancel 진행[구현 필요]
-
-                        //[조건] 충전중이 아닐경우 Skipped 후 다른 미션 전송[구현 필요]
-
-                        if (skipMission(mission, worker)) continue;
-
-                        postMission(mission);
+                        //CancelJob진행중일경우 보내지 않는다.
+                        var job = _repository.Jobs.GetByid(mission.jobId);
+                        if (job != null && job.terminateState == null)
+                        {
+                            if (skipMission(mission, worker)) continue;
+                            postMission(mission);
+                        }
                     }
                 }
             }

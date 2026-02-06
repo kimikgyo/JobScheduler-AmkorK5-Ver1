@@ -284,7 +284,7 @@ namespace JobScheduler.Controllers.Jobs
             if (IsInvalid(RequestDto.id)) return massage = $"Order id is null or empty";
             //orderId 조회
             var order = _repository.Orders.GetByid(RequestDto.id);
-            if (order != null) massage = $"Order id already exists.";
+            if (order != null) return massage = $"Order id already exists.";
 
             //[조건2]도착자Id가 null이거나 빈문자일경우
             if (IsInvalid(RequestDto.destinationId)) return massage = $"Order destinationId is null or empty";
@@ -369,90 +369,6 @@ namespace JobScheduler.Controllers.Jobs
                     if (RequestDto.type == nameof(JobType.RESET) && RequestDto.subType != nameof(JobType.RESET)) massage = $"Check Order SubType";
                     break;
             }
-
-            //사용안함
-            //switch (RequestDto.type)
-            //{
-            //    case nameof(OrderType.MOVE):
-
-            //        //같은 order Id 가 존재하는경우
-            //        if (order != null) massage = $"Check Order Id";
-            //        else if (RequestDto.subType != nameof(OrderSubType.SIMPLEMOVE)) massage = $"Check Order SubType";
-            //        //워커를 지정하여 보내지 않는경우
-            //        else if (IsInvalid(RequestDto.specifiedWorkerId)) massage = $"Check Order SpecifiedWorkerId ";
-            //        else
-            //        {
-            //            //워커를 지정 하였지만 worker가 List에 없는경우
-            //            var worker = _repository.Workers.ANT_GetById(RequestDto.specifiedWorkerId);
-            //            if (worker == null) massage = $"Check Order SpecifiedWorkerId ";
-            //        }
-            //        break;
-
-            //    case nameof(OrderType.TRANSPORT):
-            //    case nameof(OrderType.TRANSPORT_SLURRY_SUPPLY):
-            //    case nameof(OrderType.TRANSPORT_SLURRY_RECOVERY):
-            //    case nameof(OrderType.TRANSPORT_CHEMICAL_RECOVERY):
-            //    case nameof(OrderType.TRANSPORT_CHEMICAL_SUPPLY):
-
-            //        //같은 order Id 가 존재하는경우
-            //        if (order != null) massage = $"Check Order Id";
-            //        //같은 출발지와 목적지가 있는경우
-            //        else if (findSource_dest != null) massage = $"Check sourceId And DestinationId";
-            //        //carrier Id 가 없는경우 [자재 이송이기때문에 carrier이 존재해야함]
-            //        else if (IsInvalid(RequestDto.carrierId)) massage = $"Check Order carrierId ";
-            //        else if (RequestDto.subType == nameof(OrderSubType.PICKONLY) || RequestDto.subType == nameof(OrderSubType.DROPONLY))
-            //        {
-            //            //워커를 지정하여 보내지 않는경우
-            //            if (IsInvalid(RequestDto.specifiedWorkerId)) massage = $"Check Order SpecifiedWorkerId ";
-            //            else
-            //            {
-            //                //워커를 지정 하였지만 worker가 List에 없는경우
-            //                var worker = _repository.Workers.ANT_GetById(RequestDto.specifiedWorkerId);
-            //                if (worker == null) massage = $"Check Order SpecifiedWorkerId ";
-            //            }
-            //        }
-            //        else if (RequestDto.subType == nameof(OrderSubType.PICKDROP))
-            //        {
-            //            //출발지가 없는경우 PickDrop이기때문에 출발지와 목적지가 있어야함.
-            //            if (IsInvalid(RequestDto.sourceId)) massage = $"Check Order sourceId ";
-            //            else
-            //            {
-            //                //출발지가 Position 목록에 없는경우
-            //                var source = _repository.Positions.ANT_GetById(RequestDto.sourceId);
-            //                if (source == null) massage = $"Check Order sourceId ";
-            //            }
-            //        }
-            //        //서브 타입이 잘못되어서 들어오는경우
-            //        else if (RequestDto.subType != nameof(OrderSubType.PICKONLY)
-            //          || RequestDto.subType != nameof(OrderSubType.DROPONLY)
-            //          || RequestDto.subType != nameof(OrderSubType.PICKDROP))
-            //        {
-            //            massage = $"Check Order SubType";
-            //        }
-
-            //        break;
-
-            //    case nameof(OrderType.CHARGE):
-            //    case nameof(OrderType.WAIT):
-            //        if (order != null) massage = $"Check Order Id";
-            //        else if (RequestDto.type == nameof(OrderType.CHARGE) && RequestDto.subType != nameof(OrderSubType.CHARGE)) massage = $"Check Order SubType";
-            //        else if (RequestDto.type == nameof(OrderType.WAIT) && RequestDto.subType != nameof(OrderSubType.WAIT)) massage = $"Check Order SubType";
-            //        //워커를 지정하여 보내지 않는경우
-            //        else if (IsInvalid(RequestDto.specifiedWorkerId)) massage = $"Check Order SpecifiedWorkerId ";
-            //        else
-            //        {
-            //            //워커를 지정 하였지만 worker가 List에 없는경우
-            //            var worker = _repository.Workers.ANT_GetById(RequestDto.specifiedWorkerId);
-            //            if (worker == null) massage = $"Check Order SpecifiedWorkerId ";
-            //        }
-
-            //        break;
-
-            //    case nameof(OrderType.RESET):
-            //        if (order == null) massage = $"Check Order Id";
-            //        else if (RequestDto.type == nameof(OrderType.RESET) && RequestDto.subType != nameof(OrderSubType.RESET)) massage = $"Check Order SubType";
-            //        break;
-            //}
 
             return massage;
         }

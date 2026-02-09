@@ -10,7 +10,7 @@ namespace JOB.Services
         {
             OrderJobs();
             ChargeJobs();
-            WaitJobs();
+            //WaitJobs();
         }
 
         //Job생성

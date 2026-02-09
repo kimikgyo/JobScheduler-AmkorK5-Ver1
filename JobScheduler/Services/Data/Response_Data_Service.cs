@@ -323,19 +323,19 @@ namespace JobScheduler.Services
                 Reload.Add(_mapping.Carriers.ApiGetResourceResponse(dtoResourceCarrier));
             }
 
-            var ReloadId = Reload.Select(x => x.carrierId).ToList();
-            var carriers = _repository.Carriers.GetAll();
-            var carrierIds = carriers.Select(x => x.carrierId);
+            var ReloadId = Reload.Select(x => x.carrierId).ToHashSet();
+            var carriers = _repository.Carriers.GetAll() ?? new List<Carrier>();
+            var carrierIds = carriers.Select(x => x.carrierId).ToHashSet();
 
-            //새로운 데이터 기준 으로 기존데이터가 없는것
-            var AddCarriers = Reload.Where(x => !ReloadId.Contains(x.carrierId)).ToList();
+            // 새로운 데이터 기준으로 기존데이터가 없는 것 (기존 컬렉션의 id와 비교)
+            var AddCarriers = Reload.Where(x => !carrierIds.Contains(x.carrierId)).ToList();
 
             foreach (var AddCarrier in AddCarriers)
             {
                 _repository.Carriers.Add(AddCarrier);
             }
 
-            //기존데이터 기준 새로운 데이터와 같은것 업데이트
+            // 기존데이터 기준 새로운 데이터와 같은 것 업데이트
             foreach (var carrier in carriers)
             {
                 var reloadCarrier = Reload.FirstOrDefault(x => x.carrierId == carrier.carrierId);
@@ -349,7 +349,7 @@ namespace JobScheduler.Services
                 }
             }
 
-            //기존데이터 기준 에서 새로운데이터가 없는것
+            // 기존데이터 기준에서 새로운데이터가 없는 것 (제거)
             var removedateCarriers = carriers.Where(x => !ReloadId.Contains(x.carrierId)).ToList();
             foreach (var removedateCarrier in removedateCarriers)
             {
@@ -371,7 +371,23 @@ namespace JobScheduler.Services
             var mapIds = maps.Select(x => x.id);
 
             //새로운 데이터 기준 으로 기존데이터가 없는것
-            var AddMaps = Reload.Where(x => !ReloadId.Contains(x.id)).ToList();
+            var AddMaps = new List<Map>();
+            foreach (var reload in Reload)
+            {
+                bool found = false;
+                foreach (var mapId in mapIds)
+                {
+                    if (reload.id == mapId)
+                    {
+                        found = true;
+                        break;
+                    }
+                }
+                if (!found)
+                {
+                    AddMaps.Add(reload);
+                }
+            }
 
             foreach (var AddMap in AddMaps)
             {
@@ -492,8 +508,8 @@ namespace JobScheduler.Services
                 {
                     topic = $"acs/worker/{RemoveWorker.id}/mission"
                 };
-                mqttTopicSubscribes.Remove(statetopic);
-                mqttTopicSubscribes.Remove(missiontopic);
+                mqttTopicSubscribes.RemoveAll(t => t.topic == statetopic.topic);
+                mqttTopicSubscribes.RemoveAll(t => t.topic == missiontopic.topic);
             }
             foreach (var RemoveMiddleware in RemoveMiddlewares)
             {
@@ -506,8 +522,8 @@ namespace JobScheduler.Services
                 {
                     topic = $"acs/middleware/{RemoveMiddleware.id}/mission"
                 };
-                mqttTopicSubscribes.Remove(middlewarestatetopic);
-                mqttTopicSubscribes.Remove(middlewaremissiontopic);
+                mqttTopicSubscribes.RemoveAll(t => t.topic == middlewarestatetopic.topic);
+                mqttTopicSubscribes.RemoveAll(t => t.topic == middlewaremissiontopic.topic);
             }
         }
 

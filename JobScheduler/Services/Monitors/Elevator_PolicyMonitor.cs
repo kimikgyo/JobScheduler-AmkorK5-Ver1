@@ -57,23 +57,53 @@ namespace JOB.Services
             // ============================================================
             // 3) Job 전체 조회 후, 취소 후보(cross-floor)만 추출
             //    조건:
-            //    - job != null
-            //    - terminator == null : 아직 terminate(취소/완료) 처리 안 된 Job만
-            //    - state != INPROGRESS : 이미 실행중(주행/작업중)인 것은 안전상 취소하지 않음
+            //    - allJobs != null && allJobs.Count > 0 : 조회 결과가 있어야 함
+            //    - job != null : 컬렉션 내 null 방어
+            //    - terminator == null : 아직 terminate(취소/완료) 처리 안 된 Job만 대상
+            //    - state != COMPLETED && state != CANCELCOMPLETED : 이미 종료된 Job 제외
             //    - IsSameFloorJob(job) == false : 같은 층 Job이 아닌 경우만(= cross-floor)
+            //      (※ 필요 시 추가 조건: state != INPROGRESS : 실행 중 Job은 안전상 제외)
+            //      (※ 필요 시 추가 조건: IsSameFloorJob(job) == true : 같은층 Job일 경우에만)
             // ============================================================
+
+            // 메모리 에서 "전체 Job" 목록을 가져온다.
             var allJobs = _repository.Jobs.GetAll();
+
+            // 안전장치: Job 목록이 null 이거나, 개수가 0이면 더 처리할 게 없으므로 종료한다.
             if (allJobs == null || allJobs.Count == 0) return;
 
-            var cancelTargets = allJobs
-                .Where(job => job != null
-                           && job.terminator == null
-                           && job.state != nameof(JobState.INPROGRESS)
-                           && IsSameFloorJob(job) == false)
-                .ToList();
+            // 필터링된 Job만 담을 리스트(= 조건을 통과한 Job 후보들)
+            var jobs = new List<Job>();
+
+            // 전체 Job을 하나씩 순회하면서 "취소/처리 대상"만 골라낸다.
+            foreach (var job in allJobs)
+            {
+                // 1) null 방어: 리스트 안에 null 항목이 섞여있을 수 있으므로 스킵
+                if (job == null) continue;
+
+                // 2) 이미 종료(terminate) 처리된 Job은 제외
+                //    terminator != null 이면 누군가가 종료자로 기록해둔 상태(취소/종료 처리 완료 또는 진행 중)라서 건드리지 않음
+                if (job.terminator != null) continue;
+
+                // 3) 이미 완료/취소완료된 Job은 제외
+                //    - COMPLETED: 정상 완료
+                //    - CANCELCOMPLETED: 취소 처리까지 완료된 상태
+                if (job.state == nameof(JobState.COMPLETED) || job.state == nameof(JobState.CANCELCOMPLETED)) continue;
+                //if (job.state != nameof(JobState.INPROGRESS)) continue;
+
+                // 4) "같은 층 Job" 조건이 아니면 제외
+                //    IsSameFloorJob(job) == false 면 이 로직의 대상이 아닌 Job(예: cross-floor 등)이므로 스킵
+                if (!IsSameFloorJob(job)) continue;
+                //if (IsSameFloorJob(job)) continue;
+
+                //  위 조건을 모두 통과한 Job만 후보 리스트에 추가
+                jobs.Add(job);
+            }
+
+
 
             // 취소 대상이 없으면 종료
-            if (cancelTargets == null || cancelTargets.Count == 0) return;
+            if (jobs == null || jobs.Count == 0) return;
 
             // ============================================================
             // 4) 실제 취소 로직
@@ -86,7 +116,7 @@ namespace JOB.Services
             //    - linkedFacility 값이 다운된 엘리베이터 id와 같다면 => 그 Job은 그 엘리베이터를 필요로 함
             //    - 그때만 Cancel 처리한다.
             // ============================================================
-            foreach (var cancelTarget in cancelTargets)
+            foreach (var cancelTarget in jobs)
             {
                 // --------------------------------------------
                 // 4-1) Job -> Missions 조회
@@ -96,7 +126,7 @@ namespace JOB.Services
                 var missions = _repository.Missions.GetByJobId(cancelTarget.guid);
                 if (missions == null || missions.Count == 0)
                 {
-                    // 미션이 없으면 이 Job이 엘리베이터를 쓰는지 판정 불가 => 취소하지 않음
+                    // 미션이 없으면 이 Job이 엘리베이터를 쓰는지 판별 불가 => 취소하지 않음
                     continue;
                 }
 
@@ -148,7 +178,7 @@ namespace JOB.Services
                 // --------------------------------------------
                 // 4-4) 매칭 없으면 취소하면 안 됨
                 // --------------------------------------------
-                // ✅ 다운된 엘리베이터를 "실제로" 사용하는 Job만 취소해야 하므로,
+                //  다운된 엘리베이터를 "실제로" 사용하는 Job만 취소해야 하므로,
                 //    매칭이 없으면 continue로 넘어간다.
                 if (matchedElevator == null)
                     continue;
@@ -346,7 +376,7 @@ namespace JOB.Services
                     {
                         if (job == null) continue;
 
-                        // ✅ Job 취소(terminateState=INITED) - 너 프로젝트 취소 함수로 유지/교체
+                        // Job 취소(terminateState=INITED) - 너 프로젝트 취소 함수로 유지/교체
                         jobTerminateState_Change_Inited(job, message: $"[ELEVATOR][{elevator.id}][ALL_WAITING_CANCEL]");
                     }
                 }
@@ -380,7 +410,6 @@ namespace JOB.Services
 
             //EventLogger.Info("[HandleChangingToNotAgvMode][END]");
         }
-
 
         private void HandleChangingToAgvMode()
         {
@@ -433,7 +462,7 @@ namespace JOB.Services
                 };
 
                 // ============================================================
-                // ✅ 사용자 요청: 아래 Patch 결과 처리 코드는 "그대로" 사용
+                //  사용자 요청: 아래 Patch 결과 처리 코드는 "그대로" 사용
                 // ============================================================
                 var modeChangePatch = serviceApi.Api.Patch_Elevator_ModeChange_Async(Request_Patch).Result;
                 if (modeChangePatch != null)

@@ -1,4 +1,5 @@
 ﻿using Common.Models.Jobs;
+using System.Reflection;
 
 namespace JOB.Services
 {
@@ -71,15 +72,17 @@ namespace JOB.Services
                 {
                     workerName = job.assignedWorkerName;
                 }
+                //JobGuid로 Mission을 조회하고 sequence 기준으로 정렬해서 반환
+                var ordered = _repository.Missions.GetByJobId(job.guid).Where(m => m != null).OrderBy(m => m.sequence).ToList();
 
-                var ordered = GetOrderedMissions(job.guid);
-                if (ordered.Count == 0)
+                if (ordered == null || ordered.Count == 0)
                 {
                     EventLogger.Warn($"[TerminateState][EXECUTING][SKIP] no missions: jobGuid={job.guid}, jobName={job.name}, assignedWorkerName={workerName}");
                     continue;
                 }
 
-                var current = FindCurrentActiveMission(ordered);
+                // 정렬된 목록에서 "현재 진행중(active)" 미션 1개 찾기
+                var current = _repository.Missions.GetByRunMissions(ordered).FirstOrDefault();
                 if (current == null)
                 {
                     EventLogger.Info($"[TerminateState][EXECUTING][NONE] no active mission: jobGuid={job.guid}, jobName={job.name}, assignedWorkerName={workerName}");
@@ -251,15 +254,18 @@ namespace JOB.Services
                     workerName = job.assignedWorkerName;
                 }
 
-                var ordered = GetOrderedMissions(job.guid);
-                if (ordered.Count == 0)
+                //JobGuid로 Mission을 조회하고 sequence 기준으로 정렬해서 반환
+                var ordered =  _repository.Missions.GetByJobId(job.guid).Where(m => m != null).OrderBy(m => m.sequence).ToList();
+                if (ordered == null || ordered.Count == 0)
                 {
                     EventLogger.Warn($"[TerminateState][INITED][SKIP] no missions: jobGuid={job.guid}, jobName={job.name}, assignedWorkerName={workerName}");
                     continue;
                 }
 
                 bool isAdmin = IsAdminCancel(job);
-                var current = FindCurrentActiveMission(ordered);
+
+                // 정렬된 목록에서 "현재 진행중(active)" 미션 1개 찾기
+                var current = _repository.Missions.GetByRunMissions(ordered).FirstOrDefault();
 
                 EventLogger.Info($"[TerminateState][INITED][JOB] orderId={job.orderId}, jobGuid={job.guid}, jobName={job.name}, assignedWorkerName={workerName}, isAdmin={isAdmin}");
 
@@ -368,31 +374,6 @@ namespace JOB.Services
             }
 
             EventLogger.Info($"[TerminateState][INITED][END]");
-        }
-
-        /// <summary>
-        /// JobGuid로 Mission을 조회하고 sequence 기준으로 정렬해서 반환
-        /// - null 방어 포함
-        /// </summary>
-        private List<Mission> GetOrderedMissions(string jobGuid)
-        {
-            var missions = _repository.Missions.GetByJobId(jobGuid);
-
-            if (missions == null) return new List<Mission>();
-            if (missions.Count == 0) return new List<Mission>();
-
-            return missions.Where(m => m != null).OrderBy(m => m.sequence).ToList();
-        }
-
-        /// <summary>
-        /// 정렬된 목록에서 "현재 진행중(active)" 미션 1개 찾기
-        /// </summary>
-        private Mission FindCurrentActiveMission(List<Mission> ordered)
-        {
-            if (ordered == null) return null;
-            if (ordered.Count == 0) return null;
-
-            return _repository.Missions.GetByRunMissions(ordered).FirstOrDefault();
         }
 
         /// <summary>

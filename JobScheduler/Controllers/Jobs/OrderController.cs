@@ -292,6 +292,9 @@ namespace JobScheduler.Controllers.Jobs
             {
                 var destination = _repository.Positions.MiR_GetById_Name_linkedFacility(RequestDto.destinationId);
                 if (destination == null) return massage = $"Invalid destination. No matching position found.";
+
+                //var orderFindDestination = _repository.Orders.GetByDest(RequestDto.destinationId);
+                //    if(orderFindDestination != null) return massage = $"orderDestinationSame";
             }
 
             ////[조건3]타입이 null이거나 빈문자일경우

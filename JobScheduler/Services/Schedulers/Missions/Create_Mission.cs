@@ -211,7 +211,7 @@ namespace JOB.Services
                                            , int seq)
         {
             bool reValue = false;
-            if (jobDestination.nodeType == nameof(NodeType.WAYPOINT))
+            if (jobDestination.nodeType == nameof(NodeType.TRAFFIC) || jobDestination.nodeType == nameof(NodeType.WAYPOINT))
             {
                 if (job.type == nameof(JobType.TRANSPORT)) seq = template_GroupMission(job, jobDestination, worker, seq, nameof(MissionsTemplateGroup.TRANSPORTDROP));
                 else seq = template_GroupMission(job, jobDestination, worker, seq, nameof(MissionsTemplateGroup.MANUALTRANSPORTDROP));
@@ -224,7 +224,7 @@ namespace JOB.Services
                                           , int seq)
         {
             bool reValue = false;
-            if (jobDestination.nodeType == nameof(NodeType.WAYPOINT))
+            if (jobDestination.nodeType == nameof(NodeType.TRAFFIC) || jobDestination.nodeType == nameof(NodeType.WAYPOINT))
             {
                 seq = template_SingleMission(job, jobDestination, worker, seq, nameof(MissionTemplateType.MOVE), nameof(MissionTemplateSubType.DESTINATIONMOVE));
                 reValue = true;

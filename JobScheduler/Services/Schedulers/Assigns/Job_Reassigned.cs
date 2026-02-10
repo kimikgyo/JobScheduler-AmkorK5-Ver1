@@ -280,7 +280,10 @@ namespace JOB.Services
             // [7] 기존 WAIT 미션 정리 (정책에 따라)
             //      - 재구성 후에도 Subscribe_Worker 에 WAIT 미션이 필요 없다면 삭제
             // ------------------------------------------------------------
-            ChangeWaitDeleteJob(worker, "[ASSIGN][REASSIGN][AFTER]");
+            if (jobToReassign.subType != nameof(JobSubType.WAIT) && jobToReassign.subType != nameof(JobSubType.CHARGE))
+            {
+                 ChangeWaitDeleteJob(worker, "[ASSIGN][REASSIGN][AFTER]");
+            }
             //if (!waitCleaned)
             //{
             //    // WAIT 삭제 실패했다고 해서 재구성 자체를 롤백하지는 않음(정책에 따라 조정 가능)

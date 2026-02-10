@@ -221,6 +221,13 @@ namespace Data.Repositorys.Jobs
                 return _orders.FirstOrDefault(m => m.sourceId == sourceId && m.destinationId == destId);
             }
         }
+        public Order GetByDest(string destId)
+        {
+            lock (_lock)
+            {
+                return _orders.FirstOrDefault(m => m.destinationId == destId);
+            }
+        }
 
         public Order GetByIdAndTypeAndSubType(string id, string type, string subType)
         {

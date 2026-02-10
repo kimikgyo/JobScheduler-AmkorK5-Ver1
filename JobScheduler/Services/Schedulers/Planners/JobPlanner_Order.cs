@@ -10,42 +10,45 @@ namespace JOB.Services
         {
             OrderJobs();
             ChargeJobs();
-            //WaitJobs();
+            WaitJobs();
         }
 
         //Job생성
         private void OrderJobs()
         {
-            Position source = null;
-            Position destination = null;
-            var Orders = _repository.Orders.GetByOrderStatus(nameof(OrderState.Queued));
-            foreach (var Order in Orders)
+            lock (_lock)
             {
-                var Job = _repository.Jobs.GetByOrderId(Order.id);
-                if (Job != null) continue;
-
-                if (IsInvalid(Order.sourceId))
+                Position source = null;
+                Position destination = null;
+                var Orders = _repository.Orders.GetByOrderStatus(nameof(OrderState.Queued));
+                foreach (var Order in Orders)
                 {
-                    var worker = _repository.Workers.MiR_GetById(Order.specifiedWorkerId);
-                    if (worker == null) continue;
+                    var Job = _repository.Jobs.GetByOrderId(Order.id);
+                    if (Job != null) continue;
 
-                    //[조회]목적지 조회.
-                    destination = _repository.Positions.GetById(Order.destinationId);
-                    if (destination == null) continue;
-                    var carateJob = Createjob(Order, null, destination);
-                    if (carateJob == false) continue;
-                }
-                else
-                {
-                    //[조회]출발지
-                    source = _repository.Positions.MiR_GetById(Order.sourceId);
-                    if (source == null) continue;
-                    //[조회]목적지
-                    destination = _repository.Positions.GetById(Order.destinationId);
-                    if (destination == null) continue;
+                    if (IsInvalid(Order.sourceId))
+                    {
+                        var worker = _repository.Workers.MiR_GetById(Order.specifiedWorkerId);
+                        if (worker == null) continue;
 
-                    var carateJob = Createjob(Order, source, destination);
-                    if (carateJob == false) continue;
+                        //[조회]목적지 조회.
+                        destination = _repository.Positions.GetById(Order.destinationId);
+                        if (destination == null) continue;
+                        var carateJob = Createjob(Order, null, destination);
+                        if (carateJob == false) continue;
+                    }
+                    else
+                    {
+                        //[조회]출발지
+                        source = _repository.Positions.MiR_GetById(Order.sourceId);
+                        if (source == null) continue;
+                        //[조회]목적지
+                        destination = _repository.Positions.GetById(Order.destinationId);
+                        if (destination == null) continue;
+
+                        var carateJob = Createjob(Order, source, destination);
+                        if (carateJob == false) continue;
+                    }
                 }
             }
         }

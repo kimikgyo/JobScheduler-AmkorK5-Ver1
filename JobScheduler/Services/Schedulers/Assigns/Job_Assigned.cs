@@ -264,7 +264,10 @@ namespace JOB.Services
 
                 // [Step 8] 기존 WAIT/CHARGE 미션 정리
                 // (새 Job을 시작하기 전에 대기/충전 미션 제거)
-                ChangeWaitDeleteJob(worker, "[ASSIGN][NORMAL][FIRSTJOB][ASSIGNED]");
+                if (job.subType != nameof(JobSubType.WAIT) && job.subType != nameof(JobSubType.CHARGE))
+                {
+                    ChangeWaitDeleteJob(worker, "[ASSIGN][NORMAL][FIRSTJOB][ASSIGNED]");
+                }
 
                 // [Step 9] 최종 Job 할당 및 미션 생성 시도
                 if (Create_Mission(job, worker))
@@ -414,7 +417,10 @@ namespace JOB.Services
 
                     // [Step 4] 기존 WAIT 미션 정리
                     // (새 작업 시작 전에 대기/충전 미션 제거)
-                    ChangeWaitDeleteJob(worker, "[ASSIGN][NORMAL][DISTANCE][SPECIFIED][ASSIGNED]");
+                    if (job.subType != nameof(JobSubType.WAIT) && job.subType != nameof(JobSubType.CHARGE))
+                    {
+                        ChangeWaitDeleteJob(worker, "[ASSIGN][NORMAL][DISTANCE][SPECIFIED][ASSIGNED]");
+                    }
 
                     // [Step 5] 최종 Job 할당 및 미션 생성 시도
                     if (Create_Mission(job, worker))
@@ -481,7 +487,11 @@ namespace JOB.Services
                         continue;
 
                     // [Step 4] 기존 WAIT 미션 정리
-                    ChangeWaitDeleteJob(worker, "[ASSIGN][NORMAL][DISTANCE][UNSPECIFIED][ASSIGNED]");
+                    if (job.subType != nameof(JobSubType.WAIT) && job.subType != nameof(JobSubType.CHARGE))
+                    {
+                        ChangeWaitDeleteJob(worker, "[ASSIGN][NORMAL][DISTANCE][UNSPECIFIED][ASSIGNED]");
+                    }
+
 
                     // [Step 5] 최종 Job 할당 및 미션 생성 시도
                     if (Create_Mission(job, worker))

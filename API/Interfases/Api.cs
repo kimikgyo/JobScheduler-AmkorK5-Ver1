@@ -432,7 +432,7 @@ namespace RestApi.Interfases
             try
             {
                 //수정본
-                var response = await _httpClient.DeleteAsync($"api/missions/{id}");
+                var response = await _httpClient.DeleteAsync($"missions/iot/{id}");
                 var jsonResponse = await response.Content.ReadAsStringAsync();
 
                 var missionQueueResponse = new ResponseDto

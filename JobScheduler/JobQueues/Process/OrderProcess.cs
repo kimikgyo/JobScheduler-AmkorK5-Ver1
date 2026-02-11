@@ -67,8 +67,8 @@ namespace JOB.JobQueues.Process
                         }
                         _repository.MissionHistorys.Add(mission);
                         _repository.MissionFinishedHistorys.Add(mission);
-                        _repository.Missions.Remove(mission);
                     }
+                    _repository.Missions.JobIdRemove(job.guid);
                     job.finishedAt = finishedAt;
                     _repository.JobHistorys.Add(job);
                     _repository.JobFinishedHistorys.Add(job);

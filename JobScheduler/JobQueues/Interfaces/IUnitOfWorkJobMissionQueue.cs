@@ -10,10 +10,10 @@ namespace JOB.JobQueues.Interfaces
 
         void Remove_Order(Order target, DateTime? finishedAt);
 
-        void Create_Job(string group, string orderId, string type, string subtype, string carrierId, int priority, string drumKeyCode
-                                   , string sourceId, string sourceName, string sourcelinkedFacility
-                                   , string destinationId, string destinationName, string destinationlinkedFacility
-                                   , string specifiedWorkerId);
+        //void Create_Job(string group, string orderId, string type, string subtype, string carrierId, int priority, string drumKeyCode
+        //                           , string sourceId, string sourceName, string sourcelinkedFacility
+        //                           , string destinationId, string destinationName, string destinationlinkedFacility
+        //                           , string specifiedWorkerId);
 
         void Remove_Job(Job job, DateTime? finishedAt);
 

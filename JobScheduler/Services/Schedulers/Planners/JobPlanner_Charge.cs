@@ -6,119 +6,122 @@ namespace JOB.Services
     {
         public void ChargeJobs()
         {
-            // ------------------------------------------------------------
-            // 1) 배터리 설정값 로드
-            //    - 충전 정책(최소 배터리, 스위칭 기준, 시작/종료 배터리)을 한 번만 읽어온다.
-            // ------------------------------------------------------------
-            var batterySetting = _repository.Battery.GetAll();   // 단일 설정 객체라고 가정
-
-            if (batterySetting == null)
+            lock (_lock)
             {
-                // 배터리 설정이 없으면 충전 정책을 적용할 수 없으므로 로직 종료
-                EventLogger.Info("[CHARGE][BUILD] battery setting not found → exit");
-                return;
-            }
+                // ------------------------------------------------------------
+                // 1) 배터리 설정값 로드
+                //    - 충전 정책(최소 배터리, 스위칭 기준, 시작/종료 배터리)을 한 번만 읽어온다.
+                // ------------------------------------------------------------
+                var batterySetting = _repository.Battery.GetAll();   // 단일 설정 객체라고 가정
 
-            double minimum = batterySetting.minimum;         // Job을 받을 수 있는 최소 배터리
-            double crossCharge = batterySetting.crossCharge; // 스위칭 기준 배터리
-            double chargeStart = batterySetting.chargeStart; // 충전 시작 기준 배터리
-            double chargeEnd = batterySetting.chargeEnd;     // 충전 종료 기준 배터리
-
-            //EventLogger.Info("[CHARGE][BUILD] start charge decision");
-
-            // ------------------------------------------------------------
-            // 2) 충전기(Charger) Position 필터링
-            //    조건:
-            //      - subType == CHARGE
-            //      - hasCharger == true
-            //      - isEnabled == true
-            //    ※ GetAll() 결과가 null 일 수 있으므로 방어 코드 포함
-            // ------------------------------------------------------------
-
-            // 2-1) 전체 포지션 목록 로드
-            // 충전용 포지션
-            // 실제 충전기 존재
-            // 사용 가능 상태
-            var positions = _repository.Positions.GetAll();
-
-            if (positions == null || positions.Count == 0)
-            {
-                //EventLogger.Info("[CHARGE][BUILD] no available Position → exit");
-                return;
-            }
-
-            var chargerPositions = positions.Where(r => r.subType == nameof(PositionSubType.CHARGE) && r.nodeType == nameof(NodeType.CHARGER)
-                                                                     && r.isEnabled == true).ToList();
-
-            // 2-3) 충전기가 하나도 없으면 이번 사이클은 아무 일도 하지 않고 종료
-            if (chargerPositions == null || chargerPositions.Count == 0)
-            {
-                //EventLogger.Info("[CHARGE][BUILD] no available chargers (subType=CHARGE) → exit");
-                return;
-            }
-
-            // ------------------------------------------------------------
-            // 3-2) 충전 중인 Subscribe_Worker 목록 만들기
-            //      - 기준:
-            //        1) _repository.Jobs.GetByWorkerId(workerId) 로 Job 목록 조회
-            //        2) Job.type == CHARGE 또는 Job.subType == CHARGE
-            //        3) Job.state == JobState.INPROGRESS
-            //      - 위 조건을 만족하는 Job 이 하나라도 있으면 "현재 충전 중"으로 판단
-            // ------------------------------------------------------------
-            var workers = _repository.Workers.MiR_GetByActive();
-            List<Worker> chargingWorkers = new List<Worker>();
-
-            foreach (var worker in workers)
-            {
-                if (worker == null)
+                if (batterySetting == null)
                 {
-                    continue;
+                    // 배터리 설정이 없으면 충전 정책을 적용할 수 없으므로 로직 종료
+                    EventLogger.Info("[CHARGE][BUILD] battery setting not found → exit");
+                    return;
                 }
 
-                bool isCharging = IsWorkerCharging(worker.id);
-                if (isCharging)
+                double minimum = batterySetting.minimum;         // Job을 받을 수 있는 최소 배터리
+                double crossCharge = batterySetting.crossCharge; // 스위칭 기준 배터리
+                double chargeStart = batterySetting.chargeStart; // 충전 시작 기준 배터리
+                double chargeEnd = batterySetting.chargeEnd;     // 충전 종료 기준 배터리
+
+                //EventLogger.Info("[CHARGE][BUILD] start charge decision");
+
+                // ------------------------------------------------------------
+                // 2) 충전기(Charger) Position 필터링
+                //    조건:
+                //      - subType == CHARGE
+                //      - hasCharger == true
+                //      - isEnabled == true
+                //    ※ GetAll() 결과가 null 일 수 있으므로 방어 코드 포함
+                // ------------------------------------------------------------
+
+                // 2-1) 전체 포지션 목록 로드
+                // 충전용 포지션
+                // 실제 충전기 존재
+                // 사용 가능 상태
+                var positions = _repository.Positions.GetAll();
+
+                if (positions == null || positions.Count == 0)
                 {
-                    chargingWorkers.Add(worker);
+                    //EventLogger.Info("[CHARGE][BUILD] no available Position → exit");
+                    return;
                 }
+
+                var chargerPositions = positions.Where(r => r.subType == nameof(PositionSubType.CHARGE) && r.nodeType == nameof(NodeType.CHARGER)
+                                                                         && r.isEnabled == true).ToList();
+
+                // 2-3) 충전기가 하나도 없으면 이번 사이클은 아무 일도 하지 않고 종료
+                if (chargerPositions == null || chargerPositions.Count == 0)
+                {
+                    //EventLogger.Info("[CHARGE][BUILD] no available chargers (subType=CHARGE) → exit");
+                    return;
+                }
+
+                // ------------------------------------------------------------
+                // 3-2) 충전 중인 Subscribe_Worker 목록 만들기
+                //      - 기준:
+                //        1) _repository.Jobs.GetByWorkerId(workerId) 로 Job 목록 조회
+                //        2) Job.type == CHARGE 또는 Job.subType == CHARGE
+                //        3) Job.state == JobState.INPROGRESS
+                //      - 위 조건을 만족하는 Job 이 하나라도 있으면 "현재 충전 중"으로 판단
+                // ------------------------------------------------------------
+                var workers = _repository.Workers.MiR_GetByActive();
+                List<Worker> chargingWorkers = new List<Worker>();
+
+                foreach (var worker in workers)
+                {
+                    if (worker == null)
+                    {
+                        continue;
+                    }
+
+                    bool isCharging = IsWorkerCharging(worker.id);
+                    if (isCharging)
+                    {
+                        chargingWorkers.Add(worker);
+                    }
+                }
+                // ------------------------------------------------------------
+                // 3-1) IDLE 상태 Subscribe_Worker 목록 만들기
+                //      - Subscribe_Worker.state == WorkerState.IDLE 인 로봇만 선별
+                //      - 실제로 새 충전 Job을 받을 수 있는 후보들
+                // ------------------------------------------------------------
+                var idleWorkers = workers.Where(r => r.state == nameof(WorkerState.IDLE)).ToList();
+
+
+                // 3-2) WAIT 포지션 id 집합 만들기
+                var waitPositionIds = positions.Where(p => p.subType == nameof(PositionSubType.WAIT)).Select(p => p.id).ToList();
+
+                // 3-3) WAIT 위치에 있는 IDLE만 선별
+                idleWorkers = idleWorkers.Where(w => !string.IsNullOrWhiteSpace(w.PositionId) && waitPositionIds.Contains(w.PositionId)).ToList();
+
+                // ------------------------------------------------------------
+                // 4) 이번 사이클에서 이미 Job 계획된 Subscribe_Worker / 충전기를 추적하기 위한 Set
+                //    - 중복 Job 생성 방지 목적
+                // ------------------------------------------------------------
+                List<string> workerPlanned = new List<string>();   // CHARGE/WAIT Job 계획된 Subscribe_Worker Id
+                List<string> chargerPlanned = new List<string>();  // 이번 사이클에 할당된 충전기 Position Id
+
+                // ------------------------------------------------------------
+                // 5) 세부 단계 처리 (아직 내부 로직은 미구현 상태)
+                //    - 아래 함수들 안에서 실제 Job 생성( JobType.CHARGE / JobType.WAIT )을 진행할 예정
+                // ------------------------------------------------------------
+                // 5-1) 전용 충전기(linkedRobotId) 처리
+                HandleReservedChargerChargeStart(idleWorkers, chargingWorkers, chargerPositions, chargeStart, workerPlanned, chargerPlanned);
+
+                // 5-2) 일반 충전기 충전 시작 처리
+                HandleNormalChargerChargeStart(idleWorkers, chargingWorkers, chargerPositions, minimum, chargeStart, workerPlanned, chargerPlanned);
+
+                // 5-3) 스위칭(crossCharge) 처리
+                HandleCrossCharge(idleWorkers, chargingWorkers, chargerPositions, crossCharge, chargeEnd, workerPlanned, chargerPlanned);
+
+                // 5-4) 스위칭 없이 단순 충전 완료 처리
+                HandleChargeCompleteWithoutCross(chargingWorkers, chargerPositions, chargeEnd, workerPlanned);
+
+                //EventLogger.Info("[CHARGE][BUILD] finish charge decision cycle");
             }
-            // ------------------------------------------------------------
-            // 3-1) IDLE 상태 Subscribe_Worker 목록 만들기
-            //      - Subscribe_Worker.state == WorkerState.IDLE 인 로봇만 선별
-            //      - 실제로 새 충전 Job을 받을 수 있는 후보들
-            // ------------------------------------------------------------
-            var idleWorkers = workers.Where(r => r.state == nameof(WorkerState.IDLE)).ToList();
-
-        
-            // 3-2) WAIT 포지션 id 집합 만들기
-            var waitPositionIds = positions.Where(p => p.subType == nameof(PositionSubType.WAIT)).Select(p => p.id).ToList();
-
-            // 3-3) WAIT 위치에 있는 IDLE만 선별
-            idleWorkers = idleWorkers.Where(w => !string.IsNullOrWhiteSpace(w.PositionId) && waitPositionIds.Contains(w.PositionId)).ToList();
-
-            // ------------------------------------------------------------
-            // 4) 이번 사이클에서 이미 Job 계획된 Subscribe_Worker / 충전기를 추적하기 위한 Set
-            //    - 중복 Job 생성 방지 목적
-            // ------------------------------------------------------------
-            List<string> workerPlanned = new List<string>();   // CHARGE/WAIT Job 계획된 Subscribe_Worker Id
-            List<string> chargerPlanned = new List<string>();  // 이번 사이클에 할당된 충전기 Position Id
-
-            // ------------------------------------------------------------
-            // 5) 세부 단계 처리 (아직 내부 로직은 미구현 상태)
-            //    - 아래 함수들 안에서 실제 Job 생성( JobType.CHARGE / JobType.WAIT )을 진행할 예정
-            // ------------------------------------------------------------
-            // 5-1) 전용 충전기(linkedRobotId) 처리
-            HandleReservedChargerChargeStart(idleWorkers, chargingWorkers, chargerPositions, chargeStart, workerPlanned, chargerPlanned);
-
-            // 5-2) 일반 충전기 충전 시작 처리
-            HandleNormalChargerChargeStart(idleWorkers, chargingWorkers, chargerPositions, minimum, chargeStart, workerPlanned, chargerPlanned);
-
-            // 5-3) 스위칭(crossCharge) 처리
-            HandleCrossCharge(idleWorkers, chargingWorkers, chargerPositions, crossCharge, chargeEnd, workerPlanned, chargerPlanned);
-
-            // 5-4) 스위칭 없이 단순 충전 완료 처리
-            HandleChargeCompleteWithoutCross(chargingWorkers, chargerPositions, chargeEnd, workerPlanned);
-
-            //EventLogger.Info("[CHARGE][BUILD] finish charge decision cycle");
         }
 
         /// <summary>
@@ -509,7 +512,7 @@ namespace JOB.Services
             // 3) Queue 를 통한 Job 생성 요청
             // ------------------------------------------------------------
 
-            _Queue.Create_Job(worker.group, null, nameof(JobType.CHARGE), nameof(JobSubType.CHARGE), null, 0, null,
+            Create_Job(worker.group, null, nameof(JobType.CHARGE), nameof(JobSubType.CHARGE), null, 0, null,
                              null, null, null, chargerPosition.id, chargerPosition.name, chargerPosition.linkedFacility
                              , worker.id);
             updateOccupied(chargerPosition, true, 0.5,"Change");

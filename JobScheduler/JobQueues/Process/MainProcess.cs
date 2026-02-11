@@ -33,6 +33,7 @@ namespace JOB.JobQueues.Process
             _mapping = mapping;
             main = mainService;
         }
+
         /// <summary>
         /// 스케줄러의 모든 무한루프 작업을 시작합니다.
         /// </summary>
@@ -53,6 +54,8 @@ namespace JOB.JobQueues.Process
             _tasks = new List<Task>
              {
                 Task.Run(() => Queue_JobProcess()),
+                Task.Run(() => Queue_OrderProcess()),
+                Task.Run(() => Queue_MissionProcess()),
             };
         }
 
@@ -71,12 +74,12 @@ namespace JOB.JobQueues.Process
                 try
                 {
                     await Task.WhenAll(_tasks);  // 모든 Task 종료 대기
-                    EventLogger.Info($"[StopAsync] Queue_JobProcess Task Stop");
+                    EventLogger.Info($"[StopAsync] Queue_Job Or Order Or Mission Task Stop");
                 }
                 catch (Exception ex)
                 {
                     // Task 내부 예외 로깅
-                    EventLogger.Info($"[StopAsync] Queue_JobProcess Task Stop Error : {ex.Message}");
+                    EventLogger.Info($"[StopAsync] Queue_Job Or Order Or Mission Task Stop Error : {ex.Message}");
                 }
             }
 
@@ -93,9 +96,7 @@ namespace JOB.JobQueues.Process
                 {
                     try
                     {
-                        Order();
                         Job();
-                        Mission();
                         await Task.Delay(100);
                     }
                     catch (Exception ex)
@@ -107,6 +108,56 @@ namespace JOB.JobQueues.Process
             finally
             {
                 EventLogger.Info("[Queue_JobProcess Task] Stop");  // 루프 종료 로그
+            }
+        }
+
+        private async Task Queue_OrderProcess()
+        {
+            try
+            {
+                EventLogger.Info("[Queue_OrderProcess Task] Start");  // 루프 시작 로그
+
+                while (_running)
+                {
+                    try
+                    {
+                        Order();
+                        await Task.Delay(100);
+                    }
+                    catch (Exception ex)
+                    {
+                        main.LogExceptionMessage(ex);
+                    }
+                }
+            }
+            finally
+            {
+                EventLogger.Info("[Queue_OrderProcess Task] Stop");  // 루프 종료 로그
+            }
+        }
+
+        private async Task Queue_MissionProcess()
+        {
+            try
+            {
+                EventLogger.Info("[Queue_MissionProcess Task] Start");  // 루프 시작 로그
+
+                while (_running)
+                {
+                    try
+                    {
+                        Mission();
+                        await Task.Delay(100);
+                    }
+                    catch (Exception ex)
+                    {
+                        main.LogExceptionMessage(ex);
+                    }
+                }
+            }
+            finally
+            {
+                EventLogger.Info("[Queue_MissionProcess Task] Stop");  // 루프 종료 로그
             }
         }
 

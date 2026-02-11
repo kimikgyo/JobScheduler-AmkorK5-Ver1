@@ -318,7 +318,7 @@ namespace JOB.Services
             // ------------------------------------------------------------
             try
             {
-                _Queue.Create_Job(worker.group, null, nameof(JobType.WAIT), nameof(JobSubType.WAIT), null, 0, null
+                Create_Job(worker.group, null, nameof(JobType.WAIT), nameof(JobSubType.WAIT), null, 0, null
                                  , null, null, null
                                  , waitPosition.id, waitPosition.name, waitPosition.linkedFacility
                                  , worker.id);

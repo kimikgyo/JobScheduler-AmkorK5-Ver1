@@ -22,7 +22,7 @@ namespace Common.Models.Bases
         public string port { get; set; }
         public string connectId { get; set; } = string.Empty;
         public string connectPassword { get; set; } = string.Empty;
-        public string timeOut { get; set; } = "5000";
+        public string timeOut { get; set; } = "10000";
     }
     public class ResponseDto
     {

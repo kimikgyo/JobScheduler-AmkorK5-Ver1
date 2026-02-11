@@ -260,5 +260,12 @@ namespace Data.Repositorys.Jobs
                 return _orders.Where(m => m.specifiedWorkerId == workerId).ToList();
             }
         }
+        public List<Order> GetBySpecifiedWorkerIdOrAssignWorkerId(string workerId)
+        {
+            lock (_lock)
+            {
+                return _orders.Where(m => m.specifiedWorkerId == workerId || m.assignedWorkerId == workerId).ToList();
+            }
+        }
     }
 }

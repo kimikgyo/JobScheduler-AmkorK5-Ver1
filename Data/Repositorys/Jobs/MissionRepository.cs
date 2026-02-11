@@ -228,6 +228,20 @@ namespace Data.Repositorys.Jobs
                 }
             }
         }
+        public void JobIdRemove(string jobId)
+        {
+            lock (_lock)
+            {
+                string massage = null;
+
+                using (var con = new SqlConnection(connectionString))
+                {
+                    con.Execute("DELETE FROM [JobScheduler_Mission] WHERE jobId = @jobId", param: new { jobId = jobId });
+                   
+                    logger.Info($"JobIdRemove: {jobId}");
+                }
+            }
+        }
 
         public List<Mission> GetAll()
         {

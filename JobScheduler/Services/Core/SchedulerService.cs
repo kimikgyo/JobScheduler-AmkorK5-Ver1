@@ -108,6 +108,7 @@ namespace JOB.Services
                         WorkerAssined();
                         manualTransport_PickAndDrop_Control();
                         MissionPostScheduler();
+                        //PostProcess_SetSkip_AutoDoorPairs();
                         cancelControl();
                         ElevatorPolicy();
                         await Task.Delay(300);

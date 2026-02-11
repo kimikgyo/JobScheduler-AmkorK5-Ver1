@@ -260,7 +260,7 @@ namespace JOB.Services
                 }
                 Position Segment_A_ElevatorSource = null;
                 Position Segment_A_Elevatordest = null;
-
+                
                 foreach (var node in routesPlanResponse_A.nodes)
                 {
                     var position = _repository.Positions.GetByPositionId(node.positionId);

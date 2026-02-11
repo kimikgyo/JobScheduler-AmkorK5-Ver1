@@ -4,7 +4,6 @@ namespace JOB.Services
 {
     public partial class SchedulerService
     {
-        private readonly object _lock = new object();
 
         private void JobPlanner()
         {
@@ -16,39 +15,36 @@ namespace JOB.Services
         //Job생성
         private void OrderJobs()
         {
-            lock (_lock)
+            Position source = null;
+            Position destination = null;
+            var Orders = _repository.Orders.GetByOrderStatus(nameof(OrderState.Queued));
+            foreach (var Order in Orders)
             {
-                Position source = null;
-                Position destination = null;
-                var Orders = _repository.Orders.GetByOrderStatus(nameof(OrderState.Queued));
-                foreach (var Order in Orders)
+                var Job = _repository.Jobs.GetByOrderId(Order.id);
+                if (Job != null) continue;
+
+                if (IsInvalid(Order.sourceId))
                 {
-                    var Job = _repository.Jobs.GetByOrderId(Order.id);
-                    if (Job != null) continue;
+                    var worker = _repository.Workers.MiR_GetById(Order.specifiedWorkerId);
+                    if (worker == null) continue;
 
-                    if (IsInvalid(Order.sourceId))
-                    {
-                        var worker = _repository.Workers.MiR_GetById(Order.specifiedWorkerId);
-                        if (worker == null) continue;
+                    //[조회]목적지 조회.
+                    destination = _repository.Positions.GetById(Order.destinationId);
+                    if (destination == null) continue;
+                    var carateJob = Createjob(Order, null, destination);
+                    if (carateJob == false) continue;
+                }
+                else
+                {
+                    //[조회]출발지
+                    source = _repository.Positions.MiR_GetById(Order.sourceId);
+                    if (source == null) continue;
+                    //[조회]목적지
+                    destination = _repository.Positions.GetById(Order.destinationId);
+                    if (destination == null) continue;
 
-                        //[조회]목적지 조회.
-                        destination = _repository.Positions.GetById(Order.destinationId);
-                        if (destination == null) continue;
-                        var carateJob = Createjob(Order, null, destination);
-                        if (carateJob == false) continue;
-                    }
-                    else
-                    {
-                        //[조회]출발지
-                        source = _repository.Positions.MiR_GetById(Order.sourceId);
-                        if (source == null) continue;
-                        //[조회]목적지
-                        destination = _repository.Positions.GetById(Order.destinationId);
-                        if (destination == null) continue;
-
-                        var carateJob = Createjob(Order, source, destination);
-                        if (carateJob == false) continue;
-                    }
+                    var carateJob = Createjob(Order, source, destination);
+                    if (carateJob == false) continue;
                 }
             }
         }
@@ -71,10 +67,10 @@ namespace JOB.Services
             }
             if (source == null)
             {
-                _Queue.Create_Job(destination.group, order.id, order.type, order.subType, order.carrierId, order.priority, order.drumKeyCode
+                Create_Job(destination.group, order.id, order.type, order.subType, order.carrierId, order.priority, order.drumKeyCode
                                     , null, null, null, destination.id, destination.name, destination.linkedFacility
                                     , order.specifiedWorkerId);
-                updateOccupied(destination, true, 0.5,"Order1");
+                updateOccupied(destination, true, 0.5, "SourceIsNullDestination");
 
                 // --------------------------------------------------------
                 // 3) 생성 요청 성공 로그
@@ -85,11 +81,11 @@ namespace JOB.Services
             }
             else
             {
-                _Queue.Create_Job(source.group, order.id, order.type, order.subType, order.carrierId, order.priority, order.drumKeyCode
+                Create_Job(source.group, order.id, order.type, order.subType, order.carrierId, order.priority, order.drumKeyCode
                             , source.id, source.name, source.linkedFacility, destination.id, destination.name, destination.linkedFacility
                             , order.specifiedWorkerId);
-                updateOccupied(source, true, 0.5, "Order2");
-                updateOccupied(destination, true, 0.5, "Order3");
+                updateOccupied(source, true, 0.5, "Source");
+                updateOccupied(destination, true, 0.5, "Destination");
 
                 // --------------------------------------------------------
                 // 3) 생성 요청 성공 로그

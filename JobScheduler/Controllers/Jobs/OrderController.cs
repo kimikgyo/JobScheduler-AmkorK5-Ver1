@@ -7,6 +7,7 @@ using JOB.MQTTs.Interfaces;
 using log4net;
 using Microsoft.AspNetCore.Mvc;
 using Swashbuckle.AspNetCore.Annotations;
+using System.Data;
 using System.Diagnostics;
 
 // For more information on enabling Web API for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
@@ -202,7 +203,29 @@ namespace JobScheduler.Controllers.Jobs
                 return NotFound();
             }
         }
+        [HttpGet("worker/{id}")]
+        public ActionResult<List<Get_OrderDto>> GetByWorkerId(string id)
+        {
+            try
+            {
+                List<Get_OrderDto> _responseDtos = new List<Get_OrderDto>();
 
+                var orders = _repository.Orders.GetBySpecifiedWorkerIdOrAssignWorkerId(id);
+
+                foreach (var order in orders)
+                {
+                    var mappingOrder = _mapping.Orders.Get(order);
+                    _responseDtos.Add(mappingOrder);
+                }
+
+                return Ok(_responseDtos);
+            }
+            catch (Exception ex)
+            {
+                LogExceptionMessage(ex);
+                return NotFound();
+            }
+        }
         //GET api/<OrderController>/5
         [HttpGet("{id}")]
         public ActionResult<Get_OrderDto> GetById(string id)
@@ -249,7 +272,7 @@ namespace JobScheduler.Controllers.Jobs
                 _queue.Create_Order(add);
                 logger.Info($"{this.ControllerLogPath()} Get = " +
                                 $"Code = {Ok(message).StatusCode}" +
-                                $",massage = {Ok(message).Value}" +
+                                $",message = {Ok(message).Value}" +
                                 $",Date = {add}"
                                 );
                 return Created();
@@ -258,7 +281,7 @@ namespace JobScheduler.Controllers.Jobs
             {
                 logger.Warn($"{this.ControllerLogPath()} Get = " +
                                  $"Code = {NotFound(message).StatusCode}" +
-                                 $",massage = {NotFound(message).Value}" +
+                                 $",message = {NotFound(message).Value}" +
                                  $",Date = {add}"
                                  );
                 return BadRequest(message);
@@ -279,50 +302,50 @@ namespace JobScheduler.Controllers.Jobs
 
         private string ConditionAddOrder(Post_OrderDto RequestDto)
         {
-            string massage = null;
+            string message = null;
             //[조건1] order Id 가 null이거나 빈문자 이고 type이 트랜스포트일경우
-            if (IsInvalid(RequestDto.id)) return massage = $"Order id is null or empty";
+            if (IsInvalid(RequestDto.id)) return message = $"Order id is null or empty";
             //orderId 조회
             var order = _repository.Orders.GetByid(RequestDto.id);
-            if (order != null) return massage = $"Order id already exists.";
+            if (order != null) return message = $"Order id already exists.";
 
             //[조건2]도착자Id가 null이거나 빈문자일경우
-            if (IsInvalid(RequestDto.destinationId)) return massage = $"Order destinationId is null or empty";
+            if (IsInvalid(RequestDto.destinationId)) return message = $"Order destinationId is null or empty";
             else
             {
                 var destination = _repository.Positions.MiR_GetById_Name_linkedFacility(RequestDto.destinationId);
-                if (destination == null) return massage = $"Invalid destination. No matching position found.";
+                if (destination == null) return message = $"Invalid destination. No matching position found.";
 
                 //var orderFindDestination = _repository.Orders.GetByDest(RequestDto.destinationId);
-                //    if(orderFindDestination != null) return massage = $"orderDestinationSame";
+                //    if(orderFindDestination != null) return message = $"orderDestinationSame";
             }
 
             ////[조건3]타입이 null이거나 빈문자일경우
-            //if (IsInvalid(RequestDto.type)) return massage = $"Check Order Type";
+            //if (IsInvalid(RequestDto.type)) return message = $"Check Order Type";
             ////orderType 빈문자를제외후 대문자로 변환
             //RequestDto.type = RequestDto.type.Replace(" ", "").ToUpper();
             // Enum에 값이 존재하는지 확인
             //bool existTypes = Enum.IsDefined(typeof(OrderType), RequestDto.type);
-            //if (!existTypes) return massage = $"Check Order Type";
+            //if (!existTypes) return message = $"Check Order Type";
 
             //[조건4]서브타입이 null이거나 빈문자일경우
-            if (IsInvalid(RequestDto.subType)) return massage = $"SubType is null or empty";
+            if (IsInvalid(RequestDto.subType)) return message = $"SubType is null or empty";
             //orderSubType 빈문자를제외후 대문자로 변환
             RequestDto.subType = RequestDto.subType.Replace(" ", "").ToUpper();
             // Enum에 값이 존재하는지 확인
             bool existSubTypes = Enum.IsDefined(typeof(JobSubType), RequestDto.subType);
-            if (!existSubTypes) return massage = $"Check Order SubType";
+            if (!existSubTypes) return message = $"Check Order SubType";
 
             switch (RequestDto.subType)
             {
                 case nameof(JobSubType.SIMPLEMOVE):
                     //워커를 지정하여 보내지 않는경우
-                    if (IsInvalid(RequestDto.specifiedWorkerId)) massage = $"SpecifiedWorkerId is null or empty";
+                    if (IsInvalid(RequestDto.specifiedWorkerId)) message = $"SpecifiedWorkerId is null or empty";
                     else
                     {
                         //워커를 지정 하였지만 worker가 List에 없는경우
                         var worker = _repository.Workers.MiR_GetById(RequestDto.specifiedWorkerId);
-                        if (worker == null) massage = $"Invalid SpecifiedWorkerId. No matching Worker found.";
+                        if (worker == null) message = $"Invalid SpecifiedWorkerId. No matching Worker found.";
                     }
                     break;
 
@@ -331,49 +354,59 @@ namespace JobScheduler.Controllers.Jobs
                 case nameof(JobSubType.DROPONLY):
                     //같은 출발지와 목적지가 있는경우
                     var findSource_dest = _repository.Orders.GetBySource_Dest(RequestDto.sourceId, RequestDto.destinationId);
-                    if (findSource_dest != null) massage = $"There is a common source and destination";
+                    if (findSource_dest != null) message = $"There is a common source and destination";
                     //carrier Id 가 없는경우 [자재 이송이기때문에 carrier이 존재해야함]
-                    //else if (IsInvalid(RequestDto.carrierId)) massage = $"CarrierId is null or empty";
+                    //else if (IsInvalid(RequestDto.carrierId)) message = $"CarrierId is null or empty";
                     else if (RequestDto.subType == nameof(JobSubType.PICKONLY) || RequestDto.subType == nameof(JobSubType.DROPONLY))
                     {
                         //워커를 지정 하였지만 worker가 List에 없는경우
                         var worker = _repository.Workers.MiR_GetById(RequestDto.specifiedWorkerId);
-                        if (worker == null) massage = $"Check Order SpecifiedWorkerId ";
+                        if (worker == null) message = $"Check Order SpecifiedWorkerId ";
                     }
                     else if (RequestDto.subType == nameof(JobSubType.PICKDROP))
                     {
                         //출발지가 없는경우 PickDrop이기때문에 출발지와 목적지가 있어야함.
-                        if (IsInvalid(RequestDto.sourceId)) massage = $"Check Order sourceId ";
+                        if (IsInvalid(RequestDto.sourceId)) message = $"Check Order sourceId ";
                         else
                         {
                             //출발지가 Position 목록에 없는경우
                             var source = _repository.Positions.MiR_GetById_Name_linkedFacility(RequestDto.sourceId);
-                            if (source == null) massage = $"Check Order sourceId ";
+                            if (source == null) message = $"Check Order sourceId ";
                         }
                     }
                     break;
 
                 case nameof(JobSubType.CHARGE):
                 case nameof(JobSubType.WAIT):
-                    if (RequestDto.type == nameof(JobType.CHARGE) && RequestDto.subType != nameof(JobSubType.CHARGE)) massage = $"Check Order SubType";
-                    else if (RequestDto.type == nameof(JobType.WAIT) && RequestDto.subType != nameof(JobSubType.WAIT)) massage = $"Check Order SubType";
+
+                    // Orders에서 서브타입이 일치하는 항목이 있는지 확인
+                    if (RequestDto.type == nameof(JobType.CHARGE) && RequestDto.subType != nameof(JobSubType.CHARGE)) message = $"Check Order SubType";
+                    else if (RequestDto.type == nameof(JobType.WAIT) && RequestDto.subType != nameof(JobSubType.WAIT)) message = $"Check Order SubType";
                     //워커를 지정하여 보내지 않는경우
-                    else if (IsInvalid(RequestDto.specifiedWorkerId)) massage = $"Check Order SpecifiedWorkerId ";
+                    else if (IsInvalid(RequestDto.specifiedWorkerId)) message = $"Check Order SpecifiedWorkerId ";
                     else
                     {
                         //워커를 지정 하였지만 worker가 List에 없는경우
                         var worker = _repository.Workers.MiR_GetById(RequestDto.specifiedWorkerId);
-                        if (worker == null) massage = $"Check Order SpecifiedWorkerId ";
+                        if (worker == null) message = $"Check Order SpecifiedWorkerId ";
+
+                        var matchingOrder = _repository.Orders.GetAll().FirstOrDefault(o => o.subType == nameof(JobSubType.WAIT) && o.specifiedWorkerId == RequestDto.specifiedWorkerId);
+                        // Jobs에서 서브타입이 일치하는 항목이 있는지 확인
+                        var matchingJob = _repository.Jobs.GetAll().FirstOrDefault(j => j.subType == nameof(JobSubType.WAIT) && j.specifiedWorkerId == RequestDto.specifiedWorkerId);
+                        if (matchingOrder != null || matchingJob != null)
+                        {
+                            message = "There is a Job or Order that matches the subtype.";
+                        }
                     }
 
-                    break;
+                break;
 
                 case nameof(JobSubType.RESET):
-                    if (RequestDto.type == nameof(JobType.RESET) && RequestDto.subType != nameof(JobType.RESET)) massage = $"Check Order SubType";
+                    if (RequestDto.type == nameof(JobType.RESET) && RequestDto.subType != nameof(JobType.RESET)) message = $"Check Order SubType";
                     break;
             }
 
-            return massage;
+            return message;
         }
 
         private bool IsInvalid(string value)

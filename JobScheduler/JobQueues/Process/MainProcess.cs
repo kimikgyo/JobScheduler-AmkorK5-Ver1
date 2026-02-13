@@ -169,7 +169,7 @@ namespace JOB.JobQueues.Process
 
         private void Job()
         {
-            Crate_Job();
+            //Crate_Job();
             Remove_Job_Mission();
         }
 

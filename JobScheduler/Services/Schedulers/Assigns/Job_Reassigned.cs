@@ -95,7 +95,7 @@ namespace JOB.Services
                 // =======================================================
 
                 var runmission = _repository.Missions.GetByRunMissions(workerMissions);
-                var hasExecutingElevator = runmission.FirstOrDefault(m=>m.type == nameof(MissionSubType.ELEVATORENTERMOVE)
+                var hasExecutingElevator = runmission.FirstOrDefault(m => m.type == nameof(MissionSubType.ELEVATORENTERMOVE)
                                                                        || m.type == nameof(MissionSubType.ELEVATOREXITMOVE)
                                                                        || m.type == nameof(MissionSubType.ELEVATORSOURCEFLOOR)
                                                                        || m.type == nameof(MissionSubType.ELEVATORDESTINATIONFLOOR));
@@ -280,10 +280,10 @@ namespace JOB.Services
             // [7] 기존 WAIT 미션 정리 (정책에 따라)
             //      - 재구성 후에도 Subscribe_Worker 에 WAIT 미션이 필요 없다면 삭제
             // ------------------------------------------------------------
-            if (jobToReassign.subType != nameof(JobSubType.WAIT) && jobToReassign.subType != nameof(JobSubType.CHARGE))
-            {
-                 ChangeWaitDeleteJob(worker, "[ASSIGN][REASSIGN][AFTER]");
-            }
+            //if (jobToReassign.subType != nameof(JobSubType.WAIT) && jobToReassign.subType != nameof(JobSubType.CHARGE))
+            //{
+            ChangeWaitDeleteJob(worker, "[ASSIGN][REASSIGN][AFTER]");
+            //}
             //if (!waitCleaned)
             //{
             //    // WAIT 삭제 실패했다고 해서 재구성 자체를 롤백하지는 않음(정책에 따라 조정 가능)
@@ -582,7 +582,7 @@ namespace JOB.Services
             // ------------------------------------------------------------
             foreach (var skipMission in First_SkipSegment)
             {
-                updateStateMission(skipMission, nameof(MissionState.SKIPPED), true);
+                updateStateMission(skipMission, nameof(MissionState.SKIPPED), "InsertReassignJobMission", true);
                 EventLogger.Info($"[ASSIGN][REASSIGN][MERGE][SKIP-MISSION] workerName={worker.name}, workerId={worker.id}, missionId={skipMission.guid}" +
                                  $", sequence={skipMission.sequence}");
             }
@@ -666,7 +666,7 @@ namespace JOB.Services
                 mission.sequence = seq;
                 mission.assignedWorkerId = worker.id;
 
-                _repository.Missions.Update(mission);
+                _repository.Missions.Update(mission, "InsertReassignJobMission");
 
                 EventLogger.Info($"[ASSIGN][REASSIGN][MERGE][UPDATE] workerName={worker.name}, workerId={worker.id}, missionId={mission.guid}" +
                                  $", sequence={mission.sequence}, jobId={mission.jobId}");

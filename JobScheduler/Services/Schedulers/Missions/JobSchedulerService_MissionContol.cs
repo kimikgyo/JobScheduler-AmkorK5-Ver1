@@ -11,7 +11,7 @@ namespace JOB.Services
 
             foreach (var mission in missions)
             {
-                updateStateMission(mission, nameof(MissionState.EXECUTING), true);
+                updateStateMission(mission, nameof(MissionState.EXECUTING), "manualTransport_PickAndDrop_Control", true);
             }
         }
     }

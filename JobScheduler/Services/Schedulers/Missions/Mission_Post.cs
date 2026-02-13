@@ -15,7 +15,7 @@ namespace JOB.Services
         {
             bool CommandRequst = false;
             //[조건1] 미션 상태가 COMMANDREQUEST 다르면 COMMANDREQUEST 로 상태변경한다
-            updateStateMission(mission, nameof(MissionState.COMMANDREQUEST), true);
+            updateStateMission(mission, nameof(MissionState.COMMANDREQUEST),"[PostMission]", true);
 
             if (mission == null) return CommandRequst;
             if (mission != null && string.IsNullOrWhiteSpace(mission.service)) return CommandRequst;
@@ -61,7 +61,7 @@ namespace JOB.Services
             }
             if (CommandRequst)
             {
-                updateStateMission(mission, nameof(MissionState.COMMANDREQUESTCOMPLETED), true);
+                updateStateMission(mission, nameof(MissionState.COMMANDREQUESTCOMPLETED), "[PostMission]", true);
             }
             return CommandRequst;
         }
@@ -69,7 +69,7 @@ namespace JOB.Services
         private bool JobSchedulerPostMission(ServiceApi service, Mission mission)
         {
             bool CommandRequst = false;
-            EventLogger.Info($"[PostMission][WORKER][Success], Message = OK, MissionName = {mission.name}, MissionSubType = {mission.subType}" +
+            EventLogger.Info($"[PostMission][JobScheduler][Success], Message = OK, MissionName = {mission.name}, MissionSubType = {mission.subType}" +
                                                $", MissionId = {mission.guid}, AssignedWorkerId = {mission.assignedWorkerId}, AssignedWorkerName = {mission.assignedWorkerName}");
             return CommandRequst = true;
         }

@@ -157,7 +157,7 @@ namespace Data.Repositorys.Jobs
             }
         }
 
-        public void Update(Mission update)
+        public void Update(Mission update,string message)
         {
             lock (_lock)
             {
@@ -194,7 +194,7 @@ namespace Data.Repositorys.Jobs
                     //TimeOut 시간을 60초로 연장 [기본30초]
                     //con.Execute(UPDATE_SQL, param: update, commandTimeout: 60);
                     con.Execute(UPDATE_SQL, param: update);
-                    logger.Info($"Update: {update}");
+                    logger.Info($"Update: {update} / {message}");
                 }
             }
         }
@@ -237,7 +237,9 @@ namespace Data.Repositorys.Jobs
                 using (var con = new SqlConnection(connectionString))
                 {
                     con.Execute("DELETE FROM [JobScheduler_Mission] WHERE jobId = @jobId", param: new { jobId = jobId });
-                   
+
+                    // [Step 2] 캐시된 _missions 리스트에서 삭제
+                    _missions.RemoveAll(m => m.jobId == jobId);
                     logger.Info($"JobIdRemove: {jobId}");
                 }
             }

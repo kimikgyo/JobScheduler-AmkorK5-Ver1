@@ -155,7 +155,7 @@ namespace JOB.Services
                 var old = param.value;
                 param.value = selected.id;
                 mission.parametersJson = JsonSerializer.Serialize(mission.parameters);
-                _repository.Missions.Update(mission);
+                _repository.Missions.Update(mission, "[elevatorParameterMapping]");
 
                 //EventLogger.Info($"[ELEV][PARAM][SET] target updated. missionguId={mission.guid} subType={mission.subType}, missionName={mission.name}" +
                 //                 $", workerId={worker.id},WorkerName={worker.name}, mapId={worker.mapId}, oldTarget={old}, newTarget={selected.id}");
@@ -223,7 +223,7 @@ namespace JOB.Services
                     {
                         mapSwitchParam.value = mapSwitchPosition.id;
                         switchMapMission.parametersJson = JsonSerializer.Serialize(switchMapMission.parameters);
-                        _repository.Missions.Update(switchMapMission);
+                        _repository.Missions.Update(switchMapMission, "[switchingMapParameterMapping]");
                         //직접 파라메타를 변경하는것이기때문에 포지션점유를 업데이트한다
                     }
                     completed = true;

@@ -22,7 +22,7 @@ namespace JOB.Services
         /// [목적]
         /// 미할당(Unassigned) Job 목록을 조회해서
         /// 활성 워커에게 거리/우선순위 기반으로 할당한다.
-        /// 
+        ///
         /// [처리 흐름]
         /// 1) UnAssigned Job 목록 조회 (priority 내림차순 + createdAt 오름차순)
         /// 2) 엘리베이터 상태에 따라 EV 관련 Job 필터링
@@ -70,7 +70,7 @@ namespace JOB.Services
             // ============================================================
             // [단계 3] 엘리베이터 상태 확인 및 층간 이동 Job 필터링
             // ============================================================
-            // 설명: 
+            // 설명:
             // - 엘리베이터가 "사용 불가 상태"일 때는 층간 이동(cross-floor) Job을 처리하면 안 됨
             // - 따라서 사용 불가 상태 감지 → 같은 층(same-floor) Job만 남김
             //
@@ -153,7 +153,7 @@ namespace JOB.Services
         /// ============================================================
         /// [목적]
         /// 주어진 Job의 출발지와 목적지가 같은 층(Map)에 있는지 판단
-        /// 
+        ///
         /// [반환값]
         /// true  : 같은 층 → 엘리베이터 불필요
         /// false : 다른 층 → 엘리베이터 필요 (또는 Position 정보 부족)
@@ -264,10 +264,10 @@ namespace JOB.Services
 
                 // [Step 8] 기존 WAIT/CHARGE 미션 정리
                 // (새 Job을 시작하기 전에 대기/충전 미션 제거)
-                if (job.subType != nameof(JobSubType.WAIT) && job.subType != nameof(JobSubType.CHARGE))
-                {
-                    ChangeWaitDeleteJob(worker, "[ASSIGN][NORMAL][FIRSTJOB][ASSIGNED]");
-                }
+                //if (job.subType != nameof(JobSubType.WAIT) && job.subType != nameof(JobSubType.CHARGE))
+                //{
+                ChangeWaitDeleteJob(worker, "[ASSIGN][NORMAL][FIRSTJOB][ASSIGNED]");
+                //}
 
                 // [Step 9] 최종 Job 할당 및 미션 생성 시도
                 if (Create_Mission(job, worker))
@@ -342,7 +342,7 @@ namespace JOB.Services
             // ============================================================
             // [단계 2] 이미 Job 수행 중인 워커 제외
             // ============================================================
-            // 설명: 
+            // 설명:
             // - CHARGE/WAIT Job은 제외 (이들은 언제든 중단 가능)
             // - TRANSPORT 등 실제 작업 중인 Job은 해당 워커 제외
             var runningJobs = _repository.Jobs.GetAll()
@@ -354,10 +354,10 @@ namespace JOB.Services
                 // [조회] 이 Job을 수행 중인 워커 찾기
                 var runJobWorker = workers.FirstOrDefault(r => r.id == runJob.assignedWorkerId);
 
-                // [조건] 
+                // [조건]
                 // - 워커가 존재하고 (runJobWorker != null)
                 // - 해당 Job이 WAIT/CHARGE가 아닌 경우 (= 실제 작업 중)
-                if (runJobWorker != null&& runJob.type != nameof(JobType.WAIT)&& runJob.type != nameof(JobType.CHARGE))
+                if (runJobWorker != null && runJob.type != nameof(JobType.WAIT) && runJob.type != nameof(JobType.CHARGE))
                 {
                     // 이 워커는 이미 다른 작업 중이므로 할당 대상에서 제외
                     workers.Remove(runJobWorker);
@@ -417,10 +417,10 @@ namespace JOB.Services
 
                     // [Step 4] 기존 WAIT 미션 정리
                     // (새 작업 시작 전에 대기/충전 미션 제거)
-                    if (job.subType != nameof(JobSubType.WAIT) && job.subType != nameof(JobSubType.CHARGE))
-                    {
-                        ChangeWaitDeleteJob(worker, "[ASSIGN][NORMAL][DISTANCE][SPECIFIED][ASSIGNED]");
-                    }
+                    //if (job.subType != nameof(JobSubType.WAIT) && job.subType != nameof(JobSubType.CHARGE))
+                    //{
+                    ChangeWaitDeleteJob(worker, "[ASSIGN][NORMAL][DISTANCE][SPECIFIED][ASSIGNED]");
+                    //}
 
                     // [Step 5] 최종 Job 할당 및 미션 생성 시도
                     if (Create_Mission(job, worker))
@@ -439,7 +439,7 @@ namespace JOB.Services
                     else
                     {
                         // [실패 처리] Job 상태를 TERMINATED(취소) 처리
-                        jobTerminateState_Change_Inited(job,"[ASSIGN][NORMAL][DISTANCE][SPECIFIED][NOTASSIGNED]");
+                        jobTerminateState_Change_Inited(job, "[ASSIGN][NORMAL][DISTANCE][SPECIFIED][NOTASSIGNED]");
                     }
                 }
 
@@ -487,11 +487,10 @@ namespace JOB.Services
                         continue;
 
                     // [Step 4] 기존 WAIT 미션 정리
-                    if (job.subType != nameof(JobSubType.WAIT) && job.subType != nameof(JobSubType.CHARGE))
-                    {
-                        ChangeWaitDeleteJob(worker, "[ASSIGN][NORMAL][DISTANCE][UNSPECIFIED][ASSIGNED]");
-                    }
-
+                    //if (job.subType != nameof(JobSubType.WAIT) && job.subType != nameof(JobSubType.CHARGE))
+                    //{
+                    ChangeWaitDeleteJob(worker, "[ASSIGN][NORMAL][DISTANCE][UNSPECIFIED][ASSIGNED]");
+                    //}
 
                     // [Step 5] 최종 Job 할당 및 미션 생성 시도
                     if (Create_Mission(job, worker))
@@ -507,7 +506,7 @@ namespace JOB.Services
                     else
                     {
                         // [실패 처리] Job 상태를 TERMINATED(취소) 처리
-                        jobTerminateState_Change_Inited(job,"[ASSIGN][NORMAL][DISTANCE][UNSPECIFIED][NOTASSIGNED]");
+                        jobTerminateState_Change_Inited(job, "[ASSIGN][NORMAL][DISTANCE][UNSPECIFIED][NOTASSIGNED]");
                     }
                 }
             }
@@ -536,7 +535,7 @@ namespace JOB.Services
             // - 아직 terminate되지 않음 (terminateState == null)
             //// 아직 취소/완료되지 않음
             var runjob = _repository.Jobs.GetByWorkerId(worker.id)
-                .FirstOrDefault(r =>r.terminateState == null && (r.state == nameof(JobState.WORKERASSIGNED)|| r.state == nameof(JobState.INPROGRESS))
+                .FirstOrDefault(r => r.terminateState == null && (r.state == nameof(JobState.WORKERASSIGNED) || r.state == nameof(JobState.INPROGRESS))
                     && (r.type == nameof(JobType.WAIT) || r.type == nameof(JobType.CHARGE))
                 );
 

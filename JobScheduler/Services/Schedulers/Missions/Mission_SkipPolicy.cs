@@ -22,7 +22,7 @@ namespace JOB.Services
                             //[조건3]워커 포지션 Id와 이동하는 미션의 목적지 파라메타 와 일치하는경우
                             if (worker.PositionId == param.value)
                             {
-                                updateStateMission(mission, nameof(MissionState.SKIPPED), true);
+                                updateStateMission(mission, nameof(MissionState.SKIPPED), "[skipMission]", true);
                                 EventLogger.Info($"[PostMission][{nameof(Service.WORKER)}][SKIPPED], PositionId = {worker.PositionId}, PositionName = {worker.PositionName}, MissionId = {mission.guid}, AssignedWorkerId = {mission.assignedWorkerId}");
                                 completed = true;
                             }
@@ -62,9 +62,8 @@ namespace JOB.Services
         /// </summary>
         public void PostProcess_SetSkip_AutoDoorPairs()
         {
-
             var jobs = _repository.Jobs.GetAll();
-            if(jobs == null || jobs.Count == 0)
+            if (jobs == null || jobs.Count == 0)
             {
                 EventLogger.Warn($"[AUTODOOR][POST][SKIP] jobs is null Or empty");
                 return;
@@ -92,7 +91,7 @@ namespace JOB.Services
         /// 페어 규칙 적용(공용)
         /// - openType/closeType 페어를 강제하고, 짝이 안 맞는 미션은 state=SKIP 처리
         /// </summary>
-        private void ApplyPairSkipRule(List<Mission> missions,string openType,string closeType,string tag)
+        private void ApplyPairSkipRule(List<Mission> missions, string openType, string closeType, string tag)
         {
             if (missions == null || missions.Count == 0) return;
 
@@ -128,7 +127,7 @@ namespace JOB.Services
                             // (선택) INPROGRESS/COMPLETED는 건드리지 않게 하고 싶으면 여기서 조건 추가 가능
                             // if (prevOpen.state == MissionState.INPROGRESS || prevOpen.state == MissionState.COMPLETED) { ... }
 
-                            updateStateMission(prevOpen, nameof(MissionState.SKIPPED), true);
+                            updateStateMission(prevOpen, nameof(MissionState.SKIPPED), "[ApplyPairSkipRule]", true);
 
                             EventLogger.Warn(
                                 $"[AUTODOOR][PAIR][OPEN_SKIP_NO_CLOSE_BEFORE_NEXT_OPEN] tag={tag}, " +
@@ -154,7 +153,7 @@ namespace JOB.Services
                     if (pendingOpenIdx < 0)
                     {
                         // (선택) INPROGRESS/COMPLETED는 건드리지 않게 하고 싶으면 여기서 조건 추가 가능
-                        updateStateMission(m, nameof(MissionState.SKIPPED), true);
+                        updateStateMission(m, nameof(MissionState.SKIPPED), "[ApplyPairSkipRule]", true);
                         EventLogger.Warn(
                             $"[AUTODOOR][PAIR][CLOSE_SKIP_NO_OPEN] tag={tag}, idx={i}, seq={m.sequence}, stateBefore=NOT_SKIP");
 
@@ -181,7 +180,7 @@ namespace JOB.Services
                 var lastOpen = missions[pendingOpenIdx];
                 if (lastOpen != null && lastOpen.state != nameof(MissionState.SKIPPED))
                 {
-                    updateStateMission(lastOpen, nameof(MissionState.SKIPPED), true);
+                    updateStateMission(lastOpen, nameof(MissionState.SKIPPED), "[ApplyPairSkipRule]", true);
                     EventLogger.Warn(
                         $"[AUTODOOR][PAIR][OPEN_SKIP_END_NO_CLOSE] tag={tag}, idx={pendingOpenIdx}, seq={lastOpen.sequence}");
                 }
@@ -189,6 +188,5 @@ namespace JOB.Services
 
             EventLogger.Info($"[AUTODOOR][PAIR][END] tag={tag}, openType={openType}, closeType={closeType}");
         }
-
     }
 }

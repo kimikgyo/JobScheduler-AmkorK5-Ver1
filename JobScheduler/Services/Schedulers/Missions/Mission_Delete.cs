@@ -47,7 +47,7 @@ namespace JOB.Services
             {
                 if (mission.service == nameof(Service.JOBSCHEDULER))
                 {
-                    updateStateMission(mission, nameof(MissionState.CANCELED), true);
+                    updateStateMission(mission, nameof(MissionState.CANCELED), "[deleteMission]", true);
                     completed = true;
                 }
                 else

@@ -397,7 +397,7 @@ namespace JOB.Services
                 if (m.state == nameof(MissionState.COMPLETED))
                     continue;
 
-                updateStateMission(m, nameof(MissionState.CANCELED));
+                updateStateMission(m, nameof(MissionState.CANCELED), "[ApplyPairSkipRule]");
             }
 
             EventLogger.Info($"[TerminateState][CANCEL][END] reason={reasonTag}, jobGuid={jobGuid}");

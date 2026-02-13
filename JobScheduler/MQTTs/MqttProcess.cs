@@ -77,44 +77,48 @@ namespace JOB.MQTTs
                 _repository.Workers.Update(worker);
             }
         }
+        private readonly object _MissionStatusLock = new object();
 
-        public void updateStateMission(Mission mission, string state, bool historyAdd = false)
+        public void updateStateMission(Mission mission, string state, string message, bool historyAdd = false)
         {
-            bool worekerMissionIdUpdateFlag = true;
-            if (mission.state != state)
+            lock (_MissionStatusLock)
             {
-                mission.state = state;
-                switch (mission.state)
+                bool worekerMissionIdUpdateFlag = true;
+                if (mission.state != state)
                 {
-                    case nameof(MissionState.INIT):
-                    case nameof(MissionState.WORKERASSIGNED):
-                    case nameof(MissionState.WAITING):
-                    case nameof(MissionState.COMMANDREQUEST):
-                    case nameof(MissionState.COMMANDREQUESTCOMPLETED):
-                    case nameof(MissionState.PENDING):
-                    case nameof(MissionState.EXECUTING):
-                    case nameof(MissionState.FAILED):
-                    case nameof(MissionState.ABORTINITED):
-                    case nameof(MissionState.ABORTFAILED):
-                    case nameof(MissionState.CANCELINITED):
-                    case nameof(MissionState.CNACELFAILED):
-                        mission.updatedAt = DateTime.Now;
-                        break;
+                    mission.state = state;
+                    switch (mission.state)
+                    {
+                        case nameof(MissionState.INIT):
+                        case nameof(MissionState.WORKERASSIGNED):
+                        case nameof(MissionState.WAITING):
+                        case nameof(MissionState.COMMANDREQUEST):
+                        case nameof(MissionState.COMMANDREQUESTCOMPLETED):
+                        case nameof(MissionState.PENDING):
+                        case nameof(MissionState.EXECUTING):
+                        case nameof(MissionState.FAILED):
+                        case nameof(MissionState.ABORTINITED):
+                        case nameof(MissionState.ABORTFAILED):
+                        case nameof(MissionState.CANCELINITED):
+                        case nameof(MissionState.CNACELFAILED):
+                            mission.updatedAt = DateTime.Now;
+                            break;
 
-                    case nameof(MissionState.SKIPPED):
-                    case nameof(MissionState.ABORTCOMPLETED):
-                    case nameof(MissionState.CANCELINITCOMPLETED):
-                    case nameof(MissionState.CANCELED):
-                    case nameof(MissionState.COMPLETED):
-                        mission.finishedAt = DateTime.Now;
-                        worekerMissionIdUpdateFlag = false;
-                        break;
+                        case nameof(MissionState.SKIPPED):
+                        case nameof(MissionState.ABORTCOMPLETED):
+                        case nameof(MissionState.CANCELINITCOMPLETED):
+                        case nameof(MissionState.CANCELED):
+                        case nameof(MissionState.COMPLETED):
+                            mission.finishedAt = DateTime.Now;
+                            worekerMissionIdUpdateFlag = false;
+                            break;
+                    }
+
+                    _repository.Missions.Update(mission, message);
+                    if (historyAdd) _repository.MissionHistorys.Add(mission);
+                    _mqttQueue.MqttPublishMessage(TopicType.mission, mission.assignedWorkerId, _mapping.Missions.Publish(mission));
+                    worker_MissionId_MissionName_Update(mission, worekerMissionIdUpdateFlag);
                 }
-
-                _repository.Missions.Update(mission);
-                if (historyAdd) _repository.MissionHistorys.Add(mission);
-                _mqttQueue.MqttPublishMessage(TopicType.mission, mission.assignedWorkerId, _mapping.Missions.Publish(mission));
-                worker_MissionId_MissionName_Update(mission, worekerMissionIdUpdateFlag);
             }
         }
     }

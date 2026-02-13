@@ -174,7 +174,7 @@ namespace JOB.Controllers.Jobs
             if (mission != null)
             {
                 string missionstate = value.Replace(" ", "").ToUpper();
-                updateStateMission(mission, missionstate, true);
+                updateStateMission(mission, missionstate, "[missionsControllerPut]", true);
                 return Ok(mission);
             }
             else
@@ -212,7 +212,7 @@ namespace JOB.Controllers.Jobs
                                     mission.updatedAt = DateTime.Now;
                                     mission.parametersJson = JsonSerializer.Serialize(mission.parameters);
                                     responseDto = _mapping.Missions.Get(mission);
-                                    _repository.Missions.Update(mission);
+                                    _repository.Missions.Update(mission, "[missionsControllerPatch]");
                                     _repository.MissionHistorys.Add(mission);
                                     _mqttQueue.MqttPublishMessage(TopicType.mission, mission.assignedWorkerId, _mapping.Missions.Publish(mission));
                                 }
@@ -279,7 +279,7 @@ namespace JOB.Controllers.Jobs
             logger.Error(message);
         }
 
-        private void updateStateMission(Mission mission, string state, bool historyAdd = false)
+        private void updateStateMission(Mission mission, string state, string message, bool historyAdd = false)
         {
             bool worekerMissionIdUpdateFlag = true;
             if (mission.state != state)
@@ -312,7 +312,7 @@ namespace JOB.Controllers.Jobs
                         break;
                 }
 
-                _repository.Missions.Update(mission);
+                _repository.Missions.Update(mission, message);
                 if (historyAdd) _repository.MissionHistorys.Add(mission);
                 _mqttQueue.MqttPublishMessage(TopicType.mission, mission.assignedWorkerId, _mapping.Missions.Publish(mission));
             }
